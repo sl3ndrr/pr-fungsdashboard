@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semester-Roadmap</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&display=swap');
+
+:root {
+  --bg: #0a0e14;
+  --bg-panel: #11161f;
+  --bg-card-hover: #1b2230;
+  --border: #232b39;
+  --border-light: #313b4d;
+  --text: #e6edf3;
+  --text-dim: #8b96a8;
+  --text-faint: #565f6f;
+
+  --c-pruefung: #ff7b72;
+  --c-abgabe: #79c0ff;
+  --c-termin: #56d364;
+
+  --amber: #e3b341;
+  --green-done: #3fb950;
+  --red-urgent: #f85149;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { -webkit-text-size-adjust: 100%; }
+
+body {
+  background: radial-gradient(circle at 30% 0%, #131a26 0%, #0a0e14 55%);
+  color: var(--text);
+  font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 14px;
+  padding: 2rem 1rem 3.5rem;
+  line-height: 1.5;
+  min-height: 100vh;
+}
+
+.window {
+  max-width: 880px;
+  margin: 0 auto;
+  background: var(--bg-panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  box-shadow: 0 25px 70px rgba(0,0,0,0.45);
+}
+
+.titlebar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.7rem 1rem;
+  background: #0d1117;
+  border-bottom: 1px solid var(--border);
+}
+.dots { display: flex; gap: 0.4rem; flex-shrink: 0; }
+.dot { width: 11px; height: 11px; border-radius: 50%; }
+.dot.red { background: #ff5f56; }
+.dot.yellow { background: #ffbd2e; }
+.dot.green { background: #27c93f; }
+.filename { font-size: 0.75rem; color: var(--text-dim); margin-left: 0.4rem; }
+
+.terminal-body { padding: 1.4rem 1.4rem 1.6rem; }
+
+.file-header { font-size: 0.85rem; color: var(--text-dim); margin-bottom: 0.15rem; }
+.file-header .kw { color: #c9a0ff; }
+.clock-line { font-size: 0.75rem; color: var(--text-faint); margin-bottom: 1.25rem; }
+
+/* Hero */
+.hero {
+  background: rgba(255,255,255,0.02);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--text-dim);
+  border-radius: 6px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1.5rem;
+}
+.hero.type-pruefung { border-left-color: var(--c-pruefung); }
+.hero.type-abgabe { border-left-color: var(--c-abgabe); }
+.hero.type-termin { border-left-color: var(--c-termin); }
+.hero.urgent { background: rgba(248,81,73,0.07); }
+.hero-label { font-size: 0.7rem; color: var(--text-faint); margin-bottom: 0.55rem; letter-spacing: 0.02em; }
+.hero-main { display: flex; align-items: baseline; gap: 0.75rem; flex-wrap: wrap; }
+.hero-title { font-size: 1.25rem; font-weight: 700; }
+.hero-days { font-size: 0.95rem; font-weight: 700; color: var(--amber); }
+.hero.urgent .hero-days { color: var(--red-urgent); }
+.hero-meta { margin-top: 0.45rem; font-size: 0.78rem; color: var(--text-dim); }
+.hero-empty { padding: 0.5rem; color: var(--green-done); font-size: 0.95rem; text-align: center; }
+
+/* Timeline */
+.timeline-wrap { overflow-x: auto; padding-bottom: 0.25rem; margin-bottom: 1.5rem; }
+.timeline-wrap::-webkit-scrollbar { height: 6px; }
+.timeline-wrap::-webkit-scrollbar-thumb { background: var(--border-light); border-radius: 3px; }
+.timeline-track {
+  position: relative;
+  height: 4px;
+  background: var(--border);
+  border-radius: 2px;
+  min-width: 620px;
+  margin: 2.3rem 0.75rem 1.6rem;
+}
+.timeline-progress {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, var(--c-termin), var(--amber));
+  border-radius: 2px;
+}
+.timeline-marker {
+  position: absolute; top: 50%; width: 9px; height: 9px;
+  transform: translate(-50%, -50%) rotate(45deg);
+  border: 2px solid var(--bg-panel);
+  border-radius: 2px;
+}
+.timeline-marker.tl-pruefung { background: var(--c-pruefung); }
+.timeline-marker.tl-abgabe { background: var(--c-abgabe); }
+.timeline-marker.tl-termin { background: var(--c-termin); }
+.timeline-marker.today {
+  width: 2px; height: 22px; border: none; border-radius: 0;
+  transform: translate(-50%, -50%);
+  background: var(--text);
+}
+.timeline-label {
+  position: absolute; top: -1.55rem; transform: translateX(-50%);
+  font-size: 0.62rem; color: var(--text); font-weight: 700;
+  white-space: nowrap;
+}
+.timeline-month {
+  position: absolute; bottom: -1.4rem; transform: translateX(-50%);
+  font-size: 0.62rem; color: var(--text-faint);
+}
+
+/* Stats */
+.stats-line { font-size: 0.78rem; color: var(--text-faint); margin-bottom: 1rem; }
+
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.25rem; }
+.chip {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+  font-family: inherit;
+  font-size: 0.72rem;
+  padding: 0.4rem 0.7rem;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.chip:hover { border-color: var(--border-light); color: var(--text); }
+.chip.active { background: rgba(255,255,255,0.06); border-color: var(--text-dim); color: var(--text); }
+.chip.toggle.active { border-color: var(--amber); color: var(--amber); }
+.chip:focus-visible { outline: 2px solid var(--c-abgabe); outline-offset: 2px; }
+
+/* Code list */
+.code-list { background: var(--bg); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.code-row { display: flex; border-bottom: 1px solid var(--border); transition: background 0.15s, opacity 0.15s; }
+.code-row:last-child { border-bottom: none; }
+.code-row:hover { background: var(--bg-card-hover); }
+.code-row.row-done { opacity: 0.5; }
+.code-row.row-done:hover { opacity: 0.8; }
+
+.line-no {
+  flex-shrink: 0; width: 2.6rem; text-align: right;
+  padding: 0.85rem 0.55rem; color: var(--text-faint);
+  font-size: 0.74rem; user-select: none;
+  border-right: 1px solid var(--border);
+  background: var(--bg-panel);
+}
+.code-content {
+  flex: 1; padding: 0.85rem 1rem;
+  display: flex; flex-wrap: wrap; align-items: baseline;
+  column-gap: 0.35rem; row-gap: 0.2rem;
+  min-width: 0;
+}
+.brace { color: var(--text-faint); }
+.key { color: #6e7b91; }
+.val-str { color: var(--text); }
+.val-str.strike { color: var(--text-faint); text-decoration: line-through; }
+.val-date { color: #a5d6ff; }
+.val-type.type-pruefung { color: var(--c-pruefung); }
+.val-type.type-abgabe { color: var(--c-abgabe); }
+.val-type.type-termin { color: var(--c-termin); }
+.val-num.urgent { color: var(--red-urgent); font-weight: 700; }
+.val-num.soon { color: var(--amber); font-weight: 600; }
+.val-num.expired { color: var(--text-faint); }
+.val-num.done { color: var(--green-done); }
+.comment { color: var(--text-faint); font-style: italic; font-size: 0.8rem; margin-left: 0.3rem; }
+
+.bool-toggle {
+  background: none; border: none; padding: 0; margin: 0;
+  font: inherit; cursor: pointer;
+}
+.bool-toggle:focus-visible { outline: 2px solid var(--c-abgabe); outline-offset: 2px; }
+.bool-false { color: var(--red-urgent); }
+.bool-true { color: var(--green-done); }
+
+.empty-state { padding: 1.5rem; text-align: center; color: var(--text-faint); }
+
+footer.hint { max-width: 880px; margin: 1rem auto 0; font-size: 0.72rem; color: var(--text-faint); padding: 0 0.25rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+@media (max-width: 560px) {
+  body { padding: 1rem 0.5rem 2.5rem; font-size: 13px; }
+  .terminal-body { padding: 1rem 0.85rem 1.25rem; }
+  .line-no { width: 2.1rem; padding: 0.8rem 0.4rem; }
+  .code-content { padding: 0.8rem 0.7rem; }
+  .hero-title { font-size: 1.1rem; }
+}
+</style>
+</head>
+<body>
+
+  <div class="window">
+    <div class="titlebar">
+      <div class="dots"><span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span></div>
+      <div class="filename">roadmap.config.js</div>
+    </div>
+    <div class="terminal-body">
+
+      <div class="file-header"><span class="kw">const</span> semester = <span class="kw">"Sommersemester 2026"</span></div>
+      <div class="clock-line" id="clock-comment">// Stand: –</div>
+
+      <div class="hero" id="hero"></div>
+
+      <div class="timeline-wrap">
+        <div id="timeline-container"></div>
+      </div>
+
+      <div class="stats-line" id="stats-line">// lade...</div>
+
+      <div class="filters">
+        <button class="chip active" data-filter="Alle" onclick="setFilter('Alle')">--alle</button>
+        <button class="chip" data-filter="Prüfung" onclick="setFilter('Prüfung')">--prüfung</button>
+        <button class="chip" data-filter="Abgabe" onclick="setFilter('Abgabe')">--abgabe</button>
+        <button class="chip" data-filter="Termin" onclick="setFilter('Termin')">--termin</button>
+        <button class="chip toggle" onclick="toggleHideCompleted()">--erledigte-ausblenden</button>
+      </div>
+
+      <div class="code-list" id="code-list">
+        <div class="empty-state">// lade gespeicherte Daten…</div>
+      </div>
+
+    </div>
+  </div>
+  <footer class="hint">Klick auf <span style="color:var(--c-abgabe)">erledigt</span> bei einer Abgabe, um sie abzuhaken — wird automatisch gespeichert.</footer>
+
+  <script>
+    const events = [
+      { id: 'p1', type: 'Prüfung', title: 'Programmierpraktikum', date: '2026-07-16', time: '10:15 Uhr' },
+      { id: 'p2', type: 'Prüfung', title: 'ExPhy 2', date: '2026-07-20', time: '09:00 Uhr' },
+      { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit', date: '2026-07-23', time: '14:00 Uhr' },
+      { id: 't1', type: 'Termin', title: 'Beginn ASP (bis 09.10.)', date: '2026-09-07', time: 'Ganztägig' },
+      { id: 'a1', type: 'Abgabe', title: 'Data Science', date: '2026-09-10', time: '23:59 Uhr' },
+      { id: 'a2', type: 'Abgabe', title: 'KI-Methoden im akademischen Alltag', date: '2026-09-30', time: '23:59 Uhr' },
+      { id: 'p4', type: 'Prüfung', title: 'Theorie 2', date: '2026-10-05', time: '10:00 Uhr' },
+      { id: 'p5', type: 'Prüfung', title: 'Info II', date: '2026-10-14', time: '10:00 Uhr' },
+      { id: 't2', type: 'Termin', title: 'Beginn Wintersemester 2026/27', date: '2026-10-26', time: 'Ganztägig' }
+    ];
+
+    const STORAGE_KEY = 'done_items_v1';
+    let doneItems = [];
+    let activeTypeFilter = 'Alle';
+    let hideCompleted = false;
+
+    async function loadDoneItems() {
+      try {
+        const result = await window.storage.get(STORAGE_KEY, false);
+        doneItems = result ? JSON.parse(result.value) : [];
+      } catch (e) {
+        doneItems = [];
+      }
+    }
+
+    async function saveDoneItems() {
+      try {
+        await window.storage.set(STORAGE_KEY, JSON.stringify(doneItems), false);
+      } catch (e) {
+        console.error('Speichern fehlgeschlagen', e);
+      }
+    }
+
+    window.toggleDone = function(id) {
+      doneItems = doneItems.includes(id) ? doneItems.filter(x => x !== id) : [...doneItems, id];
+      saveDoneItems();
+      render();
+    };
+
+    window.setFilter = function(type) {
+      activeTypeFilter = type;
+      render();
+    };
+
+    window.toggleHideCompleted = function() {
+      hideCompleted = !hideCompleted;
+      render();
+    };
+
+    function typeClass(type) {
+      return type === 'Prüfung' ? 'pruefung' : type === 'Abgabe' ? 'abgabe' : 'termin';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function midnight(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function buildTimeline(todayMid) {
+      const allTimes = events.map(e => midnight(new Date(e.date)).getTime());
+      let minT = Math.min(todayMid.getTime(), ...allTimes);
+      let maxT = Math.max(...allTimes);
+      const range = (maxT - minT) || 1;
+      const pad = range * 0.04;
+      minT -= pad; maxT += pad;
+      const span = maxT - minT;
+      const posOf = t => ((t - minT) / span) * 100;
+
+      let markers = '';
+      events.forEach(e => {
+        const t = midnight(new Date(e.date)).getTime();
+        const pct = posOf(t);
+        markers += `<div class="timeline-marker tl-${typeClass(e.type)}" style="left:${pct}%" title="${escapeHtml(e.title)} – ${formatDate(new Date(e.date))}"></div>`;
+      });
+
+      const todayPct = posOf(todayMid.getTime());
+      markers += `<div class="timeline-marker today" style="left:${todayPct}%"></div>`;
+      markers += `<div class="timeline-label" style="left:${todayPct}%">HEUTE</div>`;
+
+      let months = '';
+      let cursor = new Date(minT);
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      if (cursor.getTime() < minT) cursor.setMonth(cursor.getMonth() + 1);
+      let guard = 0;
+      while (cursor.getTime() <= maxT && guard < 24) {
+        const pct = posOf(cursor.getTime());
+        const label = cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+        months += `<div class="timeline-month" style="left:${pct}%">${label}</div>`;
+        cursor.setMonth(cursor.getMonth() + 1);
+        guard++;
+      }
+
+      const progressPct = Math.min(100, Math.max(0, todayPct));
+
+      return `<div class="timeline-track">
+        <div class="timeline-progress" style="width:${progressPct}%"></div>
+        ${months}
+        ${markers}
+      </div>`;
+    }
+
+    function renderHero(item, todayMid) {
+      const heroEl = document.getElementById('hero');
+      if (!item) {
+        heroEl.className = 'hero';
+        heroEl.innerHTML = `<div class="hero-empty">// keine offenen Termine mehr – geschafft! 🎓</div>`;
+        return;
+      }
+      const d = new Date(item.date);
+      const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+      const urgent = diffDays <= 7;
+      heroEl.className = `hero type-${typeClass(item.type)} ${urgent ? 'urgent' : ''}`;
+      const daysLabel = diffDays === 0 ? 'HEUTE' : `in ${diffDays} Tag${diffDays !== 1 ? 'en' : ''}`;
+      heroEl.innerHTML = `
+        <div class="hero-label">$ next --upcoming</div>
+        <div class="hero-main">
+          <span class="hero-title">${escapeHtml(item.title)}</span>
+          <span class="hero-days">${daysLabel}</span>
+        </div>
+        <div class="hero-meta">${formatDate(d)} · ${item.time} · ${item.type}</div>
+      `;
+    }
+
+    function render() {
+      const today = new Date();
+      const todayMid = midnight(today);
+
+      document.getElementById('clock-comment').textContent =
+        `// Stand: ${formatDate(today)}, ${today.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' })} Uhr`;
+
+      const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const upcoming = sorted.filter(e => {
+        const diff = Math.round((midnight(new Date(e.date)) - todayMid) / 86400000);
+        const isDone = e.type === 'Abgabe' && doneItems.includes(e.id);
+        return diff >= 0 && !isDone;
+      });
+      renderHero(upcoming[0], todayMid);
+
+      document.getElementById('timeline-container').innerHTML = buildTimeline(todayMid);
+
+      const abgaben = events.filter(e => e.type === 'Abgabe');
+      const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
+      const next7 = sorted.filter(e => {
+        const diff = Math.round((midnight(new Date(e.date)) - todayMid) / 86400000);
+        return diff >= 0 && diff <= 7;
+      }).length;
+      document.getElementById('stats-line').textContent =
+        `// ${events.length} Termine total · ${abgabenDone}/${abgaben.length} Abgaben erledigt · ${next7} in den nächsten 7 Tagen`;
+
+      document.querySelectorAll('.chip[data-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === activeTypeFilter);
+      });
+      document.querySelector('.chip.toggle').classList.toggle('active', hideCompleted);
+
+      let filtered = sorted.filter(e => activeTypeFilter === 'Alle' || e.type === activeTypeFilter);
+      if (hideCompleted) {
+        filtered = filtered.filter(e => !(e.type === 'Abgabe' && doneItems.includes(e.id)));
+      }
+
+      const listEl = document.getElementById('code-list');
+      listEl.innerHTML = '';
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">// keine Einträge für diesen Filter</div>`;
+        return;
+      }
+
+      filtered.forEach((item, idx) => {
+        const d = new Date(item.date);
+        const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+        const isAbgabe = item.type === 'Abgabe';
+        const isDone = isAbgabe && doneItems.includes(item.id);
+
+        let countdownSpan;
+        if (isDone) {
+          countdownSpan = `<span class="val-num done">✓</span>`;
+        } else if (diffDays < 0) {
+          countdownSpan = `<span class="val-num expired">${diffDays}</span>`;
+        } else {
+          const cls = diffDays <= 7 ? 'urgent' : (diffDays <= 14 ? 'soon' : '');
+          countdownSpan = `<span class="val-num ${cls}">${diffDays}</span>`;
+        }
+
+        const boolToggle = isAbgabe
+          ? `, <span class="key">erledigt</span>: <button class="bool-toggle" onclick="toggleDone('${item.id}')"><span class="${isDone ? 'bool-true' : 'bool-false'}">${isDone}</span></button>`
+          : '';
+
+        const row = document.createElement('div');
+        row.className = `code-row ${isDone ? 'row-done' : ''}`;
+        row.innerHTML = `
+          <div class="line-no">${String(idx + 1).padStart(2, '0')}</div>
+          <div class="code-content">
+            <span class="brace">{</span>
+            <span class="key">typ</span>: <span class="val-type type-${typeClass(item.type)}">"${item.type}"</span>,
+            <span class="key">titel</span>: <span class="val-str ${isDone ? 'strike' : ''}">"${escapeHtml(item.title)}"</span>,
+            <span class="key">datum</span>: <span class="val-date">"${formatDate(d)}"</span>,
+            <span class="key">tage</span>: ${countdownSpan}${boolToggle}
+            <span class="brace">}</span>
+            <span class="comment">// ${item.time}</span>
+          </div>
+        `;
+        listEl.appendChild(row);
+      });
+    }
+
+    (async function init() {
+      await loadDoneItems();
+      render();
+      setInterval(render, 60000);
+    })();
+  </script>
+</body>
+</html>

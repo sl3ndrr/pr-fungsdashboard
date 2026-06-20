@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Semester-Roadmap</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700;800&family=Inter:wght@400;500;600&display=swap');
+
+:root {
+  --bg: #0f1320;
+  --card: #1b2236;
+  --card-hover: #212a42;
+  --card-done: #141a2b;
+  --border: #2a3350;
+  --text: #f4f6fb;
+  --text-muted: #9aa3bf;
+  --text-faint: #6b7494;
+
+  --pruefung: #f87171;
+  --pruefung-bg: rgba(248,113,113,0.14);
+  --abgabe: #60a5fa;
+  --abgabe-bg: rgba(96,165,250,0.14);
+  --termin: #34d399;
+  --termin-bg: rgba(52,211,153,0.14);
+
+  --amber: #fbbf24;
+  --urgent: #f87171;
+  --done: #34d399;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: radial-gradient(circle at 25% 0%, #161d33 0%, #0f1320 55%);
+  color: var(--text);
+  font-family: 'Inter', system-ui, sans-serif;
+  padding: 2.25rem 1rem 3rem;
+  line-height: 1.5;
+}
+
+h1, .display { font-family: 'Outfit', sans-serif; }
+
+.container { max-width: 720px; margin: 0 auto; }
+
+/* Header */
+header { margin-bottom: 1.5rem; }
+h1 { font-size: 1.5rem; font-weight: 700; margin-bottom: 0.2rem; }
+.subtitle { font-size: 0.85rem; color: var(--text-faint); }
+
+/* Hero */
+.hero {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.1rem 1.3rem;
+  margin-bottom: 1.4rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.hero.urgent { background: rgba(248,113,113,0.08); border-color: rgba(248,113,113,0.35); }
+.hero-icon {
+  width: 46px; height: 46px; flex-shrink: 0;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 1.4rem;
+}
+.hero-icon.pruefung { background: var(--pruefung-bg); }
+.hero-icon.abgabe { background: var(--abgabe-bg); }
+.hero-icon.termin { background: var(--termin-bg); }
+.hero-text { min-width: 0; }
+.hero-label { font-size: 0.72rem; color: var(--text-faint); margin-bottom: 0.15rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.hero-title { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; }
+.hero-meta { font-size: 0.82rem; color: var(--text-muted); margin-top: 0.15rem; }
+.hero-days {
+  margin-left: auto; text-align: right; flex-shrink: 0;
+  font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 1.05rem;
+  color: var(--amber);
+}
+.hero.urgent .hero-days { color: var(--urgent); }
+.hero-empty { text-align: center; width: 100%; color: var(--done); font-size: 0.95rem; padding: 0.4rem 0; }
+
+/* Timeline / Semesterverlauf */
+.timeline-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1.2rem 1.3rem 1.4rem;
+  margin-bottom: 1.4rem;
+}
+.timeline-title { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 1.4rem; font-weight: 500; }
+.timeline-scroll { overflow-x: auto; padding-bottom: 0.2rem; }
+.timeline-scroll::-webkit-scrollbar { height: 5px; }
+.timeline-scroll::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+.timeline-track {
+  position: relative;
+  height: 3px;
+  background: var(--border);
+  border-radius: 2px;
+  min-width: 580px;
+  margin: 1.6rem 0.8rem 1.5rem;
+}
+.timeline-progress {
+  position: absolute; left: 0; top: 0; height: 100%;
+  background: linear-gradient(90deg, var(--termin), var(--amber));
+  border-radius: 2px;
+}
+.timeline-dot {
+  position: absolute; top: 50%; width: 11px; height: 11px;
+  border-radius: 50%; transform: translate(-50%, -50%);
+  border: 2px solid var(--card);
+}
+.timeline-dot.pruefung { background: var(--pruefung); }
+.timeline-dot.abgabe { background: var(--abgabe); }
+.timeline-dot.termin { background: var(--termin); }
+.timeline-today {
+  position: absolute; top: 50%; width: 2px; height: 20px;
+  background: var(--text); transform: translate(-50%, -50%);
+}
+.timeline-today-label {
+  position: absolute; top: -1.5rem; transform: translateX(-50%);
+  font-size: 0.65rem; font-weight: 600; color: var(--text); white-space: nowrap;
+}
+.timeline-month {
+  position: absolute; bottom: -1.3rem; transform: translateX(-50%);
+  font-size: 0.65rem; color: var(--text-faint);
+}
+
+/* Stats */
+.stats-line { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.1rem; }
+.stats-line b { color: var(--text); font-weight: 600; }
+
+/* Filters */
+.filters { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 1.1rem; }
+.pill {
+  background: var(--card);
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  padding: 0.4rem 0.85rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+}
+.pill:hover { border-color: #3a4566; color: var(--text); }
+.pill.active { background: #2a3454; border-color: #3f4c78; color: var(--text); }
+.pill.toggle.active { border-color: var(--amber); color: var(--amber); }
+.pill:focus-visible { outline: 2px solid var(--abgabe); outline-offset: 2px; }
+
+/* List */
+.dashboard-list { display: flex; flex-direction: column; gap: 0.7rem; }
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.95rem 1.2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  transition: border-color 0.15s, opacity 0.15s;
+}
+.card:hover { border-color: #3a4566; }
+.card.done { background: var(--card-done); opacity: 0.55; border-style: dashed; }
+.card.done:hover { opacity: 0.85; }
+.card.done .title { text-decoration: line-through; color: var(--text-faint); }
+
+.card-left { display: flex; align-items: center; gap: 1.1rem; min-width: 0; }
+
+.checkbox-wrapper { display: flex; align-items: center; justify-content: center; width: 20px; height: 20px; flex-shrink: 0; }
+input[type="checkbox"] { width: 1.2rem; height: 1.2rem; accent-color: var(--abgabe); cursor: pointer; }
+.dot-marker { width: 7px; height: 7px; background: var(--text-faint); border-radius: 50%; flex-shrink: 0; }
+
+.info { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+
+.badge {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem; border-radius: 5px; width: fit-content;
+}
+.badge.pruefung { background: var(--pruefung-bg); color: var(--pruefung); }
+.badge.abgabe { background: var(--abgabe-bg); color: var(--abgabe); }
+.badge.termin { background: var(--termin-bg); color: var(--termin); }
+
+.title { font-family: 'Outfit', sans-serif; font-size: 1.02rem; font-weight: 600; word-break: break-word; }
+.meta { font-size: 0.82rem; color: var(--text-muted); }
+
+.countdown {
+  text-align: right; background: var(--bg); padding: 0.5rem 0.8rem;
+  border-radius: 8px; border: 1px solid var(--border);
+  min-width: 110px; flex-shrink: 0;
+}
+.countdown .primary { font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 0.92rem; display: block; }
+.countdown .secondary { font-size: 0.74rem; color: var(--text-muted); }
+.countdown.urgent { border-color: rgba(248,113,113,0.5); background: rgba(248,113,113,0.08); }
+.countdown.urgent .primary { color: var(--urgent); }
+.countdown.done-badge { background: rgba(52,211,153,0.1); border-color: rgba(52,211,153,0.4); text-align: center; }
+.countdown.done-badge .primary { color: var(--done); }
+.countdown.done-badge .secondary { color: #6ee7b7; }
+.countdown.expired { opacity: 0.45; }
+
+.empty-state { text-align: center; padding: 2rem; color: var(--text-faint); font-size: 0.9rem; }
+
+footer.hint { max-width: 720px; margin: 1.1rem auto 0; font-size: 0.75rem; color: var(--text-faint); padding: 0 0.2rem; }
+
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+
+@media (max-width: 540px) {
+  .card { flex-direction: column; align-items: flex-start; gap: 0.9rem; }
+  .countdown { width: 100%; text-align: left; display: flex; justify-content: space-between; align-items: center; }
+  .hero { flex-wrap: wrap; }
+  .hero-days { margin-left: 0; text-align: left; }
+}
+</style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>Semester-Roadmap</h1>
+      <div class="subtitle" id="today-date">Heute: –</div>
+    </header>
+
+    <div class="hero" id="hero"></div>
+
+    <div class="timeline-card">
+      <div class="timeline-title">Semesterverlauf</div>
+      <div class="timeline-scroll">
+        <div id="timeline-container"></div>
+      </div>
+    </div>
+
+    <div class="stats-line" id="stats-line"></div>
+
+    <div class="filters">
+      <button class="pill active" data-filter="Alle" onclick="setFilter('Alle')">Alle</button>
+      <button class="pill" data-filter="Prüfung" onclick="setFilter('Prüfung')">Prüfungen</button>
+      <button class="pill" data-filter="Abgabe" onclick="setFilter('Abgabe')">Abgaben</button>
+      <button class="pill" data-filter="Termin" onclick="setFilter('Termin')">Termine</button>
+      <button class="pill toggle" onclick="toggleHideCompleted()">Erledigte ausblenden</button>
+    </div>
+
+    <div class="dashboard-list" id="list"></div>
+  </div>
+  <footer class="hint">Tipp: Abgaben lassen sich abhaken — dein Fortschritt wird automatisch gespeichert.</footer>
+
+  <script>
+    const events = [
+      { id: 'p1', type: 'Prüfung', title: 'Programmierpraktikum', date: '2026-07-16', time: '10:15 Uhr' },
+      { id: 'p2', type: 'Prüfung', title: 'ExPhy 2', date: '2026-07-20', time: '09:00 Uhr' },
+      { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit', date: '2026-07-23', time: '14:00 Uhr' },
+      { id: 't1', type: 'Termin', title: 'Beginn ASP (bis 09.10.)', date: '2026-09-07', time: 'Ganztägig' },
+      { id: 'a1', type: 'Abgabe', title: 'Data Science', date: '2026-09-10', time: '23:59 Uhr' },
+      { id: 'a2', type: 'Abgabe', title: 'KI-Methoden im akademischen Alltag', date: '2026-09-30', time: '23:59 Uhr' },
+      { id: 'p4', type: 'Prüfung', title: 'Theorie 2', date: '2026-10-05', time: '10:00 Uhr' },
+      { id: 'p5', type: 'Prüfung', title: 'Info II', date: '2026-10-14', time: '10:00 Uhr' },
+      { id: 't2', type: 'Termin', title: 'Beginn Wintersemester 2026/27', date: '2026-10-26', time: 'Ganztägig' }
+    ];
+
+    const ICONS = { 'Prüfung': '📝', 'Abgabe': '📤', 'Termin': '📌' };
+
+    const STORAGE_KEY = 'done_items_v1';
+    let doneItems = [];
+    let activeTypeFilter = 'Alle';
+    let hideCompleted = false;
+
+    async function loadDoneItems() {
+      try {
+        const result = await window.storage.get(STORAGE_KEY, false);
+        doneItems = result ? JSON.parse(result.value) : [];
+      } catch (e) {
+        doneItems = [];
+      }
+    }
+
+    async function saveDoneItems() {
+      try {
+        await window.storage.set(STORAGE_KEY, JSON.stringify(doneItems), false);
+      } catch (e) {
+        console.error('Speichern fehlgeschlagen', e);
+      }
+    }
+
+    window.toggleDone = function(id) {
+      doneItems = doneItems.includes(id) ? doneItems.filter(x => x !== id) : [...doneItems, id];
+      saveDoneItems();
+      render();
+    };
+
+    window.setFilter = function(type) {
+      activeTypeFilter = type;
+      render();
+    };
+
+    window.toggleHideCompleted = function() {
+      hideCompleted = !hideCompleted;
+      render();
+    };
+
+    function typeClass(type) {
+      return type === 'Prüfung' ? 'pruefung' : type === 'Abgabe' ? 'abgabe' : 'termin';
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function formatDate(d) {
+      return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+    }
+
+    function midnight(d) {
+      return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+
+    function buildTimeline(todayMid) {
+      const allTimes = events.map(e => midnight(new Date(e.date)).getTime());
+      let minT = Math.min(todayMid.getTime(), ...allTimes);
+      let maxT = Math.max(...allTimes);
+      const range = (maxT - minT) || 1;
+      const pad = range * 0.04;
+      minT -= pad; maxT += pad;
+      const span = maxT - minT;
+      const posOf = t => ((t - minT) / span) * 100;
+
+      let dots = '';
+      events.forEach(e => {
+        const t = midnight(new Date(e.date)).getTime();
+        const pct = posOf(t);
+        dots += `<div class="timeline-dot ${typeClass(e.type)}" style="left:${pct}%" title="${escapeHtml(e.title)} – ${formatDate(new Date(e.date))}"></div>`;
+      });
+
+      const todayPct = posOf(todayMid.getTime());
+      dots += `<div class="timeline-today" style="left:${todayPct}%"></div>`;
+      dots += `<div class="timeline-today-label" style="left:${todayPct}%">Heute</div>`;
+
+      let months = '';
+      let cursor = new Date(minT);
+      cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+      if (cursor.getTime() < minT) cursor.setMonth(cursor.getMonth() + 1);
+      let guard = 0;
+      while (cursor.getTime() <= maxT && guard < 24) {
+        const pct = posOf(cursor.getTime());
+        const label = cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
+        months += `<div class="timeline-month" style="left:${pct}%">${label}</div>`;
+        cursor.setMonth(cursor.getMonth() + 1);
+        guard++;
+      }
+
+      const progressPct = Math.min(100, Math.max(0, todayPct));
+
+      return `<div class="timeline-track">
+        <div class="timeline-progress" style="width:${progressPct}%"></div>
+        ${months}
+        ${dots}
+      </div>`;
+    }
+
+    function renderHero(item, todayMid) {
+      const heroEl = document.getElementById('hero');
+      if (!item) {
+        heroEl.className = 'hero';
+        heroEl.innerHTML = `<div class="hero-empty">Keine offenen Termine mehr – geschafft! 🎉</div>`;
+        return;
+      }
+      const d = new Date(item.date);
+      const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+      const urgent = diffDays <= 7;
+      heroEl.className = `hero ${urgent ? 'urgent' : ''}`;
+      const daysLabel = diffDays === 0 ? 'Heute' : `in ${diffDays} Tag${diffDays !== 1 ? 'en' : ''}`;
+      heroEl.innerHTML = `
+        <div class="hero-icon ${typeClass(item.type)}">${ICONS[item.type]}</div>
+        <div class="hero-text">
+          <div class="hero-label">Als Nächstes</div>
+          <div class="hero-title">${escapeHtml(item.title)}</div>
+          <div class="hero-meta">${formatDate(d)} · ${item.time}</div>
+        </div>
+        <div class="hero-days">${daysLabel}</div>
+      `;
+    }
+
+    function render() {
+      const today = new Date();
+      const todayMid = midnight(today);
+
+      document.getElementById('today-date').textContent =
+        'Heute: ' + today.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+      const sorted = [...events].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+      const upcoming = sorted.filter(e => {
+        const diff = Math.round((midnight(new Date(e.date)) - todayMid) / 86400000);
+        const isDone = e.type === 'Abgabe' && doneItems.includes(e.id);
+        return diff >= 0 && !isDone;
+      });
+      renderHero(upcoming[0], todayMid);
+
+      document.getElementById('timeline-container').innerHTML = buildTimeline(todayMid);
+
+      const abgaben = events.filter(e => e.type === 'Abgabe');
+      const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
+      const next7 = sorted.filter(e => {
+        const diff = Math.round((midnight(new Date(e.date)) - todayMid) / 86400000);
+        return diff >= 0 && diff <= 7;
+      }).length;
+      document.getElementById('stats-line').innerHTML =
+        `<b>${events.length}</b> Termine im Überblick · <b>${abgabenDone}/${abgaben.length}</b> Abgaben erledigt · <b>${next7}</b> in den nächsten 7 Tagen`;
+
+      document.querySelectorAll('.pill[data-filter]').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.filter === activeTypeFilter);
+      });
+      document.querySelector('.pill.toggle').classList.toggle('active', hideCompleted);
+
+      let filtered = sorted.filter(e => activeTypeFilter === 'Alle' || e.type === activeTypeFilter);
+      if (hideCompleted) {
+        filtered = filtered.filter(e => !(e.type === 'Abgabe' && doneItems.includes(e.id)));
+      }
+
+      const listEl = document.getElementById('list');
+      listEl.innerHTML = '';
+      if (filtered.length === 0) {
+        listEl.innerHTML = `<div class="empty-state">Keine Einträge für diesen Filter.</div>`;
+        return;
+      }
+
+      filtered.forEach(item => {
+        const d = new Date(item.date);
+        const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+        const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
+        const isAbgabe = item.type === 'Abgabe';
+        const isDone = isAbgabe && doneItems.includes(item.id);
+
+        let countdownClass = '';
+        let countdownContent = '';
+        if (isDone) {
+          countdownClass = 'done-badge';
+          countdownContent = `<span class="primary">Erledigt</span><span class="secondary">abgehakt</span>`;
+        } else if (diffDays < 0) {
+          countdownClass = 'expired';
+          countdownContent = `<span class="primary">Abgelaufen</span><span class="secondary">vor ${Math.abs(diffDays)} Tg.</span>`;
+        } else if (diffDays === 0) {
+          countdownClass = 'urgent';
+          countdownContent = `<span class="primary">Heute</span><span class="secondary">${item.time}</span>`;
+        } else {
+          if (diffDays <= 7) countdownClass = 'urgent';
+          countdownContent = `<span class="primary">${diffDays} Tag${diffDays !== 1 ? 'e' : ''}</span><span class="secondary">${diffWeeks} Wo.</span>`;
+        }
+
+        const checkElement = isAbgabe
+          ? `<input type="checkbox" onchange="toggleDone('${item.id}')" ${isDone ? 'checked' : ''}>`
+          : `<div class="dot-marker"></div>`;
+
+        const card = document.createElement('div');
+        card.className = `card ${isDone ? 'done' : ''}`;
+        card.innerHTML = `
+          <div class="card-left">
+            <div class="checkbox-wrapper">${checkElement}</div>
+            <div class="info">
+              <span class="badge ${typeClass(item.type)}">${item.type}</span>
+              <div class="title">${escapeHtml(item.title)}</div>
+              <div class="meta">${formatDate(d)} · ${item.time}</div>
+            </div>
+          </div>
+          <div class="countdown ${countdownClass}">${countdownContent}</div>
+        `;
+        listEl.appendChild(card);
+      });
+    }
+
+    (async function init() {
+      await loadDoneItems();
+      render();
+      setInterval(render, 60000);
+    })();
+  </script>
+</body>
+</html>
