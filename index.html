@@ -50,11 +50,11 @@ body {
 .container { max-width: 1480px; margin: 0 auto; }
 
 /* Top-Grid */
-.top-grid { 
-  display: grid; 
-  grid-template-columns: 1fr; 
-  gap: 0.85rem; 
-  margin-bottom: 1.4rem; 
+.top-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.85rem;
+  margin-bottom: 1.4rem;
 }
 @media (min-width: 880px) {
   .top-grid { grid-template-columns: 0.82fr 1.18fr; align-items: stretch; }
@@ -72,10 +72,10 @@ body {
   animation: fadeInUp 0.55s ease both;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
-.hero.urgent { 
-  background: rgba(255, 93, 93, 0.06); 
-  border-color: rgba(255, 93, 93, 0.35); 
-  animation: fadeInUp 0.55s ease both, pulseRing 2.4s ease-in-out 0.6s infinite; 
+.hero.urgent {
+  background: rgba(255, 93, 93, 0.06);
+  border-color: rgba(255, 93, 93, 0.35);
+  animation: fadeInUp 0.55s ease both, pulseRing 2.4s ease-in-out 0.6s infinite;
 }
 .hero-icon {
   width: 48px; height: 48px; flex-shrink: 0;
@@ -124,7 +124,7 @@ body {
   height: 4px;
   background: var(--border);
   border-radius: 2px;
-  min-width: 480px; 
+  min-width: 480px;
   margin: 0.8rem 0.8rem 0.5rem;
 }
 .timeline-progress {
@@ -182,11 +182,11 @@ body {
 }
 .filter-scroll-wrapper::-webkit-scrollbar { display: none; }
 
-.filters { 
-  display: flex; 
-  flex-wrap: nowrap; 
-  gap: 0.45rem; 
-  width: max-content; 
+.filters {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.45rem;
+  width: max-content;
 }
 
 .pill {
@@ -203,16 +203,16 @@ body {
 }
 .pill:hover { border-color: #2d3954; color: var(--text); }
 .pill:active { transform: scale(0.95); }
-.pill.active { 
-  background: var(--text); 
-  border-color: var(--text); 
-  color: var(--bg); 
+.pill.active {
+  background: var(--text);
+  border-color: var(--text);
+  color: var(--bg);
   font-weight: 600;
   box-shadow: 0 0 12px rgba(255,255,255,0.2);
 }
-.pill.toggle.active { 
-  background: var(--amber); 
-  border-color: var(--amber); 
+.pill.toggle.active {
+  background: var(--amber);
+  border-color: var(--amber);
   color: var(--bg);
   box-shadow: 0 0 12px rgba(245, 158, 11, 0.25);
 }
@@ -347,6 +347,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 
   <script>
     const events = [
+      { id: 'p0', type: 'Prüfung', title: 'Probeklausur Programmierpraktikum', date: '2026-07-06', time: '10:15 Uhr' },
       { id: 'p1', type: 'Prüfung', title: 'Programmierpraktikum', date: '2026-07-16', time: '10:15 Uhr' },
       { id: 'p2', type: 'Prüfung', title: 'ExPhy 2', date: '2026-07-20', time: '09:00 Uhr' },
       { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit', date: '2026-07-23', time: '14:00 Uhr' },
@@ -515,7 +516,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
         const diff = Math.round((midnight(parseISOString(e.date)) - todayMid) / 86400000);
         return diff >= 0 && diff <= 7;
       }).length;
-      
+
       document.getElementById('stats-line').innerHTML =
         `<b>${events.length}</b> Termine · <b>${abgabenDone}/${abgaben.length}</b> Abgaben erledigt · <b>${next7}</b> in &le; 7 Tagen`;
 
