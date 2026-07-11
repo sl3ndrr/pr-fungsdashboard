@@ -161,9 +161,12 @@ body {
 .timeline-track { position: relative; height: 6px; background: var(--border); border-radius: 3px; min-width: 600px; margin: 0.8rem 0.5rem; }
 .timeline-progress { position: absolute; left: 0; top: 0; height: 100%; background: linear-gradient(90deg, var(--termin), var(--abgabe)); border-radius: 3px; transition: width 1.1s cubic-bezier(0.16, 1, 0.3, 1); z-index: 1; }
 
-.timeline-asp-span { position: absolute; top: 50%; transform: translateY(-50%); height: 20px; background: rgba(249, 115, 22, 0.1); border-top: 1.5px dashed rgba(249, 115, 22, 0.45); border-bottom: 1.5px dashed rgba(249, 115, 22, 0.45); border-radius: 4px; z-index: 2; pointer-events: none; }
-.timeline-asp-label { position: absolute; top: -1.7rem; font-size: 0.65rem; color: var(--amber); white-space: nowrap; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; z-index: 4; }
-.timeline-asp-tick { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 2px; height: 24px; background: rgba(249, 115, 22, 0.45); border-radius: 1px; z-index: 3; }
+/* Generic timeline period span (used for ASP, Wiesbaden, etc. — colored per-period via inline style) */
+.timeline-period-span { position: absolute; top: 50%; transform: translateY(-50%); height: 20px; border-top: 1.5px dashed; border-bottom: 1.5px dashed; border-radius: 4px; z-index: 2; pointer-events: none; }
+.timeline-period-label { position: absolute; top: -1.7rem; font-size: 0.65rem; white-space: nowrap; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; z-index: 4; }
+.timeline-period-tick { position: absolute; top: 50%; transform: translate(-50%, -50%); width: 2px; height: 24px; border-radius: 1px; z-index: 3; }
+/* Stack labels of overlapping/adjacent periods so they don't collide */
+.timeline-period-label[data-row="1"] { top: -3rem; }
 
 .timeline-dot {
   position: absolute; top: 50%; width: 14px; height: 14px; border-radius: 50%;
@@ -269,8 +272,9 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 .cal-nav-btn:active { transform: scale(0.92); }
 
 .cal-month-label { font-family: 'Outfit', sans-serif; font-size: 1.15rem; font-weight: 700; text-align: center; flex: 1; }
-.cal-asp-indicator { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; color: var(--amber); background: rgba(249, 115, 22, 0.1); border: 1px solid rgba(249, 115, 22, 0.35); border-radius: 999px; padding: 0.2rem 0.6rem; font-weight: 700; letter-spacing: 0.03em; }
-.cal-asp-dot-sm { width: 6px; height: 6px; border-radius: 50%; background: var(--amber); animation: breathe 2.4s ease-in-out infinite; flex-shrink: 0; }
+.cal-period-indicators { display: flex; gap: 0.4rem; flex-wrap: wrap; justify-content: flex-end; }
+.cal-period-indicator { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.72rem; border-radius: 999px; padding: 0.2rem 0.6rem; font-weight: 700; letter-spacing: 0.03em; border: 1px solid; white-space: nowrap; }
+.cal-period-dot-sm { width: 6px; height: 6px; border-radius: 50%; animation: breathe 2.4s ease-in-out infinite; flex-shrink: 0; }
 
 .cal-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .cal-scroll::-webkit-scrollbar { display: none; }
@@ -283,10 +287,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 [data-theme="dark"] .cal-day.today,
 :root:not([data-theme="light"]) .cal-day.today { background: rgba(255,255,255,0.03); }
 
-.cal-day.asp-period { background: rgba(249, 115, 22, 0.12); border-color: rgba(249, 115, 22, 0.35); }
-.cal-day.asp-period.today { border-color: var(--amber); }
-.cal-day.asp-start { border-left: 3px solid var(--amber); }
-.cal-day.asp-end   { border-right: 3px solid var(--amber); }
+.cal-day.today.period { border-color: var(--text); }
 
 .cal-day-num { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); line-height: 1.2; margin-bottom: 2px; }
 .cal-day.today .cal-day-num-inner { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border-radius: 50%; background: var(--text); color: var(--bg); font-weight: 700; font-size: 0.7rem; }
@@ -304,7 +305,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 .cal-legend-dot.pruefung { background: var(--pruefung); }
 .cal-legend-dot.abgabe   { background: var(--abgabe); }
 .cal-legend-dot.termin   { background: var(--termin); }
-.cal-legend-asp-swatch { width: 20px; height: 10px; border-radius: 3px; background: rgba(249, 115, 22, 0.15); border: 1px dashed rgba(249, 115, 22, 0.5); flex-shrink: 0; }
+.cal-legend-period-swatch { width: 20px; height: 10px; border-radius: 3px; border: 1px dashed; flex-shrink: 0; }
 
 .cal-popover {
   position: fixed; z-index: 9999; display: none; flex-direction: column; gap: 0.5rem;
@@ -332,6 +333,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   .cal-nav-btn { width: 32px; height: 32px; font-size: 1.1rem; }
   .cal-legend { gap: 0.5rem; }
   .cal-legend-item { font-size: 0.68rem; }
+  .cal-period-indicator { font-size: 0.64rem; padding: 0.15rem 0.45rem; }
 }
 
 @media (max-width: 380px) {
@@ -344,10 +346,6 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 @keyframes popIn    { from { opacity: 0; transform: scale(0.92); } to { opacity: 1; transform: scale(1); } }
 @keyframes pulseRing { 0%, 100% { box-shadow: 0 0 0 0 rgba(255, 93, 93, 0.2); } 50% { box-shadow: 0 0 0 6px rgba(255, 93, 93, 0); } }
 @keyframes breathe  { 0%, 100% { opacity: 1; } 50% { opacity: 0.4; } }
-@keyframes popInDot {
-  from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
-  to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
 @keyframes popInDot {
   from { opacity: 0; transform: translate(-50%, -50%) scale(0.92); }
   to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
@@ -384,19 +382,16 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
       <div class="cal-header">
         <button class="cal-nav-btn" id="cal-prev">‹</button>
         <div class="cal-month-label" id="cal-month-label"></div>
-        <span class="cal-asp-indicator" id="cal-asp-indicator" style="display:none">
-          <span class="cal-asp-dot-sm"></span>ASP
-        </span>
+        <div class="cal-period-indicators" id="cal-period-indicators"></div>
         <button class="cal-nav-btn" id="cal-next">›</button>
       </div>
       <div class="cal-scroll">
         <div class="cal-grid" id="cal-grid"></div>
       </div>
-      <div class="cal-legend">
+      <div class="cal-legend" id="cal-legend">
         <div class="cal-legend-item"><div class="cal-legend-dot pruefung"></div>Prüfung</div>
         <div class="cal-legend-item"><div class="cal-legend-dot abgabe"></div>Abgabe</div>
         <div class="cal-legend-item"><div class="cal-legend-dot termin"></div>Termin</div>
-        <div class="cal-legend-item"><div class="cal-legend-asp-swatch"></div>ASP-Zeitraum (07.09. – 09.10.)</div>
       </div>
     </div>
   </div>
@@ -424,7 +419,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   applyTheme(savedTheme);
 
   const events = [
-    { id: 'p0', type: 'Prüfung', title: 'Probeklausur Programmierpraktikum', date: '2026-07-06', time: '10:15 Uhr' },
+    { id: 'p0', type: 'Prüfung', title: 'Probeklausur Programmierpraktikum', date: '2026-07-06', time: '12:15 Uhr' },
     { id: 'p1', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-07-16', time: '10:15 Uhr' },
     { id: 'p2', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-07-20', time: '09:00 Uhr' },
     { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit',          date: '2026-07-23', time: '14:00 Uhr' },
@@ -432,6 +427,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-09-10', time: '23:59 Uhr' },
     { id: 'a2', type: 'Abgabe',  title: 'KI-Methoden im akademischen Alltag', date: '2026-09-30', time: '23:59 Uhr' },
     { id: 'p4', type: 'Prüfung', title: 'Theorie 2',                          date: '2026-10-05', time: '10:00 Uhr' },
+    { id: 'p6', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-10-07', time: '09:00 Uhr' },
     { id: 'p5', type: 'Prüfung', title: 'Info II',                            date: '2026-10-14', time: '10:00 Uhr' },
     { id: 't2', type: 'Termin',  title: 'Beginn Wintersemester 2026/27',      date: '2026-10-26', time: 'Ganztägig'  },
     { id: 'g1', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-06-29', time: '13:45-15:45 Uhr', calOnly: true },
@@ -445,8 +441,13 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     { id: 'g9', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-10-05', time: '13:45-15:45 Uhr', calOnly: true }
   ];
 
-  const ASP_START = '2026-09-07';
-  const ASP_END   = '2026-10-09';
+  /* Generic time-span periods shown on the timeline and in the calendar.
+     Add new entries here (e.g. further trips) — no other code needs to change. */
+  const PERIODS = [
+    { id: 'asp',        label: 'ASP',        start: '2026-09-07', end: '2026-10-09', rgb: '249, 115, 22' },
+    { id: 'wiesbaden',  label: 'in Wiesbaden', start: '2026-07-25', end: '2026-08-09', rgb: '139, 92, 246' }
+  ];
+
   const ICONS = { 'Prüfung': '📝', 'Abgabe': '📤', 'Termin': '📌' };
   const STORAGE_KEY = 'done_items_v1';
 
@@ -489,6 +490,13 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   }
   function formatDate(d) {
     return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  function periodsOnDay(dayMid) {
+    return PERIODS.filter(p => {
+      const s = midnight(parseISOString(p.start));
+      const e = midnight(parseISOString(p.end));
+      return dayMid >= s && dayMid <= e;
+    });
   }
 
   window.toggleDone = function(id) {
@@ -576,21 +584,27 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     const span = maxT - minT;
     const posOf = t => ((t - minT) / span) * 100;
 
-    const aspStartT = midnight(parseISOString(ASP_START)).getTime();
-    const aspEndT   = midnight(parseISOString(ASP_END)).getTime();
-    let aspHtml = '';
-    if (aspEndT > minT && aspStartT < maxT) {
-      const aspL = Math.max(0, posOf(aspStartT));
-      const aspR = Math.min(100, posOf(aspEndT));
-      const aspW = aspR - aspL;
-      const midPct = (aspL + aspR) / 2;
-      aspHtml = `
-        <div class="timeline-asp-span" style="left:${aspL}%;width:${aspW}%"></div>
-        <div class="timeline-asp-tick"  style="left:${aspL}%"></div>
-        <div class="timeline-asp-tick"  style="left:${aspR}%"></div>
-        <div class="timeline-asp-label" style="left:${midPct}%;transform:translateX(-50%)">ASP</div>
+    let periodsHtml = '';
+    const placedRanges = []; // for simple row-stacking of labels that would otherwise overlap
+    PERIODS.forEach(p => {
+      const pStartT = midnight(parseISOString(p.start)).getTime();
+      const pEndT   = midnight(parseISOString(p.end)).getTime();
+      if (pEndT <= minT || pStartT >= maxT) return;
+      const pL = Math.max(0, posOf(pStartT));
+      const pR = Math.min(100, posOf(pEndT));
+      const pW = pR - pL;
+      const midPct = (pL + pR) / 2;
+
+      const row = placedRanges.some(r => midPct > r.l - 6 && midPct < r.r + 6) ? 1 : 0;
+      placedRanges.push({ l: pL, r: pR });
+
+      periodsHtml += `
+        <div class="timeline-period-span" style="left:${pL}%;width:${pW}%;background:rgba(${p.rgb},0.1);border-color:rgba(${p.rgb},0.45)"></div>
+        <div class="timeline-period-tick" style="left:${pL}%;background:rgba(${p.rgb},0.45)"></div>
+        <div class="timeline-period-tick" style="left:${pR}%;background:rgba(${p.rgb},0.45)"></div>
+        <div class="timeline-period-label" data-row="${row}" style="left:${midPct}%;transform:translateX(-50%);color:rgb(${p.rgb})">${escapeHtml(p.label)}</div>
       `;
-    }
+    });
 
     let dots = '';
     mainEvents.forEach((e, i) => {
@@ -628,7 +642,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     return {
       html: `<div class="timeline-track">
         <div class="timeline-progress" id="timeline-progress-bar" style="width:${animate ? 0 : progressPct}%"></div>
-        ${aspHtml}
+        ${periodsHtml}
         ${months}
         ${dots}
       </div>`,
@@ -684,9 +698,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   }
 
   function renderCalendar() {
-    const aspStart = midnight(parseISOString(ASP_START));
-    const aspEnd   = midnight(parseISOString(ASP_END));
-    const today    = midnight(new Date());
+    const today = midnight(new Date());
 
     document.getElementById('cal-month-label').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
 
@@ -703,8 +715,15 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 
     const monthStart = new Date(calYear, calMonth, 1);
     const monthEnd   = new Date(calYear, calMonth + 1, 0);
-    const aspOverlap = monthEnd >= aspStart && monthStart <= aspEnd;
-    document.getElementById('cal-asp-indicator').style.display = aspOverlap ? 'inline-flex' : 'none';
+    const overlappingPeriods = PERIODS.filter(p => {
+      const s = midnight(parseISOString(p.start));
+      const e = midnight(parseISOString(p.end));
+      return monthEnd >= s && monthStart <= e;
+    });
+    document.getElementById('cal-period-indicators').innerHTML = overlappingPeriods.map(p => `
+      <span class="cal-period-indicator" style="color:rgb(${p.rgb});background:rgba(${p.rgb},0.1);border-color:rgba(${p.rgb},0.35)">
+        <span class="cal-period-dot-sm" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}
+      </span>`).join('');
 
     const byDate = {};
     events.forEach(e => {
@@ -729,16 +748,24 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
       const iso    = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
       const inMonth = cur.getMonth() === calMonth;
       const isToday = curMid.getTime() === today.getTime();
-      const inAsp   = curMid >= aspStart && curMid <= aspEnd;
-      const isAspS  = curMid.getTime() === aspStart.getTime();
-      const isAspE  = curMid.getTime() === aspEnd.getTime();
+
+      const dayPeriods = periodsOnDay(curMid);
+      const activePeriod = dayPeriods[0]; // first matching period wins visually if they ever overlap
 
       let cls = 'cal-day';
       if (!inMonth) cls += ' other-month';
       if (isToday)  cls += ' today';
-      if (inAsp)    cls += ' asp-period';
-      if (isAspS)   cls += ' asp-start';
-      if (isAspE)   cls += ' asp-end';
+      if (activePeriod) cls += ' period';
+
+      let dayStyle = '';
+      if (activePeriod) {
+        const pStart = midnight(parseISOString(activePeriod.start));
+        const pEnd   = midnight(parseISOString(activePeriod.end));
+        let borderSide = '';
+        if (curMid.getTime() === pStart.getTime()) borderSide = `border-left:3px solid rgb(${activePeriod.rgb});`;
+        if (curMid.getTime() === pEnd.getTime())   borderSide += `border-right:3px solid rgb(${activePeriod.rgb});`;
+        dayStyle = ` style="background:rgba(${activePeriod.rgb},0.12);border-color:rgba(${activePeriod.rgb},0.35);${borderSide}"`;
+      }
 
       const dayEvts = byDate[iso] || [];
 
@@ -750,11 +777,21 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
         return `<span class="cal-event-tag ${typeClass(e.type)}" onclick="openCalMenu(event, '${e.id}')" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
       }).join('');
 
-      html += `<div class="${cls}">${numHtml}${tagsHtml}</div>`;
+      html += `<div class="${cls}"${dayStyle}>${numHtml}${tagsHtml}</div>`;
       cur.setDate(cur.getDate() + 1);
     }
 
     document.getElementById('cal-grid').innerHTML = html;
+  }
+
+  function buildLegendPeriods() {
+    const legend = document.getElementById('cal-legend');
+    PERIODS.forEach(p => {
+      const item = document.createElement('div');
+      item.className = 'cal-legend-item';
+      item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgba(${p.rgb},0.15);border-color:rgba(${p.rgb},0.5)"></span>${escapeHtml(p.label)}-Zeitraum (${formatDate(parseISOString(p.start))} – ${formatDate(parseISOString(p.end))})`;
+      legend.appendChild(item);
+    });
   }
 
   function render(animate) {
@@ -850,6 +887,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   document.getElementById('cal-next').addEventListener('click', () => calNav(+1));
 
   (async function init() {
+    buildLegendPeriods();
     await loadDoneItems();
     render(true);
     setInterval(() => render(false), 60000);
