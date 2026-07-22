@@ -191,8 +191,9 @@ body {
 .timeline-today-label { position: absolute; top: -1.6rem; transform: translateX(-50%); font-size: 0.7rem; font-weight: 700; color: var(--text); white-space: nowrap; z-index: 6; }
 .timeline-month { position: absolute; bottom: -1.5rem; transform: translateX(-50%); font-size: 0.7rem; color: var(--text-faint); font-weight: 500; }
 
-.stats-line { font-size: 0.88rem; color: var(--text-muted); margin-bottom: 1.2rem; }
-.stats-line b { color: var(--text); font-weight: 600; }
+/* Stats & Filter Container */
+.stats-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.2rem; flex-wrap: wrap; gap: 0.5rem; }
+.stats-line { font-size: 0.88rem; color: var(--text-muted); }
 
 .pill { background: var(--card); border: 1px solid var(--border); color: var(--text-muted); font-family: 'Inter', sans-serif; font-size: 0.8rem; font-weight: 600; padding: 0.4rem 0.9rem; border-radius: 999px; cursor: pointer; transition: all 0.2s ease; flex-shrink: 0; box-shadow: var(--shadow); }
 .pill:hover { border-color: var(--text-faint); color: var(--text); }
@@ -396,7 +397,11 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     </div>
   </div>
 
-  <div class="stats-line" id="stats-line"></div>
+  <div class="stats-container">
+    <div class="stats-line" id="stats-line"></div>
+    <button class="pill" id="toggle-past-btn">Vergangene anzeigen</button>
+  </div>
+
   <div class="dashboard-list" id="list"></div>
 </div>
 
@@ -418,13 +423,22 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   themeSelect.value = savedTheme;
   applyTheme(savedTheme);
 
+  // NEU: Variable zum Steuern der Anzeige vergangener Termine
+  let showPast = false;
+
   const events = [
     { id: 'p0', type: 'Prüfung', title: 'Probeklausur Programmierpraktikum', date: '2026-07-06', time: '12:00 Uhr' },
     { id: 'p1', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-07-16', time: '10:00 Uhr' },
     { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit',          date: '2026-07-23', time: '14:00 Uhr' },
     { id: 't1', type: 'Termin',  title: 'Beginn ASP (bis 09.10.)',            date: '2026-09-07', time: 'Ganztägig'  },
-    { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-09-10', time: '23:59 Uhr' },
-    { id: 'a2', type: 'Abgabe',  title: 'KI-Methoden im akademischen Alltag', date: '2026-09-30', time: '23:59 Uhr' },
+    
+    // ANGEPASST: Data Science auf 03.08.
+    // HINWEIS: Setze isDone: true, wenn eine Abgabe im Code als erledigt markiert sein soll.
+    { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-08-03', time: '23:59 Uhr', isDone: false },
+    
+    // ANGEPASST: KI-Methoden auf 31.08.
+    { id: 'a2', type: 'Abgabe',  title: 'KI-Methoden im akademischen Alltag', date: '2026-08-31', time: '23:59 Uhr', isDone: false },
+    
     { id: 'p4', type: 'Prüfung', title: 'Theorie 2',                          date: '2026-10-05', time: '10:00 Uhr' },
     { id: 'p6', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-10-07', time: '09:00 Uhr' },
     { id: 'p5', type: 'Prüfung', title: 'Info II',                            date: '2026-10-14', time: '10:00 Uhr' },
@@ -466,6 +480,16 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
         doneItems = r ? JSON.parse(r) : [];
       }
     } catch (e) { doneItems = []; }
+
+    // NEU: Hardcoded "Done" Status aus dem Code übernehmen
+    events.forEach(e => {
+      if (e.isDone && !doneItems.includes(e.id)) {
+        doneItems.push(e.id);
+      }
+    });
+    
+    // Speichern, falls durch Code-Änderungen neue Items hinzugekommen sind
+    saveDoneItems();
   }
 
   async function saveDoneItems() {
@@ -827,12 +851,24 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 
     const listEl = document.getElementById('list');
     listEl.innerHTML = '';
-    if (sorted.length === 0) {
-      listEl.innerHTML = `<div class="empty-state">Keine offenen Termine.</div>`;
+    
+    // Filter-Logik für die Liste
+    const visibleEvents = sorted.filter(item => {
+      const d = parseISOString(item.date);
+      const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+      
+      // Wenn showPast false ist und das Datum in der Vergangenheit liegt, ausblenden
+      if (!showPast && diffDays < 0) return false;
+      
+      return true;
+    });
+
+    if (visibleEvents.length === 0) {
+      listEl.innerHTML = `<div class="empty-state">Keine Termine in dieser Ansicht.</div>`;
       return;
     }
 
-    sorted.forEach((item, idx) => {
+    visibleEvents.forEach((item, idx) => {
       const d        = parseISOString(item.date);
       const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
       const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
@@ -884,6 +920,15 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   document.getElementById('cal-toggle-btn').addEventListener('click', toggleCalendar);
   document.getElementById('cal-prev').addEventListener('click', () => calNav(-1));
   document.getElementById('cal-next').addEventListener('click', () => calNav(+1));
+
+  // NEU: Event Listener für den "Vergangene anzeigen" Button
+  const togglePastBtn = document.getElementById('toggle-past-btn');
+  togglePastBtn.addEventListener('click', () => {
+    showPast = !showPast;
+    togglePastBtn.textContent = showPast ? "Vergangene ausblenden" : "Vergangene anzeigen";
+    togglePastBtn.classList.toggle('active', showPast);
+    render(false);
+  });
 
   (async function init() {
     buildLegendPeriods();
