@@ -381,10 +381,10 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   <div id="calendar-section" class="calendar-section" style="display:none">
     <div class="calendar-card">
       <div class="cal-header">
-        <button class="cal-nav-btn" id="cal-prev">‹</button>
+        <button class="cal-nav-btn" id="cal-prev" aria-label="Vorheriger Monat">‹</button>
         <div class="cal-month-label" id="cal-month-label"></div>
         <div class="cal-period-indicators" id="cal-period-indicators"></div>
-        <button class="cal-nav-btn" id="cal-next">›</button>
+        <button class="cal-nav-btn" id="cal-next" aria-label="Nächster Monat">›</button>
       </div>
       <div class="cal-scroll">
         <div class="cal-grid" id="cal-grid"></div>
@@ -432,9 +432,9 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit',          date: '2026-07-23', time: '14:00 Uhr' },
     { id: 't1', type: 'Termin',  title: 'Beginn ASP (bis 09.10.)',            date: '2026-09-07', time: 'Ganztägig'  },
     
-    // ANGEPASST: Data Science auf 03.08.
+    // ANGEPASST: Data Science auf 09.08. um 23:59 Uhr
     // HINWEIS: Setze isDone: true, wenn eine Abgabe im Code als erledigt markiert sein soll.
-    { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-08-03', time: '23:59 Uhr', isDone: false },
+    { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-08-09', time: '23:59 Uhr', isDone: false },
     
     // ANGEPASST: KI-Methoden auf 31.08.
     { id: 'a2', type: 'Abgabe',  title: 'KI-Methoden im akademischen Alltag', date: '2026-08-31', time: '23:59 Uhr', isDone: false },
@@ -458,7 +458,8 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
      Add new entries here (e.g. further trips) — no other code needs to change. */
   const PERIODS = [
     { id: 'asp',        label: 'ASP',        start: '2026-09-07', end: '2026-10-09', rgb: '249, 115, 22' },
-    { id: 'wiesbaden',  label: 'in Wiesbaden', start: '2026-07-25', end: '2026-08-09', rgb: '139, 92, 246' }
+    { id: 'wiesbaden-1', label: 'in Wiesbaden', start: '2026-07-25', end: '2026-08-09', rgb: '139, 92, 246' },
+    { id: 'wiesbaden-2', label: 'in Wiesbaden', start: '2026-10-15', end: '2026-10-25', rgb: '139, 92, 246' }
   ];
 
   const ICONS = { 'Prüfung': '📝', 'Abgabe': '📤', 'Termin': '📌' };
@@ -466,9 +467,27 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 
   let doneItems  = [];
   let calVisible = false;
+
+  // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
+  const calendarDateValues = [
+    ...events.map(e => e.date),
+    ...PERIODS.flatMap(p => [p.start, p.end])
+  ];
+  const calMinIso = calendarDateValues.reduce((a, b) => a < b ? a : b);
+  const calMaxIso = calendarDateValues.reduce((a, b) => a > b ? a : b);
+  const [calMinYear, calMinMonth1] = calMinIso.split('-').map(Number);
+  const [calMaxYear, calMaxMonth1] = calMaxIso.split('-').map(Number);
+  const monthIndex = (year, month) => year * 12 + month;
+  const CAL_MIN_MONTH_INDEX = monthIndex(calMinYear, calMinMonth1 - 1);
+  const CAL_MAX_MONTH_INDEX = monthIndex(calMaxYear, calMaxMonth1 - 1);
+
   const _n = new Date();
-  let calYear  = _n.getFullYear();
-  let calMonth = _n.getMonth();
+  const initialCalMonthIndex = Math.min(
+    CAL_MAX_MONTH_INDEX,
+    Math.max(CAL_MIN_MONTH_INDEX, monthIndex(_n.getFullYear(), _n.getMonth()))
+  );
+  let calYear  = Math.floor(initialCalMonthIndex / 12);
+  let calMonth = initialCalMonthIndex % 12;
 
   async function loadDoneItems() {
     try {
@@ -489,7 +508,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     });
     
     // Speichern, falls durch Code-Änderungen neue Items hinzugekommen sind
-    saveDoneItems();
+    await saveDoneItems();
   }
 
   async function saveDoneItems() {
@@ -507,6 +526,11 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     return new Date(y, m - 1, d);
   }
   function midnight(d) { return new Date(d.getFullYear(), d.getMonth(), d.getDate()); }
+  function calendarDayDiff(a, b) {
+    const utcA = Date.UTC(a.getFullYear(), a.getMonth(), a.getDate());
+    const utcB = Date.UTC(b.getFullYear(), b.getMonth(), b.getDate());
+    return Math.round((utcA - utcB) / 86400000);
+  }
   function typeClass(t) { return t === 'Prüfung' ? 'pruefung' : t === 'Abgabe' ? 'abgabe' : 'termin'; }
   function escapeHtml(s) {
     return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -565,7 +589,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
         <button class="cal-popover-close" onclick="closeCalMenu()">✕</button>
       </div>
       <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
-      <div class="cal-popover-meta">📅 ${formatDate(parseISOString(ev.date))} · ⏰ ${ev.time}</div>
+      <div class="cal-popover-meta">📅 ${formatDate(parseISOString(ev.date))} · ⏰ ${escapeHtml(ev.time)}</div>
       ${actionBtn}
     `;
 
@@ -599,8 +623,13 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
   function buildTimeline(todayMid, animate) {
     const mainEvents = events.filter(e => !e.calOnly);
     const allTimes = mainEvents.map(e => midnight(parseISOString(e.date)).getTime());
-    let minT = Math.min(todayMid.getTime(), ...allTimes);
-    let maxT = Math.max(...allTimes);
+    const periodTimes = PERIODS.flatMap(p => [
+      midnight(parseISOString(p.start)).getTime(),
+      midnight(parseISOString(p.end)).getTime()
+    ]);
+    const timelineTimes = [...allTimes, ...periodTimes];
+    let minT = Math.min(todayMid.getTime(), ...timelineTimes);
+    let maxT = Math.max(todayMid.getTime(), ...timelineTimes);
     const range = (maxT - minT) || 1;
     const pad   = range * 0.04;
     minT -= pad; maxT += pad;
@@ -638,7 +667,8 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
       dots += `<div class="timeline-dot ${typeClass(e.type)} ${enterCls}"
                     style="left:${pct}%;${delay}"
                     onclick="selectTimelineEvent(event, '${e.id}')"
-                    tabindex="0" role="img"
+                    onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); selectTimelineEvent(event, '${e.id}'); }"
+                    tabindex="0" role="button"
                     aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}"
                     title="${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}">
                </div>`;
@@ -681,7 +711,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
       return;
     }
     const d        = parseISOString(item.date);
-    const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+    const diffDays = calendarDayDiff(d, todayMid);
     const urgent   = diffDays <= 7;
     el.className   = `hero ${urgent ? 'urgent' : ''}`;
     const daysLabel = diffDays === 0 ? 'Heute' : `in ${diffDays} Tag${diffDays !== 1 ? 'en' : ''}`;
@@ -690,7 +720,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
       <div class="hero-text">
         <div class="hero-label">Als Nächstes</div>
         <div class="hero-title">${escapeHtml(item.title)}</div>
-        <div class="hero-meta">${formatDate(d)} · ${item.time}</div>
+        <div class="hero-meta">${formatDate(d)} · ${escapeHtml(item.time)}</div>
       </div>
       <div class="hero-days">${daysLabel}</div>
     `;
@@ -712,8 +742,8 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     if (nextMonth > 11) { nextMonth = 0; nextYear++; }
     if (nextMonth < 0)  { nextMonth = 11; nextYear--; }
 
-    if (nextYear < 2026 || (nextYear === 2026 && nextMonth < 5)) return;
-    if (nextYear > 2026 || (nextYear === 2026 && nextMonth > 9)) return;
+    const nextMonthIndex = monthIndex(nextYear, nextMonth);
+    if (nextMonthIndex < CAL_MIN_MONTH_INDEX || nextMonthIndex > CAL_MAX_MONTH_INDEX) return;
 
     calMonth = nextMonth;
     calYear = nextYear;
@@ -725,8 +755,9 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 
     document.getElementById('cal-month-label').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
 
-    const isMinDate = (calYear === 2026 && calMonth === 5);
-    const isMaxDate = (calYear === 2026 && calMonth === 9);
+    const currentMonthIndex = monthIndex(calYear, calMonth);
+    const isMinDate = currentMonthIndex <= CAL_MIN_MONTH_INDEX;
+    const isMaxDate = currentMonthIndex >= CAL_MAX_MONTH_INDEX;
 
     const prevBtn = document.getElementById('cal-prev');
     prevBtn.style.opacity = isMinDate ? '0.2' : '1';
@@ -825,7 +856,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     const sorted   = [...mainEvents].sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
 
     const upcoming = sorted.filter(e => {
-      const diff = Math.round((midnight(parseISOString(e.date)) - todayMid) / 86400000);
+      const diff = calendarDayDiff(parseISOString(e.date), todayMid);
       return diff >= 0 && !(e.type === 'Abgabe' && doneItems.includes(e.id));
     });
     renderHero(upcoming[0], todayMid);
@@ -842,7 +873,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
     const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
     const next7       = sorted.filter(e => {
-      const diff = Math.round((midnight(parseISOString(e.date)) - todayMid) / 86400000);
+      const diff = calendarDayDiff(parseISOString(e.date), todayMid);
       return diff >= 0 && diff <= 7;
     }).length;
 
@@ -855,7 +886,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
     // Filter-Logik für die Liste
     const visibleEvents = sorted.filter(item => {
       const d = parseISOString(item.date);
-      const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+      const diffDays = calendarDayDiff(d, todayMid);
       
       // Wenn showPast false ist und das Datum in der Vergangenheit liegt, ausblenden
       if (!showPast && diffDays < 0) return false;
@@ -870,7 +901,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 
     visibleEvents.forEach((item, idx) => {
       const d        = parseISOString(item.date);
-      const diffDays = Math.round((midnight(d) - todayMid) / 86400000);
+      const diffDays = calendarDayDiff(d, todayMid);
       const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
       const isAbgabe = item.type === 'Abgabe';
       const isDone   = isAbgabe && doneItems.includes(item.id);
@@ -884,7 +915,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
         countdownContent = `<span class="primary">Abgelaufen</span><span class="secondary">vor ${Math.abs(diffDays)} Tg.</span>`;
       } else if (diffDays === 0) {
         countdownClass   = 'urgent';
-        countdownContent = `<span class="primary">Heute</span><span class="secondary">${item.time}</span>`;
+        countdownContent = `<span class="primary">Heute</span><span class="secondary">${escapeHtml(item.time)}</span>`;
       } else {
         if (diffDays <= 7) countdownClass = 'urgent';
         countdownContent = `<span class="primary">${diffDays} Tag${diffDays !== 1 ? 'e' : ''}</span><span class="secondary">${diffWeeks} Wo.</span>`;
@@ -905,7 +936,7 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
             <div class="info">
               <span class="badge ${typeClass(item.type)}">${item.type}</span>
               <div class="title">${escapeHtml(item.title)}</div>
-              <div class="meta">${formatDate(d)} · ${item.time}</div>
+              <div class="meta">${formatDate(d)} · ${escapeHtml(item.time)}</div>
             </div>
           </div>
           <div class="countdown ${countdownClass}">${countdownContent}</div>
