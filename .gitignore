@@ -1,0 +1,22 @@
+# Betriebssystem
+.DS_Store
+Thumbs.db
+
+# Abhängigkeiten und Build-Ausgaben
+node_modules/
+dist/
+build/
+coverage/
+
+# Lokale Konfiguration und Secrets
+.env
+.env.*
+!.env.example
+
+# Editor- und Log-Dateien
+.vscode/*
+!.vscode/extensions.json
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
