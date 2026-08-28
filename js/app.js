@@ -26,19 +26,66 @@ async function saveCompletedItems() {
   await saveDoneItems(STORAGE_KEY, doneItems);
 }
 
-const themeSelect = document.getElementById('theme-select');
-const applyTheme = (theme) => {
-  if (theme === 'system') {
-    document.documentElement.removeAttribute('data-theme');
-  } else {
-    document.documentElement.setAttribute('data-theme', theme);
-  }
-  localStorage.setItem('theme_pref', theme);
+const THEME_VALUES = ['light', 'system', 'dark'];
+const THEME_LABELS = {
+  light: 'Helles Design',
+  system: 'Folgt der Systemeinstellung',
+  dark: 'Dunkles Design',
 };
 
-themeSelect.addEventListener('change', (e) => applyTheme(e.target.value));
+const themeSwitch = document.getElementById('theme-switch');
+const themeOptions = [...themeSwitch.querySelectorAll('.theme-option')];
+const themeStatus = document.getElementById('theme-switch-status');
+
+function applyTheme(theme, { focus = false } = {}) {
+  const selectedTheme = THEME_VALUES.includes(theme) ? theme : 'system';
+
+  if (selectedTheme === 'system') {
+    document.documentElement.removeAttribute('data-theme');
+  } else {
+    document.documentElement.setAttribute('data-theme', selectedTheme);
+  }
+
+  themeSwitch.dataset.value = selectedTheme;
+  themeStatus.textContent = THEME_LABELS[selectedTheme];
+  themeOptions.forEach((option) => {
+    const isSelected = option.dataset.themeValue === selectedTheme;
+    option.setAttribute('aria-checked', String(isSelected));
+    option.tabIndex = isSelected ? 0 : -1;
+  });
+
+  localStorage.setItem('theme_pref', selectedTheme);
+
+  if (focus) {
+    themeOptions.find((option) => option.dataset.themeValue === selectedTheme)?.focus();
+  }
+}
+
+themeOptions.forEach((option) => {
+  option.addEventListener('click', () => applyTheme(option.dataset.themeValue));
+});
+
+themeSwitch.addEventListener('keydown', (event) => {
+  const currentIndex = Math.max(0, THEME_VALUES.indexOf(themeSwitch.dataset.value));
+  let nextIndex;
+
+  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
+    nextIndex = (currentIndex + 1) % THEME_VALUES.length;
+  } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
+    nextIndex = (currentIndex - 1 + THEME_VALUES.length) % THEME_VALUES.length;
+  } else if (event.key === 'Home') {
+    nextIndex = 0;
+  } else if (event.key === 'End') {
+    nextIndex = THEME_VALUES.length - 1;
+  } else {
+    return;
+  }
+
+  event.preventDefault();
+  applyTheme(THEME_VALUES[nextIndex], { focus: true });
+});
+
 const savedTheme = localStorage.getItem('theme_pref') || 'system';
-themeSelect.value = savedTheme;
 applyTheme(savedTheme);
 
 let showPast = false;
