@@ -175,10 +175,12 @@ window.openCalMenu = function(e, id) {
   pop.style.left = `${Math.max(10, left)}px`;
 };
 
-window.closeCalMenu = function() {
+function closeCalMenu() {
   const p = document.getElementById('cal-popover');
   if (p) p.style.display = 'none';
-};
+}
+
+window.closeCalMenu = closeCalMenu;
 
 document.addEventListener('click', (e) => {
   const pop = document.getElementById('cal-popover');
