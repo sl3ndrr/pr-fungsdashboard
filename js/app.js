@@ -143,6 +143,7 @@ window.openCalMenu = function(e, id) {
 
   const pop = document.getElementById('cal-popover');
   const isDone = ev.type === 'Abgabe' && doneItems.includes(ev.id);
+  const cancelledBadge = ev.isCancelled ? '<div class="cal-popover-cancelled">Abgebrochen</div>' : '';
 
   let actionBtn = '';
   if (ev.type === 'Abgabe') {
@@ -158,6 +159,7 @@ window.openCalMenu = function(e, id) {
     </div>
     <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
     <div class="cal-popover-meta">📅 ${formatDate(parseISOString(ev.date))} · ⏰ ${escapeHtml(ev.time)}</div>
+    ${cancelledBadge}
     ${actionBtn}
   `;
 
@@ -234,13 +236,15 @@ function buildTimeline(todayMid, animate) {
     const pct = posOf(t);
     const enterCls = animate ? 'enter' : '';
     const delay    = animate ? `--delay:${(0.2 + i * 0.04).toFixed(3)}s;` : '';
-    dots += `<div class="timeline-dot ${typeClass(e.type)} ${enterCls}"
+    const cancelledCls = e.isCancelled ? 'cancelled' : '';
+    const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
+    dots += `<div class="timeline-dot ${typeClass(e.type)} ${cancelledCls} ${enterCls}"
                   style="left:${pct}%;${delay}"
                   onclick="selectTimelineEvent(event, '${e.id}')"
                   onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); selectTimelineEvent(event, '${e.id}'); }"
                   tabindex="0" role="button"
-                  aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}"
-                  title="${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}">
+                  aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}${cancelledLabel}"
+                  title="${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}${cancelledLabel}">
              </div>`;
   });
 
@@ -398,7 +402,9 @@ function renderCalendar() {
       : `<div class="cal-day-num">${cur.getDate()}</div>`;
 
     const tagsHtml = dayEvts.map(e => {
-      return `<span class="cal-event-tag ${typeClass(e.type)}" onclick="openCalMenu(event, '${e.id}')" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
+      const cancelledCls = e.isCancelled ? 'cancelled' : '';
+      const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
+      return `<span class="cal-event-tag ${typeClass(e.type)} ${cancelledCls}" onclick="openCalMenu(event, '${e.id}')" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})${cancelledLabel}">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
     }).join('');
 
     html += `<div class="${cls}"${dayStyle}>${numHtml}${tagsHtml}</div>`;
@@ -427,7 +433,7 @@ function render(animate) {
 
   const upcoming = sorted.filter(e => {
     const diff = calendarDayDiff(parseISOString(e.date), todayMid);
-    return diff >= 0 && !(e.type === 'Abgabe' && doneItems.includes(e.id));
+    return diff >= 0 && !e.isCancelled && !(e.type === 'Abgabe' && doneItems.includes(e.id));
   });
   renderHero(upcoming[0], todayMid);
 
@@ -444,11 +450,11 @@ function render(animate) {
   const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
   const next7       = sorted.filter(e => {
     const diff = calendarDayDiff(parseISOString(e.date), todayMid);
-    return diff >= 0 && diff <= 7;
+    return diff >= 0 && diff <= 7 && !e.isCancelled;
   }).length;
 
   document.getElementById('stats-line').innerHTML =
-    `<b>${mainEvents.length}</b> Termine · <b>${abgabenDone}/${abgaben.length}</b> Abgaben erledigt · <b>${next7}</b> in &le; 7 Tagen`;
+    `<b>${mainEvents.filter(e => !e.isCancelled).length}</b> Termine · <b>${abgabenDone}/${abgaben.length}</b> Abgaben erledigt · <b>${next7}</b> in &le; 7 Tagen`;
 
   const listEl = document.getElementById('list');
   listEl.innerHTML = '';
@@ -477,7 +483,10 @@ function render(animate) {
     const isDone   = isAbgabe && doneItems.includes(item.id);
 
     let countdownClass = '', countdownContent = '';
-    if (isDone) {
+    if (item.isCancelled) {
+      countdownClass   = 'cancelled-badge';
+      countdownContent = `<span class="primary">Abgebrochen</span><span class="secondary">nicht angetreten</span>`;
+    } else if (isDone) {
       countdownClass   = 'done-badge';
       countdownContent = `<span class="primary">Erledigt</span><span class="secondary">abgehakt</span>`;
     } else if (diffDays < 0) {
@@ -496,7 +505,7 @@ function render(animate) {
       : `<div class="dot-marker"></div>`;
 
     const card = document.createElement('div');
-    card.className = `card ${isDone ? 'done' : ''} ${animate ? 'enter' : ''}`;
+    card.className = `card ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} ${animate ? 'enter' : ''}`;
     card.id = `card-${item.id}`;
     card.setAttribute('role', 'listitem');
     if (animate) card.style.setProperty('--delay', (idx * 0.035) + 's');
