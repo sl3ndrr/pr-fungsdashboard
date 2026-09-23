@@ -8,11 +8,13 @@ export const EVENTS = [
   { id: 'p3', type: 'Prüfung', title: 'Sicherheit und Privatheit',          date: '2026-09-24', time: '14:00 Uhr' },
   { id: 't1', type: 'Termin',  title: 'Beginn ASP (bis 09.10.)',            date: '2026-09-07', time: 'Ganztägig'  },
   // isDone: true markiert eine Abgabe beim ersten Laden als erledigt.
-  { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-08-09', time: '23:59 Uhr', isDone: false },
-  { id: 'a2', type: 'Abgabe',  title: 'KI-Methoden im akademischen Alltag', date: '2026-09-23', time: '23:59 Uhr', isDone: false },
-  { id: 'p4', type: 'Prüfung', title: 'Theorie 2',                          date: '2026-10-05', time: '10:00 Uhr' },
+  { id: 'a1', type: 'Abgabe',  title: 'Data Science',                       date: '2026-08-09', time: '23:59 Uhr', isDone: true },
+  { id: 'a2', type: 'Abgabe',  title: 'KI-Methoden im akademischen Alltag', date: '2026-09-23', time: '23:59 Uhr', isDone: true },
+  // isCancelled: true markiert einen Termin als abgebrochen.
+  { id: 'p4', type: 'Prüfung', title: 'Theorie 2',                          date: '2026-10-05', time: '10:00 Uhr', isCancelled: true },
   { id: 'p6', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-10-07', time: '09:00 Uhr' },
   { id: 'p5', type: 'Prüfung', title: 'Info II',                            date: '2026-10-14', time: '10:00 Uhr' },
+  { id: 'p7', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-10-26', time: 'KW 44 (26.–30.10.)' },
   { id: 't2', type: 'Termin',  title: 'Beginn Wintersemester 2026/27',      date: '2026-10-26', time: 'Ganztägig'  },
   { id: 'g1', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-06-29', time: '13:45-15:45 Uhr', calOnly: true },
   { id: 'g2', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-08-17', time: '13:45-15:45 Uhr', calOnly: true },
