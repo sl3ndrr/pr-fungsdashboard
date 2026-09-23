@@ -6,6 +6,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 
 - Übersicht über anstehende Prüfungen, Abgaben und Termine
 - Interaktiver Zeitstrahl mit Zeiträumen
+- Abgebrochene Termine werden gedämpft dargestellt und aus der nächsten Fälligkeit ausgeblendet
 - Monatlicher Kalender mit Detail-Popover
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
@@ -53,6 +54,7 @@ Alle fachlichen Daten liegen zentral in [`js/data.js`](js/data.js):
 - `EVENTS`: Prüfungen, Abgaben und Termine
 - `PERIODS`: mehrtägige Zeiträume für Kalender und Zeitstrahl
 - `isDone: true`: markiert eine Abgabe beim ersten Laden als erledigt
+- `isCancelled: true`: markiert einen Termin als abgebrochen
 - `calOnly: true`: zeigt einen Termin nur im Kalender
 
 Die Darstellung und Interaktionen müssen für neue Termine nicht angepasst werden.
