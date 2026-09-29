@@ -105,6 +105,7 @@ let showPast = false;
 
 let doneItems  = [];
 let calVisible = false;
+let selectedCalDate = null;
 
 // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
 const calendarDateValues = [
@@ -180,7 +181,7 @@ function openCalMenu(anchor, ev) {
   pop.innerHTML = `
     <div class="cal-popover-head">
       <span class="badge ${typeClass(ev.type)}">${ev.type}</span>
-      <button class="cal-popover-close" type="button">✕</button>
+      <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">✕</button>
     </div>
     <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
     <div class="cal-popover-meta">📅 ${formatDate(parseISOString(ev.date))} · ⏰ ${escapeHtml(ev.time)}</div>
@@ -214,7 +215,7 @@ function closeCalMenu() {
 
 document.addEventListener('click', (e) => {
   const pop = document.getElementById('cal-popover');
-  if (pop && pop.style.display === 'flex' && !pop.contains(e.target) && !e.target.closest('.cal-event-tag')) {
+  if (pop && pop.style.display === 'flex' && !pop.contains(e.target) && !e.target.closest('.cal-event-tag, .cal-day-event')) {
     closeCalMenu();
   }
 });
@@ -350,7 +351,63 @@ function calNav(delta) {
 
   calMonth = nextMonth;
   calYear = nextYear;
+  selectedCalDate = null;
+  closeCalMenu();
   renderCalendar();
+}
+
+function renderSelectedCalDay(byDate) {
+  const panel = document.getElementById('cal-day-details');
+  panel.hidden = !selectedCalDate;
+  if (!selectedCalDate) {
+    panel.innerHTML = '';
+    return;
+  }
+
+  const selectedDate = parseISOString(selectedCalDate);
+  const dayEvents = byDate.get(selectedCalDate) || [];
+  const dayPeriods = periodsOnDay(midnight(selectedDate), periods);
+  const periodHtml = dayPeriods.map(p => `
+    <span class="cal-day-period" style="color:rgb(${p.rgb});background:rgba(${p.rgb},0.1);border-color:rgba(${p.rgb},0.35)">
+      ${escapeHtml(p.label)}
+    </span>`).join('');
+
+  panel.innerHTML = `
+    <div class="cal-day-details-head">
+      <h4 id="cal-day-details-title">Termine am ${formatDate(selectedDate)}</h4>
+      <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">✕</button>
+    </div>
+    ${periodHtml ? `<div class="cal-day-periods" aria-label="Zeiträume an diesem Tag">${periodHtml}</div>` : ''}
+    ${dayEvents.length ? `<div class="cal-day-events">
+      ${dayEvents.map(e => {
+        const isDone = e.type === 'Abgabe' && doneItems.includes(e.id);
+        const status = e.isCancelled ? 'Abgebrochen' : isDone ? 'Erledigt' : e.type === 'Abgabe' ? 'Offen' : '';
+        return `<button class="cal-day-event ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" type="button"
+          aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)}, ${escapeHtml(e.time)}${status ? ', ' + status : ''}. Termindetails öffnen">
+          <span class="cal-day-event-main">
+            <span class="cal-day-event-type">${escapeHtml(e.type)}</span>
+            <span class="cal-day-event-title">${escapeHtml(e.title)}</span>
+          </span>
+          <span class="cal-day-event-meta">
+            <span>${escapeHtml(e.time)}</span>
+            ${status ? `<span class="cal-day-event-status ${isDone && !e.isCancelled ? 'done' : ''}">${status}</span>` : ''}
+          </span>
+        </button>`;
+      }).join('')}
+    </div>` : '<p class="cal-day-empty">Keine Termine an diesem Tag.</p>'}
+  `;
+
+  panel.querySelector('.cal-day-details-close').addEventListener('click', () => {
+    selectedCalDate = null;
+    closeCalMenu();
+    renderCalendar();
+  });
+  panel.querySelectorAll('.cal-day-event').forEach((button, index) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openCalMenu(button, dayEvents[index]);
+    });
+  });
 }
 
 function renderCalendar() {
@@ -409,6 +466,7 @@ function renderCalendar() {
     if (!inMonth) cls += ' other-month';
     if (isToday)  cls += ' today';
     if (activePeriod) cls += ' period';
+    if (selectedCalDate === iso) cls += ' selected';
 
     let dayStyle = '';
     if (activePeriod) {
@@ -423,8 +481,17 @@ function renderCalendar() {
     const dayEvts = byDate.get(iso) || [];
 
     const numHtml = isToday
-      ? `<div class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></div>`
-      : `<div class="cal-day-num">${cur.getDate()}</div>`;
+      ? `<span class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></span>`
+      : `<span class="cal-day-num">${cur.getDate()}</span>`;
+    const count = dayEvts.length;
+    const countLabel = `${count} ${count === 1 ? 'Termin' : 'Termine'}`;
+    const dayButton = inMonth
+      ? `<button class="cal-day-select" type="button" data-date="${iso}"
+           aria-label="${formatDate(cur)}: ${countLabel} anzeigen"
+           aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">
+           ${numHtml}<span class="cal-day-count">${countLabel}</span>
+         </button>`
+      : `<span class="cal-day-select">${numHtml}</span>`;
 
     const tagsHtml = dayEvts.map(e => {
       tagEvents.push(e);
@@ -433,17 +500,26 @@ function renderCalendar() {
       return `<span class="cal-event-tag ${typeClass(e.type)} ${cancelledCls}" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})${cancelledLabel}">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
     }).join('');
 
-    html += `<div class="${cls}"${dayStyle}>${numHtml}${tagsHtml}</div>`;
+    html += `<div class="${cls}"${dayStyle}>${dayButton}${tagsHtml}</div>`;
     cur.setDate(cur.getDate() + 1);
   }
 
   document.getElementById('cal-grid').innerHTML = html;
+  document.querySelectorAll('#cal-grid .cal-day-select[data-date]').forEach(button => {
+    button.addEventListener('click', () => {
+      selectedCalDate = selectedCalDate === button.dataset.date ? null : button.dataset.date;
+      closeCalMenu();
+      renderCalendar();
+      document.querySelector(`#cal-grid .cal-day-select[data-date="${button.dataset.date}"]`)?.focus({ preventScroll: true });
+    });
+  });
   document.querySelectorAll('#cal-grid .cal-event-tag').forEach((tag, index) => {
     tag.addEventListener('click', (event) => {
       event.stopPropagation();
       openCalMenu(tag, tagEvents[index]);
     });
   });
+  renderSelectedCalDay(byDate);
 }
 
 function buildLegendPeriods() {
