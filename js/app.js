@@ -182,17 +182,17 @@ function openCalMenu(anchor, ev) {
   let actionBtn = '';
   if (ev.type === 'Abgabe') {
     actionBtn = `<button class="cal-popover-btn" type="button">
-      ${isDone ? 'Als offen markieren' : '✔ Als erledigt markieren'}
+      ${isDone ? 'Als offen markieren' : ICONS.check + ' Als erledigt markieren'}
     </button>`;
   }
 
   pop.innerHTML = `
     <div class="cal-popover-head">
-      <span class="badge ${typeClass(ev.type)}">${ev.type}</span>
-      <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">✕</button>
+      <span class="badge ${typeClass(ev.type)}">${escapeHtml(ev.type)}</span>
+      <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">${ICONS.close}</button>
     </div>
     <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
-    <div class="cal-popover-meta">📅 ${formatDate(parseISOString(ev.date))} · ⏰ ${escapeHtml(ev.time)}</div>
+    <div class="cal-popover-meta">${ICONS.calendar} ${formatDate(parseISOString(ev.date))} · ${ICONS.clock} ${escapeHtml(ev.time)}</div>
     ${cancelledBadge}
     ${actionBtn}
   `;
@@ -347,7 +347,7 @@ function renderHero(item, todayMid) {
   const el = document.getElementById('hero');
   if (!item) {
     el.className = 'hero';
-    el.innerHTML = `<div class="hero-empty">Keine offenen Termine mehr – geschafft! 🎉</div>`;
+    el.innerHTML = `<div class="hero-empty">Keine offenen Termine mehr – geschafft! ${ICONS.check}</div>`;
     return;
   }
   const d        = parseISOString(item.date);
@@ -413,7 +413,7 @@ function renderSelectedCalDay(byDate) {
   panel.innerHTML = `
     <div class="cal-day-details-head">
       <h4 id="cal-day-details-title">Termine am ${formatDate(selectedDate)}</h4>
-      <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">✕</button>
+      <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">${ICONS.close}</button>
     </div>
     ${periodHtml ? `<div class="cal-day-periods" aria-label="Zeiträume an diesem Tag">${periodHtml}</div>` : ''}
     ${dayEvents.length ? `<div class="cal-day-events">
@@ -725,7 +725,7 @@ function render(animate) {
         <div class="card-left">
           <div class="checkbox-wrapper">${checkElement}</div>
           <div class="info">
-            <span class="badge ${typeClass(item.type)}">${item.type}</span>
+            <span class="badge ${typeClass(item.type)}">${escapeHtml(item.type)}</span>
             <div class="title">${escapeHtml(item.title)}</div>
             <div class="meta">${formatDate(d)} · ${escapeHtml(item.time)}</div>
           </div>
@@ -754,6 +754,10 @@ function refreshCurrentDay() {
   if (!document.hidden && localDayKey(new Date()) !== renderedDay) renderPreservingState();
   scheduleNextDay();
 }
+
+document.getElementById('cal-toggle-btn').innerHTML = ICONS.calendar + ' Kalender';
+document.getElementById('cal-prev').innerHTML = ICONS.left;
+document.getElementById('cal-next').innerHTML = ICONS.right;
 
 document.getElementById('cal-toggle-btn').addEventListener('click', toggleCalendar);
 document.getElementById('cal-prev').addEventListener('click', () => calNav(-1));
@@ -789,3 +793,4 @@ togglePastBtn.addEventListener('click', () => {
   });
   refreshCurrentDay();
 })();
+
