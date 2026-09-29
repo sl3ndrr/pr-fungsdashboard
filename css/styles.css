@@ -239,6 +239,12 @@ body {
 .group-list { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-4); }
 @media (min-width: 720px) { .group-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 @media (min-width: 1200px) { .group-list { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+/* Wide desktops use the available width; smaller layouts stay unchanged. */
+@media (min-width: 1560px) {
+  .container { max-width: none; }
+  .top-grid { grid-template-columns: minmax(0, 560px) minmax(0, 1fr); }
+  .group-list { grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); }
+}
 .card { position: relative; min-width: 0; background: var(--surface-1); border: 1px solid var(--border); border-left: 3px solid var(--type-color); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-1); transition: transform var(--duration-fast), border-color var(--duration-fast), background-color var(--duration-normal); }
 .card.pruefung { --type-color: var(--pruefung); } .card.abgabe { --type-color: var(--abgabe); } .card.termin { --type-color: var(--termin); }
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
