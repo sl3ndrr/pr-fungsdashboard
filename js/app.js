@@ -628,6 +628,9 @@ function render(animate) {
   const today    = new Date();
   const todayMid = midnight(today);
   renderedDay = localDayKey(today);
+  document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
+    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+  });
 
   const mainEvents = events.filter(e => !e.calOnly);
   const sorted   = [...mainEvents].sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
