@@ -148,8 +148,19 @@ function toggleDone(id) {
 
 /* Visuelles Feedback beim Auswählen eines Punkts im Zeitstrahl. */
 function selectTimelineEvent(dot, id) {
+  const item = events.find(e => e.id === id);
+  if (item && !showPast && calendarDayDiff(parseISOString(item.date), midnight(new Date())) < 0) {
+    const scroll = document.querySelector('.timeline-scroll');
+    const scrollLeft = scroll.scrollLeft;
+    showPast = true;
+    updatePastToggle();
+    render(false);
+    scroll.scrollLeft = scrollLeft;
+    dot = [...document.querySelectorAll('.timeline-dot')].find(button => button.dataset.eventId === id);
+  }
+
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!reduceMotion) {
+  if (dot && !reduceMotion) {
     dot.classList.remove('ping');
     void dot.offsetWidth; // Reflow erzwingen
     dot.classList.add('ping');
@@ -222,7 +233,8 @@ document.addEventListener('click', (e) => {
 window.addEventListener('scroll', closeCalMenu, true);
 
 function buildTimeline(todayMid, animate) {
-  const mainEvents = events.filter(e => !e.calOnly);
+  const mainEvents = events.filter(e => !e.calOnly)
+    .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
   const allTimes = mainEvents.map(e => midnight(parseISOString(e.date)).getTime());
   const periodTimes = periods.flatMap(p => [
     midnight(parseISOString(p.start)).getTime(),
@@ -259,6 +271,32 @@ function buildTimeline(todayMid, animate) {
     `;
   });
 
+  // Keep dates on the real time axis. Nearby dates share a row only when their
+  // hit areas do not overlap at the track's minimum width (600px).
+  const byDate = new Map();
+  mainEvents.forEach(e => {
+    if (!byDate.has(e.date)) byDate.set(e.date, []);
+    byDate.get(e.date).push(e);
+  });
+  const lastPositionByRow = [];
+  const rowsById = new Map();
+  const dateLabels = [];
+  byDate.forEach((dayEvents, date) => {
+    const pct = posOf(midnight(parseISOString(date)).getTime());
+    const x = pct * 6; // 600px minimum track width
+    let firstRow = 0;
+    while (dayEvents.some((_, offset) => x - (lastPositionByRow[firstRow + offset] ?? -Infinity) < 28)) {
+      firstRow++;
+    }
+    dayEvents.forEach((e, offset) => {
+      const row = firstRow + offset;
+      rowsById.set(e.id, row);
+      lastPositionByRow[row] = x;
+    });
+    if (dayEvents.length > 1) dateLabels.push({ pct, date, row: firstRow + dayEvents.length - 1 });
+  });
+  const maxRow = Math.max(0, ...rowsById.values());
+
   let dots = '';
   mainEvents.forEach((e, i) => {
     const t   = midnight(parseISOString(e.date)).getTime();
@@ -268,11 +306,17 @@ function buildTimeline(todayMid, animate) {
     const cancelledCls = e.isCancelled ? 'cancelled' : '';
     const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
     dots += `<div class="timeline-dot ${typeClass(e.type)} ${cancelledCls} ${enterCls}"
-                  style="left:${pct}%;${delay}"
+                  style="left:${pct}%;--row-offset:${rowsById.get(e.id) * 28}px;${delay}"
+                  data-event-id="${escapeHtml(e.id)}"
                   tabindex="0" role="button"
                   aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}${cancelledLabel}"
-                  title="${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}${cancelledLabel}">
+                  title="${escapeHtml(e.type)}: ${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}${cancelledLabel}">
              </div>`;
+  });
+
+  dateLabels.forEach(({ pct, date, row }) => {
+    const label = formatDate(parseISOString(date));
+    dots += `<div class="timeline-date-label" style="left:${pct}%;--row-offset:${row * 28}px" aria-hidden="true">${label}</div>`;
   });
 
   const todayPct = posOf(todayMid.getTime());
@@ -294,7 +338,7 @@ function buildTimeline(todayMid, animate) {
 
   const progressPct = Math.min(100, Math.max(0, todayPct));
   return {
-    html: `<div class="timeline-track">
+    html: `<div class="timeline-track" style="--timeline-extra-height:${maxRow * 28 + (dateLabels.length ? 20 : 0)}px">
       <div class="timeline-progress" id="timeline-progress-bar" style="width:${animate ? 0 : progressPct}%"></div>
       ${periodsHtml}
       ${months}
@@ -656,10 +700,13 @@ document.getElementById('cal-next').addEventListener('click', () => calNav(+1));
 
 // Filter für vergangene Termine.
 const togglePastBtn = document.getElementById('toggle-past-btn');
+function updatePastToggle() {
+  togglePastBtn.textContent = showPast ? 'Vergangene ausblenden' : 'Vergangene anzeigen';
+  togglePastBtn.classList.toggle('active', showPast);
+}
 togglePastBtn.addEventListener('click', () => {
   showPast = !showPast;
-  togglePastBtn.textContent = showPast ? "Vergangene ausblenden" : "Vergangene anzeigen";
-  togglePastBtn.classList.toggle('active', showPast);
+  updatePastToggle();
   render(false);
 });
 
