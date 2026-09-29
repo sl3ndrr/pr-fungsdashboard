@@ -343,27 +343,46 @@ function buildTimeline(todayMid, animate) {
   };
 }
 
-function renderHero(item, todayMid) {
+function renderHero(upcoming, todayMid) {
   const el = document.getElementById('hero');
+  const item = upcoming[0];
   if (!item) {
     el.className = 'hero';
-    el.innerHTML = `<div class="hero-empty">Keine offenen Termine mehr – geschafft! ${ICONS.check}</div>`;
+    el.innerHTML = `<div class="hero-label">Als Nächstes</div><div class="hero-empty">${ICONS.check}<span>Keine offenen Termine</span></div>`;
     return;
   }
-  const d        = parseISOString(item.date);
+  const d = parseISOString(item.date);
   const diffDays = calendarDayDiff(d, todayMid);
-  const urgent   = diffDays <= 7;
-  el.className   = `hero ${urgent ? 'urgent' : ''}`;
-  const daysLabel = diffDays === 0 ? 'Heute' : `in ${diffDays} Tag${diffDays !== 1 ? 'en' : ''}`;
+  el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''}`;
+  const count = diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : diffDays;
+  const activePeriods = periodsOnDay(todayMid, periods);
   el.innerHTML = `
-    <div class="hero-icon ${typeClass(item.type)}">${ICONS[item.type]}</div>
-    <div class="hero-text">
-      <div class="hero-label">Als Nächstes</div>
-      <div class="hero-title">${escapeHtml(item.title)}</div>
-      <div class="hero-meta">${formatDate(d)} · ${escapeHtml(item.time)}</div>
+    <h2 class="hero-label">Als Nächstes</h2>
+    <div class="hero-main">
+      <div class="hero-countdown"><span class="hero-number ${diffDays < 2 ? 'word' : ''}">${count}</span>${diffDays > 1 ? '<span class="hero-unit">Tage</span>' : ''}</div>
+      <div class="hero-text">
+        <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}</span>
+        <h3 class="hero-title">${escapeHtml(item.title)}</h3>
+        <div class="hero-meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
+      </div>
     </div>
-    <div class="hero-days">${daysLabel}</div>
+    ${upcoming.length > 1 ? `<div class="hero-after"><h3 class="hero-label">Danach</h3>${upcoming.slice(1, 3).map(e => {
+      const days = calendarDayDiff(parseISOString(e.date), todayMid);
+      return `<button class="hero-next" type="button" data-event-id="${escapeHtml(e.id)}">
+        <span class="type-icon ${typeClass(e.type)}">${ICONS[e.type]}</span>
+        <span class="hero-next-info"><span class="hero-next-title">${escapeHtml(e.title)}</span><span class="hero-next-date">${escapeHtml(formatDate(parseISOString(e.date)))}</span></span>
+        <span class="hero-next-days">${days === 0 ? 'Heute' : days === 1 ? 'Morgen' : `in ${days} Tagen`}</span>
+      </button>`;
+    }).join('')}</div>` : ''}
+    ${activePeriods.map(p => {
+      const day = calendarDayDiff(todayMid, parseISOString(p.start)) + 1;
+      const total = calendarDayDiff(parseISOString(p.end), parseISOString(p.start)) + 1;
+      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · Tag ${day} von ${total}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}"><span style="width:${day / total * 100}%"></span></div></div>`;
+    }).join('')}
   `;
+  el.querySelectorAll('.hero-next').forEach(button => {
+    button.addEventListener('click', () => selectTimelineEvent(null, button.dataset.eventId));
+  });
 }
 
 const MONTH_NAMES = ['Januar','Februar','März','April','Mai','Juni',
@@ -639,7 +658,7 @@ function render(animate) {
     const diff = calendarDayDiff(parseISOString(e.date), todayMid);
     return diff >= 0 && !e.isCancelled && !(e.type === 'Abgabe' && doneItems.includes(e.id));
   });
-  renderHero(upcoming[0], todayMid);
+  renderHero(upcoming, todayMid);
 
   const tl = buildTimeline(todayMid, animate);
   const timelineContainer = document.getElementById('timeline-container');
