@@ -576,9 +576,14 @@ function buildLegendPeriods() {
   });
 }
 
+const localDayKey = date => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+let renderedDay = null;
+let dayTimer;
+
 function render(animate) {
   const today    = new Date();
   const todayMid = midnight(today);
+  renderedDay = localDayKey(today);
 
   const mainEvents = events.filter(e => !e.calOnly);
   const sorted   = [...mainEvents].sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
@@ -694,6 +699,19 @@ function render(animate) {
   if (calVisible) renderCalendar();
 }
 
+function scheduleNextDay() {
+  clearTimeout(dayTimer);
+  const now = new Date();
+  const nextMidnight = midnight(now);
+  nextMidnight.setDate(nextMidnight.getDate() + 1);
+  dayTimer = setTimeout(refreshCurrentDay, Math.max(1, nextMidnight.getTime() - now.getTime() + 25));
+}
+
+function refreshCurrentDay() {
+  if (localDayKey(new Date()) !== renderedDay) render(false);
+  scheduleNextDay();
+}
+
 document.getElementById('cal-toggle-btn').addEventListener('click', toggleCalendar);
 document.getElementById('cal-prev').addEventListener('click', () => calNav(-1));
 document.getElementById('cal-next').addEventListener('click', () => calNav(+1));
@@ -714,5 +732,9 @@ togglePastBtn.addEventListener('click', () => {
   buildLegendPeriods();
   await initialiseDoneItems();
   render(true);
-  setInterval(() => render(false), 60000);
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refreshCurrentDay();
+  });
+  window.addEventListener('pageshow', refreshCurrentDay);
+  refreshCurrentDay();
 })();
