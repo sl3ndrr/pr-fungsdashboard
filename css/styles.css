@@ -371,8 +371,10 @@ input[type="checkbox"]:checked::before { transform: scale(1); }
 .cal-day { min-height: 95px; background: transparent; border: 1px solid var(--border); border-radius: 8px; padding: 0.4rem; display: flex; flex-direction: column; gap: 3px; transition: border-color 0.15s; }
 .cal-day.other-month { opacity: 0.15; pointer-events: none; border-color: transparent; }
 .cal-day.today { border-color: var(--text); background: rgba(0,0,0,0.02); }
-[data-theme="dark"] .cal-day.today,
-:root:not([data-theme="light"]) .cal-day.today { background: rgba(255,255,255,0.03); }
+[data-theme="dark"] .cal-day.today { background: rgba(255,255,255,0.03); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .cal-day.today { background: rgba(255,255,255,0.03); }
+}
 
 .cal-day.today.period { border-color: var(--text); }
 
