@@ -716,7 +716,35 @@ function render(animate) {
     listEl.innerHTML = `<div class="empty-state">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
   }
 
-  visibleEvents.forEach((item, idx) => {
+  const weekStart = new Date(todayMid);
+  weekStart.setDate(weekStart.getDate() - (weekStart.getDay() + 6) % 7);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+  const nextWeekEnd = new Date(weekEnd); nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
+  const groupFor = item => {
+    const date = parseISOString(item.date);
+    if (date < todayMid) return 'Vergangen';
+    if (date.getTime() === todayMid.getTime()) return 'Heute';
+    if (date <= weekEnd) return 'Diese Woche';
+    if (date <= nextWeekEnd) return 'Nächste Woche';
+    return date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+  };
+  // Future appointments lead; revealed history follows as its own group.
+  const orderedEvents = [...visibleEvents.filter(e => parseISOString(e.date) >= todayMid),
+    ...visibleEvents.filter(e => parseISOString(e.date) < todayMid)];
+  let currentGroup = null;
+  let groupList;
+  orderedEvents.forEach((item, idx) => {
+    const group = groupFor(item);
+    if (group !== currentGroup) {
+      currentGroup = group;
+      const section = document.createElement('div');
+      section.className = 'appointment-group';
+      section.setAttribute('role', 'listitem');
+      const headingId = `appointment-group-${idx}`;
+      section.innerHTML = `<h3 id="${headingId}" class="group-heading">${escapeHtml(group)}</h3><div class="group-list" role="list" aria-labelledby="${headingId}"></div>`;
+      groupList = section.querySelector('.group-list');
+      listEl.appendChild(section);
+    }
     const d        = parseISOString(item.date);
     const diffDays = calendarDayDiff(d, todayMid);
     const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
@@ -726,47 +754,48 @@ function render(animate) {
     let countdownClass = '', countdownContent = '';
     if (item.isCancelled) {
       countdownClass   = 'cancelled-badge';
-      countdownContent = `<span class="primary">Abgebrochen</span><span class="secondary">nicht angetreten</span>`;
+      countdownContent = `<span class="primary">${ICONS.cancelled}Abgebrochen</span><span class="secondary">nicht angetreten</span>`;
     } else if (isDone) {
       countdownClass   = 'done-badge';
-      countdownContent = `<span class="primary">Erledigt</span><span class="secondary">abgehakt</span>`;
+      countdownContent = `<span class="primary">${ICONS.check}Erledigt</span><span class="secondary">abgehakt</span>`;
     } else if (diffDays < 0) {
       countdownClass   = 'expired';
       countdownContent = `<span class="primary">Abgelaufen</span><span class="secondary">vor ${Math.abs(diffDays)} Tg.</span>`;
     } else if (diffDays === 0) {
-      countdownClass   = 'urgent';
+      countdownClass   = 'urgent today-chip';
       countdownContent = `<span class="primary">Heute</span><span class="secondary">${escapeHtml(item.time)}</span>`;
     } else {
-      if (diffDays <= 7) countdownClass = 'urgent';
-      countdownContent = `<span class="primary">${diffDays} Tag${diffDays !== 1 ? 'e' : ''}</span><span class="secondary">${diffWeeks} Wo.</span>`;
+      if (diffDays <= 3) countdownClass = 'urgent';
+      countdownContent = `<span class="primary countdown-number">${diffDays}</span><span class="countdown-unit">Tag${diffDays !== 1 ? 'e' : ''}</span><span class="secondary">${diffWeeks} Wochen</span>`;
     }
 
     const checkElement = isAbgabe
-      ? `<input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt">`
-      : `<div class="dot-marker"></div>`;
+      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><span>${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
+      : '';
 
     const card = document.createElement('div');
-    card.className = `card ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} ${animate ? 'enter' : ''}`;
+    card.className = `card ${typeClass(item.type)} ${diffDays < 0 ? 'past' : ''} ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} ${animate ? 'enter' : ''}`;
     card.id = `card-${item.id}`;
     card.setAttribute('role', 'listitem');
     if (animate) card.style.setProperty('--delay', (idx * 0.035) + 's');
     card.innerHTML = `
       <div class="card-inner">
         <div class="card-left">
-          <div class="checkbox-wrapper">${checkElement}</div>
+          <div class="type-icon ${typeClass(item.type)}">${ICONS[item.type]}</div>
           <div class="info">
             <span class="badge ${typeClass(item.type)}">${escapeHtml(item.type)}</span>
-            <div class="title">${escapeHtml(item.title)}</div>
-            <div class="meta">${formatDate(d)} · ${escapeHtml(item.time)}</div>
+            <h4 class="title">${escapeHtml(item.title)}</h4>
+            <div class="meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
           </div>
         </div>
         <div class="countdown ${countdownClass}">${countdownContent}</div>
       </div>
+      ${checkElement}
     `;
     if (isAbgabe) {
       card.querySelector('input[type="checkbox"]').addEventListener('change', () => toggleDone(item.id));
     }
-    listEl.appendChild(card);
+    groupList.appendChild(card);
   });
 
   if (calVisible) renderCalendar();
