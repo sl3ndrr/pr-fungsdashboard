@@ -268,42 +268,39 @@ function buildTimeline(todayMid, animate) {
     `;
   });
 
-  // Keep dates on the real time axis. Nearby dates share a row only when their
-  // hit areas do not overlap at the track's minimum width (600px).
+  // Spread close dates along the rail so every event remains clickable.
+  // The track grows with the number of events, including when many share a date.
+  const minWidth = Math.max(600, (mainEvents.length + 2) * 28);
+  const trackWidth = Math.max(minWidth, document.getElementById('timeline-container').clientWidth);
+  const dotXs = mainEvents.map(e =>
+    posOf(midnight(parseISOString(e.date)).getTime()) * trackWidth / 100
+  );
+  for (let i = 1; i < dotXs.length; i++) {
+    dotXs[i] = Math.max(dotXs[i], dotXs[i - 1] + 28);
+  }
+  let rightEdge = trackWidth - 10;
+  for (let i = dotXs.length - 1; i >= 0; i--) {
+    dotXs[i] = Math.min(dotXs[i], rightEdge);
+    rightEdge = dotXs[i] - 28;
+  }
+
   const byDate = new Map();
   mainEvents.forEach(e => {
     if (!byDate.has(e.date)) byDate.set(e.date, []);
     byDate.get(e.date).push(e);
   });
-  const lastPositionByRow = [];
-  const rowsById = new Map();
-  const dateLabels = [];
-  byDate.forEach((dayEvents, date) => {
-    const pct = posOf(midnight(parseISOString(date)).getTime());
-    const x = pct * 6; // 600px minimum track width
-    let firstRow = 0;
-    while (dayEvents.some((_, offset) => x - (lastPositionByRow[firstRow + offset] ?? -Infinity) < 28)) {
-      firstRow++;
-    }
-    dayEvents.forEach((e, offset) => {
-      const row = firstRow + offset;
-      rowsById.set(e.id, row);
-      lastPositionByRow[row] = x;
-    });
-    if (dayEvents.length > 1) dateLabels.push({ pct, date, row: firstRow + dayEvents.length - 1 });
-  });
-  const maxRow = Math.max(0, ...rowsById.values());
+  const dateLabels = [...byDate].filter(([, items]) => items.length > 1)
+    .map(([date]) => ({ pct: posOf(midnight(parseISOString(date)).getTime()), date }));
 
   let dots = '';
   mainEvents.forEach((e, i) => {
-    const t   = midnight(parseISOString(e.date)).getTime();
-    const pct = posOf(t);
+    const pct = dotXs[i] / trackWidth * 100;
     const enterCls = animate ? 'enter' : '';
     const delay    = animate ? `--delay:${(0.2 + i * 0.04).toFixed(3)}s;` : '';
     const cancelledCls = e.isCancelled ? 'cancelled' : '';
     const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
     dots += `<div class="timeline-dot ${typeClass(e.type)} ${cancelledCls} ${enterCls}"
-                  style="left:${pct}%;--row-offset:${rowsById.get(e.id) * 28}px;${delay}"
+                  style="left:${pct}%;${delay}"
                   data-event-id="${escapeHtml(e.id)}"
                   tabindex="0" role="button"
                   aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}${cancelledLabel}"
@@ -311,9 +308,9 @@ function buildTimeline(todayMid, animate) {
              </div>`;
   });
 
-  dateLabels.forEach(({ pct, date, row }) => {
+  dateLabels.forEach(({ pct, date }) => {
     const label = formatDate(parseISOString(date));
-    dots += `<div class="timeline-date-label" style="left:${pct}%;--row-offset:${row * 28}px" aria-hidden="true">${label}</div>`;
+    dots += `<div class="timeline-date-label" style="left:${pct}%" aria-hidden="true">${label}</div>`;
   });
 
   const todayPct = posOf(todayMid.getTime());
@@ -335,7 +332,7 @@ function buildTimeline(todayMid, animate) {
 
   const progressPct = Math.min(100, Math.max(0, todayPct));
   return {
-    html: `<div class="timeline-track" style="--timeline-extra-height:${maxRow * 28 + (dateLabels.length ? 20 : 0)}px">
+    html: `<div class="timeline-track" style="--timeline-min-width:${minWidth}px">
       <div class="timeline-progress" id="timeline-progress-bar" style="width:${animate ? 0 : progressPct}%"></div>
       ${periodsHtml}
       ${months}
@@ -782,5 +779,13 @@ togglePastBtn.addEventListener('click', () => {
     if (!document.hidden) refreshCurrentDay();
   });
   window.addEventListener('pageshow', refreshCurrentDay);
+  let timelineWidth = document.getElementById('timeline-container').clientWidth;
+  window.addEventListener('resize', () => {
+    const width = document.getElementById('timeline-container').clientWidth;
+    if (width !== timelineWidth) {
+      timelineWidth = width;
+      renderPreservingState();
+    }
+  });
   refreshCurrentDay();
 })();
