@@ -131,12 +131,22 @@
       </section>
 
       <section class="stats-container" aria-label="Termin-Statistiken">
-        <p class="stats-line" id="stats-line"></p>
-        <button class="pill" id="toggle-past-btn" type="button">Vergangene anzeigen</button>
+        <div class="stats-grid" id="stats-line"></div>
       </section>
 
       <section aria-labelledby="appointments-heading">
-        <h2 id="appointments-heading" class="section-title display">Termine</h2>
+        <div class="list-heading">
+          <h2 id="appointments-heading" class="section-title display">Termine</h2>
+          <div class="list-controls">
+            <div id="type-filter" class="segmented-filter" role="group" aria-label="Termine nach Typ filtern">
+              <button type="button" data-filter="all" aria-pressed="true" aria-controls="list">Alle</button>
+              <button type="button" data-filter="Prüfung" aria-pressed="false" aria-controls="list">Prüfungen</button>
+              <button type="button" data-filter="Abgabe" aria-pressed="false" aria-controls="list">Abgaben</button>
+              <button type="button" data-filter="Termin" aria-pressed="false" aria-controls="list">Termine</button>
+            </div>
+            <button class="pill" id="toggle-past-btn" type="button" aria-pressed="false" aria-controls="list">Vergangene anzeigen</button>
+          </div>
+        </div>
         <div class="dashboard-list" id="list" role="list"></div>
       </section>
     </main>
