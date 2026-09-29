@@ -328,7 +328,9 @@ const MONTH_NAMES = ['Januar','Februar','März','April','Mai','Juni',
 function toggleCalendar() {
   calVisible = !calVisible;
   document.getElementById('calendar-section').hidden = !calVisible;
-  document.getElementById('cal-toggle-btn').classList.toggle('active', calVisible);
+  const toggleBtn = document.getElementById('cal-toggle-btn');
+  toggleBtn.classList.toggle('active', calVisible);
+  toggleBtn.setAttribute('aria-expanded', String(calVisible));
   if (calVisible) renderCalendar();
 }
 
@@ -355,13 +357,8 @@ function renderCalendar() {
   const isMinDate = currentMonthIndex <= CAL_MIN_MONTH_INDEX;
   const isMaxDate = currentMonthIndex >= CAL_MAX_MONTH_INDEX;
 
-  const prevBtn = document.getElementById('cal-prev');
-  prevBtn.style.opacity = isMinDate ? '0.2' : '1';
-  prevBtn.style.pointerEvents = isMinDate ? 'none' : 'auto';
-
-  const nextBtn = document.getElementById('cal-next');
-  nextBtn.style.opacity = isMaxDate ? '0.2' : '1';
-  nextBtn.style.pointerEvents = isMaxDate ? 'none' : 'auto';
+  document.getElementById('cal-prev').disabled = isMinDate;
+  document.getElementById('cal-next').disabled = isMaxDate;
 
   const monthStart = dateInMonth(calYear, calMonth, 1);
   const monthEnd   = dateInMonth(calYear, calMonth + 1, 0);
