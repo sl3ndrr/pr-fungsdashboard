@@ -42,5 +42,6 @@ export const PERIODS = [
   { id: 'wiesbaden-2', label: 'in Wiesbaden', start: '2026-10-15', end: '2026-10-25', rgb: '139, 92, 246' }
 ];
 
-export const ICONS = { 'Prüfung': '📝', 'Abgabe': '📤', 'Termin': '📌' };
+export { ICONS } from './icons.js';
 export const STORAGE_KEY = 'done_items_v1';
+
