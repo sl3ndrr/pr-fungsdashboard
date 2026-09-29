@@ -1,5 +1,3 @@
-import { PERIODS } from "./data.js";
-
 /** Wiederverwendbare Datum- und Darstellungshilfen. */
 export function parseISOString(s) {
   if (typeof s !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s)) return null;
@@ -36,7 +34,7 @@ export function escapeHtml(s) {
 export function formatDate(d) {
   return d.toLocaleDateString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric' });
 }
-export function periodsOnDay(dayMid, periods = PERIODS) {
+export function periodsOnDay(dayMid, periods) {
   return periods.filter(p => {
     const s = midnight(parseISOString(p.start));
     const e = midnight(parseISOString(p.end));
