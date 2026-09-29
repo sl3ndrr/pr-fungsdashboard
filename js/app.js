@@ -182,7 +182,7 @@ function selectTimelineEvent(dot, id) {
 function openCalMenu(anchor, ev) {
   const pop = document.getElementById('cal-popover');
   const isDone = ev.type === 'Abgabe' && doneItems.includes(ev.id);
-  const cancelledBadge = ev.isCancelled ? '<div class="cal-popover-cancelled">Abgebrochen</div>' : '';
+  const cancelledBadge = ev.isCancelled ? `<div class="cal-popover-cancelled">${ICONS.cancelled}Abgebrochen</div>` : '';
 
   let actionBtn = '';
   if (ev.type === 'Abgabe') {
@@ -193,7 +193,7 @@ function openCalMenu(anchor, ev) {
 
   pop.innerHTML = `
     <div class="cal-popover-head">
-      <span class="badge ${typeClass(ev.type)}">${escapeHtml(ev.type)}</span>
+      <span class="badge ${ev.calOnly ? 'cal-only' : typeClass(ev.type)}">${ICONS[ev.type]}${ev.calOnly ? 'Nur im Kalender' : escapeHtml(ev.type)}</span>
       <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">${ICONS.close}</button>
     </div>
     <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
@@ -409,7 +409,7 @@ function renderSelectedCalDay(byDate) {
   const dayEvents = byDate.get(selectedCalDate) || [];
   const dayPeriods = periodsOnDay(midnight(selectedDate), periods);
   const periodHtml = dayPeriods.map(p => `
-    <span class="cal-day-period" style="color:rgb(${p.rgb});background:rgba(${p.rgb},0.1);border-color:rgba(${p.rgb},0.35)">
+    <span class="cal-day-period" style="--period-rgb:${p.rgb}">
       ${escapeHtml(p.label)}
     </span>`).join('');
 
@@ -423,14 +423,14 @@ function renderSelectedCalDay(byDate) {
       ${dayEvents.map(e => {
         const isDone = e.type === 'Abgabe' && doneItems.includes(e.id);
         const status = e.isCancelled ? 'Abgebrochen' : isDone ? 'Erledigt' : e.type === 'Abgabe' ? 'Offen' : '';
-        return `<button class="cal-day-event ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" type="button"
+        return `<button class="cal-day-event ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" type="button"
           aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)}, ${escapeHtml(e.time)}${status ? ', ' + status : ''}. Termindetails öffnen">
           <span class="cal-day-event-main">
-            <span class="cal-day-event-type">${escapeHtml(e.type)}</span>
+            <span class="cal-day-event-type">${ICONS[e.type]}${e.calOnly ? 'Nur im Kalender' : escapeHtml(e.type)}</span>
             <span class="cal-day-event-title">${escapeHtml(e.title)}</span>
           </span>
           <span class="cal-day-event-meta">
-            <span>${escapeHtml(e.time)}</span>
+            <span>${ICONS.clock}${escapeHtml(e.time)}</span>
             ${status ? `<span class="cal-day-event-status ${isDone && !e.isCancelled ? 'done' : ''}">${status}</span>` : ''}
           </span>
         </button>`;
@@ -471,7 +471,7 @@ function renderCalendar() {
     return monthEnd >= s && monthStart <= e;
   });
   document.getElementById('cal-period-indicators').innerHTML = overlappingPeriods.map(p => `
-    <span class="cal-period-indicator" style="color:rgb(${p.rgb});background:rgba(${p.rgb},0.1);border-color:rgba(${p.rgb},0.35)">
+    <span class="cal-period-indicator" style="--period-rgb:${p.rgb}">
       <span class="cal-period-dot-sm" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}
     </span>`).join('');
 
@@ -487,66 +487,41 @@ function renderCalendar() {
   if (dow === 0) dow = 7;
   start.setDate(start.getDate() - (dow - 1));
 
-  let html = '';
+  let html = '<div class="cal-week cal-week-head" role="row">' + ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d => `<div class="cal-day-header" role="columnheader">${d}</div>`).join('') + '</div>';
   const tagEvents = [];
-  ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(d => {
-    html += `<div class="cal-day-header">${d}</div>`;
-  });
-
-  let cur = new Date(start);
-  for (let i = 0; i < 42; i++) {
-    const curMid = midnight(cur);
-    const iso    = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
-    const inMonth = cur.getMonth() === calMonth;
-    const isToday = curMid.getTime() === today.getTime();
-
-    const dayPeriods = periodsOnDay(curMid, periods);
-    const activePeriod = dayPeriods[0]; // first matching period wins visually if they ever overlap
-
-    let cls = 'cal-day';
-    if (!inMonth) cls += ' other-month';
-    if (isToday)  cls += ' today';
-    if (activePeriod) cls += ' period';
-    if (selectedCalDate === iso) cls += ' selected';
-
-    let dayStyle = '';
-    if (activePeriod) {
-      const pStart = midnight(parseISOString(activePeriod.start));
-      const pEnd   = midnight(parseISOString(activePeriod.end));
-      let borderSide = '';
-      if (curMid.getTime() === pStart.getTime()) borderSide = `border-left:3px solid rgb(${activePeriod.rgb});`;
-      if (curMid.getTime() === pEnd.getTime())   borderSide += `border-right:3px solid rgb(${activePeriod.rgb});`;
-      dayStyle = ` style="background:rgba(${activePeriod.rgb},0.12);border-color:rgba(${activePeriod.rgb},0.35);${borderSide}"`;
+  for (let week = 0; week < 6; week++) {
+    const weekStart = new Date(start); weekStart.setDate(weekStart.getDate() + week * 7);
+    const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
+    const weekPeriods = periods.filter(p => parseISOString(p.end) >= weekStart && parseISOString(p.start) <= weekEnd);
+    html += `<div class="cal-week" role="row" style="--period-rows:${weekPeriods.length}">`;
+    for (let weekday = 0; weekday < 7; weekday++) {
+      const cur = new Date(weekStart); cur.setDate(cur.getDate() + weekday);
+      const iso = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
+      const inMonth = cur.getMonth() === calMonth;
+      const isToday = cur.getTime() === today.getTime();
+      const dayEvts = byDate.get(iso) || [];
+      const count = dayEvts.length;
+      const countLabel = `${count} ${count === 1 ? 'Termin' : 'Termine'}`;
+      const numHtml = `<span class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></span>`;
+      const mobileDots = dayEvts.slice(0,3).map(e => `<span class="cal-mobile-dot ${e.calOnly ? 'cal-only' : typeClass(e.type)}" aria-hidden="true"></span>`).join('');
+      const dayButton = `<button class="cal-day-select" type="button" data-date="${iso}" aria-label="${escapeHtml(formatDate(cur))}: ${countLabel} anzeigen" aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">${numHtml}<span class="cal-day-dots" aria-hidden="true">${mobileDots}</span></button>`;
+      const tagsHtml = dayEvts.slice(0,3).map(e => {
+        tagEvents.push(e);
+        return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', abgebrochen' : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
+      }).join('');
+      html += `<div class="cal-day ${inMonth ? '' : 'other-month'} ${weekday >= 5 ? 'weekend' : ''} ${isToday ? 'today' : ''} ${selectedCalDate === iso ? 'selected' : ''}" role="gridcell">
+        ${dayButton}<span class="cal-band-space" aria-hidden="true"></span>${tagsHtml}${count > 3 ? `<button class="cal-more" type="button" data-date="${iso}" aria-label="Alle ${count} Termine am ${escapeHtml(formatDate(cur))} anzeigen" aria-controls="cal-day-details">+${count - 3}</button>` : ''}</div>`;
     }
-
-    const dayEvts = byDate.get(iso) || [];
-
-    const numHtml = isToday
-      ? `<span class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></span>`
-      : `<span class="cal-day-num">${cur.getDate()}</span>`;
-    const count = dayEvts.length;
-    const countLabel = `${count} ${count === 1 ? 'Termin' : 'Termine'}`;
-    const dayButton = inMonth
-      ? `<button class="cal-day-select" type="button" data-date="${iso}"
-           aria-label="${formatDate(cur)}: ${countLabel} anzeigen"
-           aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">
-           ${numHtml}<span class="cal-day-count">${countLabel}</span>
-         </button>`
-      : `<span class="cal-day-select">${numHtml}</span>`;
-
-    const tagsHtml = dayEvts.map(e => {
-      tagEvents.push(e);
-      const cancelledCls = e.isCancelled ? 'cancelled' : '';
-      const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
-      return `<span class="cal-event-tag ${typeClass(e.type)} ${cancelledCls}" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})${cancelledLabel}">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
-    }).join('');
-
-    html += `<div class="${cls}"${dayStyle}>${dayButton}${tagsHtml}</div>`;
-    cur.setDate(cur.getDate() + 1);
+    weekPeriods.forEach((p, row) => {
+      const left = Math.max(0, calendarDayDiff(parseISOString(p.start), weekStart));
+      const right = Math.min(6, calendarDayDiff(parseISOString(p.end), weekStart));
+      html += `<div class="cal-period-band ${left > 0 ? 'starts' : ''} ${right < 6 ? 'ends' : ''}" style="--period-rgb:${p.rgb};left:calc(${left} * 100% / 7 + 2px);width:calc(${right-left+1} * 100% / 7 - 4px);top:calc(48px + ${row} * 22px)"><span>${escapeHtml(p.label)}</span></div>`;
+    });
+    html += '</div>';
   }
 
   document.getElementById('cal-grid').innerHTML = html;
-  document.querySelectorAll('#cal-grid .cal-day-select[data-date]').forEach(button => {
+  document.querySelectorAll('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]').forEach(button => {
     button.addEventListener('click', () => {
       selectedCalDate = selectedCalDate === button.dataset.date ? null : button.dataset.date;
       closeCalMenu();
@@ -570,7 +545,7 @@ function buildLegendPeriods() {
   periods.forEach(p => {
     const item = document.createElement('div');
     item.className = 'cal-legend-item';
-    item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgba(${p.rgb},0.15);border-color:rgba(${p.rgb},0.5)"></span>${escapeHtml(p.label)}-Zeitraum (${formatDate(parseISOString(p.start))} – ${formatDate(parseISOString(p.end))})`;
+    item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}-Zeitraum (${formatDate(parseISOString(p.start))} – ${formatDate(parseISOString(p.end))})`;
     legend.appendChild(item);
   });
 }
@@ -590,7 +565,7 @@ function focusAfterRender() {
 
   const day = active.closest('#cal-grid .cal-day-select[data-date]');
   if (day) {
-    return () => [...document.querySelectorAll('#cal-grid .cal-day-select[data-date]')]
+    return () => [...document.querySelectorAll('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]')]
       .find(button => button.dataset.date === day.dataset.date);
   }
 
