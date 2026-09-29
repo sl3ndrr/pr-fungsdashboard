@@ -35,7 +35,7 @@ export const EVENTS = [
   { id: 'g17', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-10-27', time: '15:30-16:30 Uhr', calOnly: true }
 ];
 
-/** Zeiträume, die im Kalender und Zeitstrahl dargestellt werden. */
+/** Zeiträume, die im Kalender und Zeitstrahl dargestellt werden.. */
 export const PERIODS = [
   { id: 'asp',        label: 'ASP',        start: '2026-09-07', end: '2026-10-09', rgb: '249, 115, 22' },
   { id: 'wiesbaden-1', label: 'in Wiesbaden', start: '2026-07-25', end: '2026-08-09', rgb: '139, 92, 246' },
