@@ -147,16 +147,21 @@ function toggleDone(id) {
 
 /* Visuelles Feedback beim Auswählen eines Punkts im Zeitstrahl. */
 function selectTimelineEvent(dot, id) {
-  dot.classList.remove('ping');
-  void dot.offsetWidth; // Reflow erzwingen
-  dot.classList.add('ping');
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (!reduceMotion) {
+    dot.classList.remove('ping');
+    void dot.offsetWidth; // Reflow erzwingen
+    dot.classList.add('ping');
+  }
 
   const card = document.getElementById(`card-${id}`);
   if (card) {
-    card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    card.classList.remove('pulse-highlight');
-    void card.offsetWidth;
-    card.classList.add('pulse-highlight');
+    card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
+    if (!reduceMotion) {
+      card.classList.remove('pulse-highlight');
+      void card.offsetWidth;
+      card.classList.add('pulse-highlight');
+    }
   }
 }
 
