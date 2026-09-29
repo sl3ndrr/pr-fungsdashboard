@@ -164,9 +164,8 @@ function selectTimelineEvent(dot, id) {
   }
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (dot && !reduceMotion) {
-    dot.classList.remove('ping');
-    void dot.offsetWidth; // Reflow erzwingen
     dot.classList.add('ping');
+    setTimeout(() => dot?.classList.remove('ping'), 350);
   }
 
   const card = document.getElementById(`card-${id}`);
@@ -238,114 +237,93 @@ window.addEventListener('scroll', closeCalMenu, true);
 function buildTimeline(todayMid, animate) {
   const mainEvents = events.filter(e => !e.calOnly)
     .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
-  const allTimes = mainEvents.map(e => midnight(parseISOString(e.date)).getTime());
-  const periodTimes = periods.flatMap(p => [
-    midnight(parseISOString(p.start)).getTime(),
-    midnight(parseISOString(p.end)).getTime()
-  ]);
-  const timelineTimes = [...allTimes, ...periodTimes];
-  let minT = Math.min(todayMid.getTime(), ...timelineTimes);
-  let maxT = Math.max(todayMid.getTime(), ...timelineTimes);
-  const range = (maxT - minT) || 1;
-  const pad   = range * 0.04;
-  minT -= pad; maxT += pad;
-  const span = maxT - minT;
-  const posOf = t => ((t - minT) / span) * 100;
+  const times = mainEvents.map(e => parseISOString(e.date).getTime());
+  const examTimes = mainEvents.filter(e => e.type === 'Prüfung').map(e => parseISOString(e.date).getTime());
+  let axisStart = examTimes.length ? Math.min(...examTimes) : times.length ? Math.min(...times) : todayMid.getTime();
+  let axisEnd = examTimes.length ? Math.max(...examTimes) : times.length ? Math.max(...times) : axisStart;
+  if (times.some(t => t < axisStart || t > axisEnd)) {
+    console.warn('Semester-Roadmap: Termin außerhalb der Prüfungsachse; Achse erweitert.');
+    axisStart = Math.min(axisStart, ...times);
+    axisEnd = Math.max(axisEnd, ...times);
+  }
+  const range = axisEnd - axisStart || 86400000;
+  const minT = axisStart - range * 0.04;
+  const maxT = axisEnd + range * 0.04;
+  const posOf = t => (t - minT) / (maxT - minT) * 100;
+
+  // Least-squares isotonic regression of x[i] - i * gap. Each merged
+  // collision group is spread symmetrically about its true centroid.
+  const spread = targets => {
+    const blocks = [];
+    targets.forEach((x, i) => {
+      blocks.push({ start: i, end: i, sum: x - i * 32, count: 1 });
+      while (blocks.length > 1) {
+        const a = blocks[blocks.length - 2], b = blocks[blocks.length - 1];
+        if (a.sum / a.count <= b.sum / b.count) break;
+        blocks.splice(-2, 2, { start: a.start, end: b.end, sum: a.sum + b.sum, count: a.count + b.count });
+      }
+    });
+    const result = [];
+    blocks.forEach(b => {
+      for (let i = b.start; i <= b.end; i++) result[i] = b.sum / b.count + i * 32;
+    });
+    return result;
+  };
+  let trackWidth = Math.max(600, (mainEvents.length + 1) * 32,
+    document.getElementById('timeline-container').clientWidth - 16);
+  let dotXs, trueXs;
+  // Grow the scrollable rail until symmetric groups also fit at the edges.
+  for (let attempt = 0; attempt < 30; attempt++) {
+    trueXs = times.map(t => posOf(t) * trackWidth / 100);
+    dotXs = spread(trueXs);
+    if (!dotXs.length || (dotXs[0] >= 16 && dotXs.at(-1) <= trackWidth - 16)) break;
+    trackWidth = Math.ceil(trackWidth * 1.25);
+  }
 
   let periodsHtml = '';
-  const placedRanges = []; // for simple row-stacking of labels that would otherwise overlap
+  const placedRanges = [];
   periods.forEach(p => {
-    const pStartT = midnight(parseISOString(p.start)).getTime();
-    const pEndT   = midnight(parseISOString(p.end)).getTime();
-    if (pEndT <= minT || pStartT >= maxT) return;
-    const pL = Math.max(0, posOf(pStartT));
-    const pR = Math.min(100, posOf(pEndT));
-    const pW = pR - pL;
-    const midPct = (pL + pR) / 2;
-
-    const row = placedRanges.some(r => midPct > r.l - 6 && midPct < r.r + 6) ? 1 : 0;
-    placedRanges.push({ l: pL, r: pR });
-
-    periodsHtml += `
-      <div class="timeline-period-span" style="left:${pL}%;width:${pW}%;background:rgba(${p.rgb},0.1);border-color:rgba(${p.rgb},0.45)"></div>
-      <div class="timeline-period-tick" style="left:${pL}%;background:rgba(${p.rgb},0.45)"></div>
-      <div class="timeline-period-tick" style="left:${pR}%;background:rgba(${p.rgb},0.45)"></div>
-      <div class="timeline-period-label" data-row="${row}" style="left:${midPct}%;transform:translateX(-50%);color:rgb(${p.rgb})">${escapeHtml(p.label)}</div>
-    `;
+    const start = parseISOString(p.start).getTime(), end = parseISOString(p.end).getTime();
+    if (end < axisStart || start > axisEnd) return;
+    const left = posOf(Math.max(axisStart, start)), right = posOf(Math.min(axisEnd, end));
+    const mid = (left + right) / 2;
+    const row = placedRanges.some(r => mid > r.l - 6 && mid < r.r + 6) ? 1 : 0;
+    placedRanges.push({ l: left, r: right });
+    periodsHtml += `<div class="timeline-period-span" style="left:${left}%;width:${right - left}%;--period-rgb:${p.rgb}"></div>
+      <div class="timeline-period-label" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
   });
-
-  // Spread close dates along the rail so every event remains clickable.
-  // The track grows with the number of events, including when many share a date.
-  const minWidth = Math.max(600, (mainEvents.length + 2) * 28);
-  const trackWidth = Math.max(minWidth, document.getElementById('timeline-container').clientWidth);
-  const dotXs = mainEvents.map(e =>
-    posOf(midnight(parseISOString(e.date)).getTime()) * trackWidth / 100
-  );
-  for (let i = 1; i < dotXs.length; i++) {
-    dotXs[i] = Math.max(dotXs[i], dotXs[i - 1] + 28);
-  }
-  let rightEdge = trackWidth - 10;
-  for (let i = dotXs.length - 1; i >= 0; i--) {
-    dotXs[i] = Math.min(dotXs[i], rightEdge);
-    rightEdge = dotXs[i] - 28;
-  }
-
-  const byDate = new Map();
-  mainEvents.forEach(e => {
-    if (!byDate.has(e.date)) byDate.set(e.date, []);
-    byDate.get(e.date).push(e);
-  });
-  const dateLabels = [...byDate].filter(([, items]) => items.length > 1)
-    .map(([date]) => ({ pct: posOf(midnight(parseISOString(date)).getTime()), date }));
-
+  const dateGroups = new Map();
   let dots = '';
   mainEvents.forEach((e, i) => {
-    const pct = dotXs[i] / trackWidth * 100;
-    const enterCls = animate ? 'enter' : '';
-    const delay    = animate ? `--delay:${(0.2 + i * 0.04).toFixed(3)}s;` : '';
-    const cancelledCls = e.isCancelled ? 'cancelled' : '';
-    const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
-    dots += `<div class="timeline-dot ${typeClass(e.type)} ${cancelledCls} ${enterCls}"
-                  style="left:${pct}%;${delay}"
-                  data-event-id="${escapeHtml(e.id)}"
-                  tabindex="0" role="button"
-                  aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}${cancelledLabel}"
-                  title="${escapeHtml(e.type)}: ${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}${cancelledLabel}">
-             </div>`;
+    if (!dateGroups.has(e.date)) dateGroups.set(e.date, []);
+    dateGroups.get(e.date).push(dotXs[i]);
+    const past = times[i] < todayMid.getTime();
+    const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
+    dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} ${animate ? 'enter' : ''}"
+      style="left:${dotXs[i]}px;--delay:${i * 0.02}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}" aria-describedby="timeline-tip-${escapeHtml(e.id)}">
+      <span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? '<span>Abgebrochen</span>' : ''}</span>
+    </button>`;
+    if (Math.abs(dotXs[i] - trueXs[i]) > 6) dots += `<span class="timeline-date-tick" style="left:${trueXs[i]}px" aria-hidden="true"></span>`;
   });
-
-  dateLabels.forEach(({ pct, date }) => {
-    const label = formatDate(parseISOString(date));
-    dots += `<div class="timeline-date-label" style="left:${pct}%" aria-hidden="true">${label}</div>`;
+  dateGroups.forEach((xs, date) => {
+    if (xs.length < 2) return;
+    dots += `<span class="timeline-date-label" style="left:${xs.reduce((a,b) => a+b,0) / xs.length}px" aria-hidden="true">${escapeHtml(formatDate(parseISOString(date)).slice(0, 6))}</span>`;
   });
-
-  const todayPct = posOf(todayMid.getTime());
-  dots += `<div class="timeline-today" style="left:${todayPct}%"></div>`;
-  dots += `<div class="timeline-today-label" style="left:${todayPct}%">Heute</div>`;
-
+  const todayPct = todayMid.getTime() < axisStart ? 0 : todayMid.getTime() > axisEnd ? 100 : posOf(todayMid.getTime());
+  dots += `<div class="timeline-today" style="left:${todayPct}%" aria-hidden="true"></div><div class="timeline-today-label" style="left:${todayPct}%">Heute</div>`;
   let months = '';
   let cursor = new Date(minT);
   cursor = dateInMonth(cursor.getFullYear(), cursor.getMonth(), 1);
   if (cursor.getTime() < minT) cursor.setMonth(cursor.getMonth() + 1);
   let guard = 0;
-  while (cursor.getTime() <= maxT && guard < 24) {
-    const pct   = posOf(cursor.getTime());
-    const label = cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' });
-    months += `<div class="timeline-month" style="left:${pct}%">${label}</div>`;
+  while (cursor.getTime() <= maxT && guard++ < 120) {
+    months += `<span class="timeline-month" style="left:${posOf(cursor.getTime())}%">${escapeHtml(cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }))}</span>`;
     cursor.setMonth(cursor.getMonth() + 1);
-    guard++;
   }
-
-  const progressPct = Math.min(100, Math.max(0, todayPct));
   return {
-    html: `<div class="timeline-track" style="--timeline-min-width:${minWidth}px">
-      <div class="timeline-progress" id="timeline-progress-bar" style="width:${animate ? 0 : progressPct}%"></div>
-      ${periodsHtml}
-      ${months}
-      ${dots}
-    </div>`,
-    targetPct: progressPct,
-    dotEvents: mainEvents
+    html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="width:${trackWidth}px">
+      <div class="timeline-progress" id="timeline-progress-bar" style="width:${todayPct}%"></div>${periodsHtml}${months}${dots}</div>`,
+    targetPct: todayPct, dotEvents: mainEvents
   };
 }
 
@@ -587,6 +565,8 @@ function renderCalendar() {
 
 function buildLegendPeriods() {
   const legend = document.getElementById('cal-legend');
+  const timelineLegend = document.getElementById('timeline-legend');
+  timelineLegend.innerHTML = ['Prüfung', 'Abgabe', 'Termin'].map(type => `<span class="cal-legend-item"><span class="cal-legend-dot ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + periods.filter((p, i, all) => all.findIndex(other => other.label === p.label) === i).map(p => `<span class="cal-legend-item"><span class="period-swatch" style="--period-rgb:${p.rgb}" aria-hidden="true"></span>${escapeHtml(p.label)}</span>`).join('');
   periods.forEach(p => {
     const item = document.createElement('div');
     item.className = 'cal-legend-item';
@@ -620,6 +600,15 @@ function focusAfterRender() {
   }
 
   return null;
+}
+
+function centerTimelineToday() {
+  const scroller = document.querySelector('.timeline-scroll');
+  const track = document.querySelector('.timeline-track');
+  const today = document.querySelector('.timeline-today');
+  if (!track || !today) return;
+  const x = track.offsetLeft + today.offsetLeft;
+  scroller.scrollLeft = Math.max(0, Math.min(scroller.scrollWidth - scroller.clientWidth, x - scroller.clientWidth / 2));
 }
 
 function renderPreservingState() {
@@ -672,19 +661,9 @@ function render(animate) {
   timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
     const item = tl.dotEvents[index];
     dot.addEventListener('click', () => selectTimelineEvent(dot, item.id));
-    dot.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter' || event.key === ' ') {
-        event.preventDefault();
-        selectTimelineEvent(dot, item.id);
-      }
-    });
+
   });
-  if (animate) {
-    const bar = document.getElementById('timeline-progress-bar');
-    requestAnimationFrame(() => requestAnimationFrame(() => {
-      if (bar) bar.style.width = tl.targetPct + '%';
-    }));
-  }
+  if (animate) centerTimelineToday();
 
   const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
   const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
@@ -862,6 +841,7 @@ document.querySelectorAll('#type-filter button').forEach(button => {
     if (width !== timelineWidth) {
       timelineWidth = width;
       renderPreservingState();
+      centerTimelineToday();
     }
   });
   refreshCurrentDay();
