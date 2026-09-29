@@ -13,7 +13,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
-- Responsive Darstellung mit einer, zwei oder drei Kartenspalten
+- Responsive Darstellung mit einer, zwei oder drei Kartenspalten; ab 1560 px volle Inhaltsbreite und zusätzliche Spalten je nach verfügbarem Platz
 - Tastaturbedienung, sichtbarer Fokus und Unterstützung für reduzierte Bewegung
 - Tageswechsel aktualisiert Datum, Countdown und Ansichten automatisch
 
