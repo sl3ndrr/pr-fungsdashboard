@@ -7,7 +7,7 @@
       name="description"
       content="Persönliches Dashboard für Prüfungen, Abgaben und wichtige Termine."
     >
-    <title>Prüfungen und Termine</title>
+    <title>Semester-Roadmap</title>
     <link
       rel="icon"
       href="data:image/svg+xml,&lt;svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22&gt;&lt;text y=%22.9em%22 font-size=%2290%22&gt;%F0%9F%8E%93&lt;/text&gt;&lt;/svg&gt;"
@@ -24,6 +24,12 @@
   <body>
     <main class="container">
       <header class="page-header">
+        <div class="page-brand">
+          <h1 class="display">Semester-Roadmap</h1>
+          <p id="today-date" class="header-date"></p>
+        </div>
+        <div class="header-actions">
+          <button class="pill" id="cal-toggle-btn" type="button" aria-controls="calendar-section" aria-expanded="false">Kalender</button>
         <div class="theme-control">
           <div
             id="theme-switch"
@@ -86,6 +92,7 @@
             Folgt der Systemeinstellung
           </p>
         </div>
+        </div>
       </header>
 
       <section class="top-grid" aria-label="Semesterübersicht">
@@ -94,7 +101,6 @@
         <section class="timeline-card" aria-labelledby="timeline-heading">
           <div class="timeline-title">
             <h2 id="timeline-heading" class="display">Semesterverlauf</h2>
-            <button class="pill" id="cal-toggle-btn" type="button" aria-controls="calendar-section" aria-expanded="false">Kalender</button>
           </div>
           <div class="timeline-scroll">
             <div id="timeline-container"></div>

@@ -467,3 +467,17 @@ input[type="checkbox"]:focus-visible {
 svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; vertical-align: middle; }
 .pill, .badge, .hero-empty { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); }
 .hero-icon { color: var(--text); } .hero-icon svg { width: 1.75rem; height: 1.75rem; }
+
+/* Header */
+.page-header { justify-content: space-between; gap: var(--space-6); margin-bottom: var(--space-8); }
+.page-brand { min-width: 0; }
+.page-brand h1 { font-size: clamp(1.65rem, 3vw, 2.25rem); line-height: 1.2; font-weight: 800; letter-spacing: -0.035em; overflow-wrap: anywhere; }
+.header-date { color: var(--text-muted); font-size: var(--font-sm); margin-top: var(--space-2); }
+.header-actions { display: flex; align-items: center; flex-wrap: wrap; gap: var(--space-3); }
+.theme-switch { width: 132px; height: 44px; padding: var(--space-1); background: var(--surface-2); }
+.theme-switch-thumb { width: 44px; height: 44px; top: var(--space-1); left: var(--space-1); }
+.theme-option { flex-basis: 44px; width: 44px; height: 44px; }
+.theme-switch[data-value="system"] .theme-switch-thumb { transform: translateX(44px); }
+.theme-switch[data-value="dark"] .theme-switch-thumb { transform: translateX(88px); }
+.pill { min-height: 44px; font-size: var(--font-sm); padding: var(--space-2) var(--space-4); }
+@media (max-width: 480px) { .page-header { gap: var(--space-4); } .header-actions { width: 100%; justify-content: space-between; } }
