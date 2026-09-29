@@ -145,6 +145,7 @@ function toggleDone(id) {
   doneItems = doneItems.includes(id) ? doneItems.filter(x => x !== id) : [...doneItems, id];
   saveCompletedItems();
   renderPreservingState();
+  if (doneItems.includes(id)) document.getElementById(`card-${id}`)?.classList.add('just-completed');
 }
 
 /* Visuelles Feedback beim Auswählen eines Punkts im Zeitstrahl. */
@@ -197,7 +198,7 @@ function openCalMenu(anchor, ev) {
       <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">${ICONS.close}</button>
     </div>
     <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
-    <div class="cal-popover-meta">${ICONS.calendar} ${formatDate(parseISOString(ev.date))} · ${ICONS.clock} ${escapeHtml(ev.time)}</div>
+    <div class="cal-popover-meta">${ICONS.calendar} ${escapeHtml(formatDate(parseISOString(ev.date)))} · ${ICONS.clock} ${escapeHtml(ev.time)}</div>
     ${cancelledBadge}
     ${actionBtn}
   `;
@@ -298,7 +299,7 @@ function buildTimeline(todayMid, animate) {
     if (!dateGroups.has(e.date)) dateGroups.set(e.date, []);
     dateGroups.get(e.date).push(dotXs[i]);
     const past = times[i] < todayMid.getTime();
-    const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
+    const description = `${e.type}: ${e.title}, ${escapeHtml(formatDate(parseISOString(e.date)))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
     dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} ${animate ? 'enter' : ''}"
       style="left:${dotXs[i]}px;--delay:${i * 0.02}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}" aria-describedby="timeline-tip-${escapeHtml(e.id)}">
       <span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? '<span>Abgebrochen</span>' : ''}</span>
@@ -327,17 +328,17 @@ function buildTimeline(todayMid, animate) {
   };
 }
 
-function renderHero(upcoming, todayMid) {
+function renderHero(upcoming, todayMid, animate) {
   const el = document.getElementById('hero');
   const item = upcoming[0];
   if (!item) {
-    el.className = 'hero';
+    el.className = `hero ${animate ? 'enter' : ''}`;
     el.innerHTML = `<div class="hero-label">Als Nächstes</div><div class="hero-empty">${ICONS.check}<span>Keine offenen Termine</span></div>`;
     return;
   }
   const d = parseISOString(item.date);
   const diffDays = calendarDayDiff(d, todayMid);
-  el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''}`;
+  el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''} ${animate ? 'enter' : ''}`;
   const count = diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : diffDays;
   const activePeriods = periodsOnDay(todayMid, periods);
   el.innerHTML = `
@@ -415,7 +416,7 @@ function renderSelectedCalDay(byDate) {
 
   panel.innerHTML = `
     <div class="cal-day-details-head">
-      <h4 id="cal-day-details-title">Termine am ${formatDate(selectedDate)}</h4>
+      <h4 id="cal-day-details-title">Termine am ${escapeHtml(formatDate(selectedDate))}</h4>
       <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">${ICONS.close}</button>
     </div>
     ${periodHtml ? `<div class="cal-day-periods" aria-label="Zeiträume an diesem Tag">${periodHtml}</div>` : ''}
@@ -431,7 +432,7 @@ function renderSelectedCalDay(byDate) {
           </span>
           <span class="cal-day-event-meta">
             <span>${ICONS.clock}${escapeHtml(e.time)}</span>
-            ${status ? `<span class="cal-day-event-status ${isDone && !e.isCancelled ? 'done' : ''}">${status}</span>` : ''}
+            ${status ? `<span class="cal-day-event-status ${isDone && !e.isCancelled ? 'done' : ''}">${escapeHtml(status)}</span>` : ''}
           </span>
         </button>`;
       }).join('')}
@@ -507,7 +508,7 @@ function renderCalendar() {
       const dayButton = `<button class="cal-day-select" type="button" data-date="${iso}" aria-label="${escapeHtml(formatDate(cur))}: ${countLabel} anzeigen" aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">${numHtml}<span class="cal-day-dots" aria-hidden="true">${mobileDots}</span></button>`;
       const tagsHtml = dayEvts.slice(0,3).map(e => {
         tagEvents.push(e);
-        return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', abgebrochen' : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
+        return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', abgebrochen' : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
       }).join('');
       html += `<div class="cal-day ${inMonth ? '' : 'other-month'} ${weekday >= 5 ? 'weekend' : ''} ${isToday ? 'today' : ''} ${selectedCalDate === iso ? 'selected' : ''}" role="gridcell">
         ${dayButton}<span class="cal-band-space" aria-hidden="true"></span>${tagsHtml}${count > 3 ? `<button class="cal-more" type="button" data-date="${iso}" aria-label="Alle ${count} Termine am ${escapeHtml(formatDate(cur))} anzeigen" aria-controls="cal-day-details">+${count - 3}</button>` : ''}</div>`;
@@ -515,7 +516,7 @@ function renderCalendar() {
     weekPeriods.forEach((p, row) => {
       const left = Math.max(0, calendarDayDiff(parseISOString(p.start), weekStart));
       const right = Math.min(6, calendarDayDiff(parseISOString(p.end), weekStart));
-      html += `<div class="cal-period-band ${left > 0 ? 'starts' : ''} ${right < 6 ? 'ends' : ''}" style="--period-rgb:${p.rgb};left:calc(${left} * 100% / 7 + 2px);width:calc(${right-left+1} * 100% / 7 - 4px);top:calc(48px + ${row} * 22px)"><span>${escapeHtml(p.label)}</span></div>`;
+      html += `<div class="cal-period-band ${parseISOString(p.start) >= weekStart ? 'starts' : ''} ${parseISOString(p.end) <= weekEnd ? 'ends' : ''}" style="--period-rgb:${p.rgb};left:calc(${left} * 100% / 7 + 2px);width:calc(${right-left+1} * 100% / 7 - 4px);top:calc(48px + ${row} * 22px)"><span>${escapeHtml(p.label)}</span></div>`;
     });
     html += '</div>';
   }
@@ -545,7 +546,7 @@ function buildLegendPeriods() {
   periods.forEach(p => {
     const item = document.createElement('div');
     item.className = 'cal-legend-item';
-    item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}-Zeitraum (${formatDate(parseISOString(p.start))} – ${formatDate(parseISOString(p.end))})`;
+    item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}-Zeitraum (${escapeHtml(formatDate(parseISOString(p.start)))} – ${escapeHtml(formatDate(parseISOString(p.end)))})`;
     legend.appendChild(item);
   });
 }
@@ -557,15 +558,25 @@ function focusAfterRender() {
     return () => document.getElementById(card.id)?.querySelector('input[type="checkbox"]');
   }
 
+  const heroNext = active.closest('.hero-next');
+  if (heroNext) {
+    return () => [...document.querySelectorAll('.hero-next')].find(button => button.dataset.eventId === heroNext.dataset.eventId);
+  }
   const dot = active.closest('#timeline-container .timeline-dot');
   if (dot) {
     return () => [...document.querySelectorAll('#timeline-container .timeline-dot')]
       .find(button => button.dataset.eventId === dot.dataset.eventId);
   }
 
-  const day = active.closest('#cal-grid .cal-day-select[data-date]');
+  const calendarTag = active.closest('#cal-grid .cal-event-tag');
+  if (calendarTag) {
+    return () => [...document.querySelectorAll('#cal-grid .cal-event-tag')]
+      .find(button => button.dataset.eventId === calendarTag.dataset.eventId);
+  }
+  const day = active.closest('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]');
   if (day) {
-    return () => [...document.querySelectorAll('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]')]
+    const selector = day.matches('.cal-more') ? '.cal-more' : '.cal-day-select';
+    return () => [...document.querySelectorAll(`#cal-grid ${selector}[data-date]`)]
       .find(button => button.dataset.date === day.dataset.date);
   }
 
@@ -628,7 +639,7 @@ function render(animate) {
     const diff = calendarDayDiff(parseISOString(e.date), todayMid);
     return diff >= 0 && !e.isCancelled && !(e.type === 'Abgabe' && doneItems.includes(e.id));
   });
-  renderHero(upcoming, todayMid);
+  renderHero(upcoming, todayMid, animate);
 
   const tl = buildTimeline(todayMid, animate);
   const timelineContainer = document.getElementById('timeline-container');
@@ -636,8 +647,18 @@ function render(animate) {
   timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
     const item = tl.dotEvents[index];
     dot.addEventListener('click', () => selectTimelineEvent(dot, item.id));
+    const positionTooltip = () => {
+      const bounds = document.querySelector('.timeline-scroll').getBoundingClientRect();
+      const rect = dot.getBoundingClientRect();
+      const x = rect.left + rect.width / 2;
+      const center = Math.max(bounds.left + 114, Math.min(bounds.right - 114, x));
+      dot.style.setProperty('--tooltip-shift', `${center - x}px`);
+    };
+    dot.addEventListener('pointerenter', positionTooltip);
+    dot.addEventListener('focus', positionTooltip);
 
   });
+  document.querySelector('.timeline-card').classList.toggle('enter', animate);
   if (animate) centerTimelineToday();
 
   const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
@@ -667,7 +688,7 @@ function render(animate) {
   });
 
   if (visibleEvents.length === 0) {
-    listEl.innerHTML = `<div class="empty-state">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
+    listEl.innerHTML = `<div class="empty-state" role="listitem">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
   }
 
   const weekStart = new Date(todayMid);
@@ -731,7 +752,7 @@ function render(animate) {
     card.className = `card ${typeClass(item.type)} ${diffDays < 0 ? 'past' : ''} ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} ${animate ? 'enter' : ''}`;
     card.id = `card-${item.id}`;
     card.setAttribute('role', 'listitem');
-    if (animate) card.style.setProperty('--delay', (idx * 0.035) + 's');
+    if (animate) card.style.setProperty('--delay', Math.min(idx * 0.025, 0.15) + 's');
     card.innerHTML = `
       <div class="card-inner">
         <div class="card-left">
@@ -821,4 +842,3 @@ document.querySelectorAll('#type-filter button').forEach(button => {
   });
   refreshCurrentDay();
 })();
-

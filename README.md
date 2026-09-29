@@ -4,13 +4,18 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 
 ## Funktionen
 
-- Übersicht über anstehende Prüfungen, Abgaben und Termine
-- Interaktiver Zeitstrahl mit Zeiträumen
+- Nächster offener Termin mit großem Countdown, zwei Folgeterminen und aktuellem Zeitraum-Fortschritt
+- Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
+- Nach Heute, Kalenderwochen, Monaten und Vergangenheit gruppierte Terminkarten
+- Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
 - Abgebrochene Termine werden gedämpft dargestellt und aus der nächsten Fälligkeit ausgeblendet
-- Monatlicher Kalender mit Detail-Popover
+- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover
+- Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
-- Responsive Darstellung für Desktop und Mobilgeräte
+- Responsive Darstellung mit einer, zwei oder drei Kartenspalten
+- Tastaturbedienung, sichtbarer Fokus und Unterstützung für reduzierte Bewegung
+- Tageswechsel aktualisiert Datum, Countdown und Ansichten automatisch
 
 ## Projektstruktur
 
@@ -21,7 +26,8 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 │   └── styles.css       # Gesamtes Styling, Themes und Responsive-Regeln
 ├── js/
 │   ├── app.js           # Initialisierung, UI-Rendering und Interaktionen
-│   ├── data.js          # Termine, Zeiträume, Icons und Konfiguration
+│   ├── data.js          # Termine, Zeiträume und Speicherschlüssel
+│   ├── icons.js         # Statische SVG-Icons für alle UI-Bereiche
 │   ├── storage.js       # Persistenz erledigter Abgaben
 │   └── utils.js         # Wiederverwendbare Datums- und HTML-Hilfen
 ├── .gitignore
@@ -59,6 +65,24 @@ Alle fachlichen Daten liegen zentral in [`js/data.js`](js/data.js):
 
 Die Darstellung und Interaktionen müssen für neue Termine nicht angepasst werden.
 
+Der Typfilter betrifft ausschließlich die Terminliste. Die nächste Fälligkeit, Kennzahlen,
+Zeitstrahl und Kalender behalten ihre vollständige Datenbasis. Ein Zeitstrahl-Punkt oder
+„Danach“-Eintrag macht bei Bedarf die passende Karte sichtbar.
+
+Die Zeitstrahl-Achse reicht von der ersten bis zur letzten Prüfung (auch abgebrochene
+Prüfungen zählen als Achsengrenze). Der optische Rand beträgt an beiden Enden 4 % der
+Datumsspanne. Liegt ein regulärer Termin außerhalb dieser Grenzen, erweitert sich die
+Achse mit einer Konsolenwarnung. `calOnly`-Termine und Zeiträume verändern die Achse
+nicht. Kollisionsgruppen werden nur horizontal und mit mindestens 32 px Abstand
+verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`.
+
+Design-Tokens und beide Farbpaletten liegen in `css/styles.css`. `color-scheme` und
+`light-dark()` wählen Hell, Dunkel oder das Systemdesign aus einer gemeinsamen
+Definition. Outfit und Inter werden wie bisher über Google Fonts geladen; bei
+fehlender Verbindung greift der System-Fallback. Es gibt keine neuen Abhängigkeiten.
+Der Kalender kann auf sehr schmalen Geräten innerhalb seiner Fläche horizontal
+gescrollt werden, damit alle Tages-Buttons mindestens 44 px breit bleiben.
+
 ## Änderungen veröffentlichen
 
 ```bash
@@ -70,3 +94,4 @@ git push -u origin feature/meine-aenderung
 
 
 Erstelle anschließend auf GitHub einen Pull Request nach `main`.
+
