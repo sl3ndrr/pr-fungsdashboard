@@ -11,19 +11,20 @@ import {
 import { loadDoneItems, saveDoneItems } from "./storage.js";
 
 async function initialiseDoneItems() {
-  doneItems = await loadDoneItems(STORAGE_KEY);
+  const savedItems = await loadDoneItems(STORAGE_KEY);
+  doneItems = Array.isArray(savedItems)
+    ? savedItems
+    : events.filter((event) => event.isDone).map((event) => event.id);
 
-  events.forEach((event) => {
-    if (event.isDone && !doneItems.includes(event.id)) {
-      doneItems.push(event.id);
-    }
-  });
-
-  await saveCompletedItems();
+  if (savedItems === null) await saveCompletedItems();
 }
 
+let pendingSave = Promise.resolve();
+
 async function saveCompletedItems() {
-  await saveDoneItems(STORAGE_KEY, doneItems);
+  const items = [...doneItems];
+  pendingSave = pendingSave.then(() => saveDoneItems(STORAGE_KEY, items));
+  await pendingSave;
 }
 
 const THEME_VALUES = ['light', 'system', 'dark'];
