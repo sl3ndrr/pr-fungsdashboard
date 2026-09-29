@@ -102,6 +102,7 @@ try {
 applyTheme(savedTheme);
 
 let showPast = false;
+let typeFilter = 'all';
 
 let doneItems  = [];
 let calVisible = false;
@@ -156,6 +157,11 @@ function selectTimelineEvent(dot, id) {
     dot = [...document.querySelectorAll('.timeline-dot')].find(button => button.dataset.eventId === id);
   }
 
+  if (item && typeFilter !== 'all' && typeFilter !== item.type) {
+    typeFilter = 'all';
+    updateTypeFilter();
+    renderPreservingState();
+  }
   const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (dot && !reduceMotion) {
     dot.classList.remove('ping');
@@ -688,7 +694,9 @@ function render(animate) {
   }).length;
 
   document.getElementById('stats-line').innerHTML =
-    `<b>${mainEvents.filter(e => !e.isCancelled).length}</b> Termine · <b>${abgabenDone}/${abgaben.length}</b> Abgaben erledigt · <b>${next7}</b> in &le; 7 Tagen`;
+    `<div class="stat-tile"><span class="stat-label">Termine</span><strong class="stat-value">${mainEvents.filter(e => !e.isCancelled).length}</strong><span class="stat-note">ohne abgebrochene</span></div>
+     <div class="stat-tile"><span class="stat-label">Abgaben erledigt</span><strong class="stat-value">${abgabenDone}<span class="stat-total"> / ${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="width:${abgaben.length ? abgabenDone / abgaben.length * 100 : 0}%"></span></div></div>
+     <div class="stat-tile"><span class="stat-label">In den nächsten 7 Tagen</span><strong class="stat-value">${next7}</strong><span class="stat-note">heute eingeschlossen</span></div>`;
 
   const listEl = document.getElementById('list');
   listEl.innerHTML = '';
@@ -701,11 +709,11 @@ function render(animate) {
     // Wenn showPast false ist und das Datum in der Vergangenheit liegt, ausblenden
     if (!showPast && diffDays < 0) return false;
     
-    return true;
+    return typeFilter === 'all' || item.type === typeFilter;
   });
 
   if (visibleEvents.length === 0) {
-    listEl.innerHTML = `<div class="empty-state">Keine Termine in dieser Ansicht.</div>`;
+    listEl.innerHTML = `<div class="empty-state">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
   }
 
   visibleEvents.forEach((item, idx) => {
@@ -790,11 +798,25 @@ const togglePastBtn = document.getElementById('toggle-past-btn');
 function updatePastToggle() {
   togglePastBtn.textContent = showPast ? 'Vergangene ausblenden' : 'Vergangene anzeigen';
   togglePastBtn.classList.toggle('active', showPast);
+  togglePastBtn.setAttribute('aria-pressed', String(showPast));
 }
 togglePastBtn.addEventListener('click', () => {
   showPast = !showPast;
   updatePastToggle();
   renderPreservingState();
+});
+
+function updateTypeFilter() {
+  document.querySelectorAll('#type-filter button').forEach(button => {
+    button.setAttribute('aria-pressed', String(button.dataset.filter === typeFilter));
+  });
+}
+document.querySelectorAll('#type-filter button').forEach(button => {
+  button.addEventListener('click', () => {
+    typeFilter = button.dataset.filter;
+    updateTypeFilter();
+    renderPreservingState();
+  });
 });
 
 (async function init() {
