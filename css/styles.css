@@ -1,4 +1,4 @@
-/* Design tokens: one palette, selected through the native color scheme. */
+/* Design tokens: one palette, selected through the native color  scheme. */
 :root {
   color-scheme: light dark;
   --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
