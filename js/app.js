@@ -1,4 +1,4 @@
-import { EVENTS as events, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
+import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
   escapeHtml,
@@ -7,8 +7,11 @@ import {
   parseISOString,
   periodsOnDay,
   typeClass,
+  validateData,
 } from "./utils.js";
 import { loadDoneItems, saveDoneItems } from "./storage.js";
+
+const { events, periods } = validateData(EVENTS, PERIODS);
 
 async function initialiseDoneItems() {
   const savedItems = await loadDoneItems(STORAGE_KEY);
@@ -106,13 +109,25 @@ let calVisible = false;
 // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
 const calendarDateValues = [
   ...events.map(e => e.date),
-  ...PERIODS.flatMap(p => [p.start, p.end])
+  ...periods.flatMap(p => [p.start, p.end])
 ];
+if (!calendarDateValues.length) {
+  const today = new Date();
+  calendarDateValues.push(
+    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
+  );
+}
 const calMinIso = calendarDateValues.reduce((a, b) => a < b ? a : b);
 const calMaxIso = calendarDateValues.reduce((a, b) => a > b ? a : b);
 const [calMinYear, calMinMonth1] = calMinIso.split('-').map(Number);
 const [calMaxYear, calMaxMonth1] = calMaxIso.split('-').map(Number);
 const monthIndex = (year, month) => year * 12 + month;
+const dateInMonth = (year, month, day) => {
+  const date = new Date(0);
+  date.setFullYear(year, month, day);
+  date.setHours(0, 0, 0, 0);
+  return date;
+};
 const CAL_MIN_MONTH_INDEX = monthIndex(calMinYear, calMinMonth1 - 1);
 const CAL_MAX_MONTH_INDEX = monthIndex(calMaxYear, calMaxMonth1 - 1);
 
@@ -124,15 +139,14 @@ const initialCalMonthIndex = Math.min(
 let calYear  = Math.floor(initialCalMonthIndex / 12);
 let calMonth = initialCalMonthIndex % 12;
 
-window.toggleDone = function(id) {
+function toggleDone(id) {
   doneItems = doneItems.includes(id) ? doneItems.filter(x => x !== id) : [...doneItems, id];
   saveCompletedItems();
   render(false);
-};
+}
 
 /* Visuelles Feedback beim Auswählen eines Punkts im Zeitstrahl. */
-window.selectTimelineEvent = function(e, id) {
-  const dot = e.currentTarget;
+function selectTimelineEvent(dot, id) {
   dot.classList.remove('ping');
   void dot.offsetWidth; // Reflow erzwingen
   dot.classList.add('ping');
@@ -144,20 +158,16 @@ window.selectTimelineEvent = function(e, id) {
     void card.offsetWidth;
     card.classList.add('pulse-highlight');
   }
-};
+}
 
-window.openCalMenu = function(e, id) {
-  e.stopPropagation();
-  const ev = events.find(x => x.id === id);
-  if (!ev) return;
-
+function openCalMenu(anchor, ev) {
   const pop = document.getElementById('cal-popover');
   const isDone = ev.type === 'Abgabe' && doneItems.includes(ev.id);
   const cancelledBadge = ev.isCancelled ? '<div class="cal-popover-cancelled">Abgebrochen</div>' : '';
 
   let actionBtn = '';
   if (ev.type === 'Abgabe') {
-    actionBtn = `<button class="cal-popover-btn" onclick="toggleDone('${ev.id}'); closeCalMenu();">
+    actionBtn = `<button class="cal-popover-btn" type="button">
       ${isDone ? 'Als offen markieren' : '✔ Als erledigt markieren'}
     </button>`;
   }
@@ -165,17 +175,22 @@ window.openCalMenu = function(e, id) {
   pop.innerHTML = `
     <div class="cal-popover-head">
       <span class="badge ${typeClass(ev.type)}">${ev.type}</span>
-      <button class="cal-popover-close" onclick="closeCalMenu()">✕</button>
+      <button class="cal-popover-close" type="button">✕</button>
     </div>
     <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
     <div class="cal-popover-meta">📅 ${formatDate(parseISOString(ev.date))} · ⏰ ${escapeHtml(ev.time)}</div>
     ${cancelledBadge}
     ${actionBtn}
   `;
+  pop.querySelector('.cal-popover-close').addEventListener('click', closeCalMenu);
+  pop.querySelector('.cal-popover-btn')?.addEventListener('click', () => {
+    toggleDone(ev.id);
+    closeCalMenu();
+  });
 
   pop.style.display = 'flex';
 
-  const tRect = e.currentTarget.getBoundingClientRect();
+  const tRect = anchor.getBoundingClientRect();
   const pRect = pop.getBoundingClientRect();
   let top = tRect.bottom + 6;
   let left = tRect.left;
@@ -185,14 +200,12 @@ window.openCalMenu = function(e, id) {
 
   pop.style.top  = `${Math.max(10, top)}px`;
   pop.style.left = `${Math.max(10, left)}px`;
-};
+}
 
 function closeCalMenu() {
   const p = document.getElementById('cal-popover');
   if (p) p.style.display = 'none';
 }
-
-window.closeCalMenu = closeCalMenu;
 
 document.addEventListener('click', (e) => {
   const pop = document.getElementById('cal-popover');
@@ -205,7 +218,7 @@ window.addEventListener('scroll', closeCalMenu, true);
 function buildTimeline(todayMid, animate) {
   const mainEvents = events.filter(e => !e.calOnly);
   const allTimes = mainEvents.map(e => midnight(parseISOString(e.date)).getTime());
-  const periodTimes = PERIODS.flatMap(p => [
+  const periodTimes = periods.flatMap(p => [
     midnight(parseISOString(p.start)).getTime(),
     midnight(parseISOString(p.end)).getTime()
   ]);
@@ -220,7 +233,7 @@ function buildTimeline(todayMid, animate) {
 
   let periodsHtml = '';
   const placedRanges = []; // for simple row-stacking of labels that would otherwise overlap
-  PERIODS.forEach(p => {
+  periods.forEach(p => {
     const pStartT = midnight(parseISOString(p.start)).getTime();
     const pEndT   = midnight(parseISOString(p.end)).getTime();
     if (pEndT <= minT || pStartT >= maxT) return;
@@ -250,8 +263,6 @@ function buildTimeline(todayMid, animate) {
     const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
     dots += `<div class="timeline-dot ${typeClass(e.type)} ${cancelledCls} ${enterCls}"
                   style="left:${pct}%;${delay}"
-                  onclick="selectTimelineEvent(event, '${e.id}')"
-                  onkeydown="if(event.key === 'Enter' || event.key === ' '){ event.preventDefault(); selectTimelineEvent(event, '${e.id}'); }"
                   tabindex="0" role="button"
                   aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)} am ${formatDate(parseISOString(e.date))}${cancelledLabel}"
                   title="${escapeHtml(e.title)} – ${formatDate(parseISOString(e.date))}${cancelledLabel}">
@@ -264,7 +275,7 @@ function buildTimeline(todayMid, animate) {
 
   let months = '';
   let cursor = new Date(minT);
-  cursor = new Date(cursor.getFullYear(), cursor.getMonth(), 1);
+  cursor = dateInMonth(cursor.getFullYear(), cursor.getMonth(), 1);
   if (cursor.getTime() < minT) cursor.setMonth(cursor.getMonth() + 1);
   let guard = 0;
   while (cursor.getTime() <= maxT && guard < 24) {
@@ -283,7 +294,8 @@ function buildTimeline(todayMid, animate) {
       ${months}
       ${dots}
     </div>`,
-    targetPct: progressPct
+    targetPct: progressPct,
+    dotEvents: mainEvents
   };
 }
 
@@ -351,9 +363,9 @@ function renderCalendar() {
   nextBtn.style.opacity = isMaxDate ? '0.2' : '1';
   nextBtn.style.pointerEvents = isMaxDate ? 'none' : 'auto';
 
-  const monthStart = new Date(calYear, calMonth, 1);
-  const monthEnd   = new Date(calYear, calMonth + 1, 0);
-  const overlappingPeriods = PERIODS.filter(p => {
+  const monthStart = dateInMonth(calYear, calMonth, 1);
+  const monthEnd   = dateInMonth(calYear, calMonth + 1, 0);
+  const overlappingPeriods = periods.filter(p => {
     const s = midnight(parseISOString(p.start));
     const e = midnight(parseISOString(p.end));
     return monthEnd >= s && monthStart <= e;
@@ -363,19 +375,20 @@ function renderCalendar() {
       <span class="cal-period-dot-sm" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}
     </span>`).join('');
 
-  const byDate = {};
+  const byDate = new Map();
   events.forEach(e => {
-    byDate[e.date] = byDate[e.date] || [];
-    byDate[e.date].push(e);
+    if (!byDate.has(e.date)) byDate.set(e.date, []);
+    byDate.get(e.date).push(e);
   });
 
-  const first = new Date(calYear, calMonth, 1);
+  const first = dateInMonth(calYear, calMonth, 1);
   let start = new Date(first);
   let dow = start.getDay();
   if (dow === 0) dow = 7;
   start.setDate(start.getDate() - (dow - 1));
 
   let html = '';
+  const tagEvents = [];
   ['Mo','Di','Mi','Do','Fr','Sa','So'].forEach(d => {
     html += `<div class="cal-day-header">${d}</div>`;
   });
@@ -387,7 +400,7 @@ function renderCalendar() {
     const inMonth = cur.getMonth() === calMonth;
     const isToday = curMid.getTime() === today.getTime();
 
-    const dayPeriods = periodsOnDay(curMid);
+    const dayPeriods = periodsOnDay(curMid, periods);
     const activePeriod = dayPeriods[0]; // first matching period wins visually if they ever overlap
 
     let cls = 'cal-day';
@@ -405,16 +418,17 @@ function renderCalendar() {
       dayStyle = ` style="background:rgba(${activePeriod.rgb},0.12);border-color:rgba(${activePeriod.rgb},0.35);${borderSide}"`;
     }
 
-    const dayEvts = byDate[iso] || [];
+    const dayEvts = byDate.get(iso) || [];
 
     const numHtml = isToday
       ? `<div class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></div>`
       : `<div class="cal-day-num">${cur.getDate()}</div>`;
 
     const tagsHtml = dayEvts.map(e => {
+      tagEvents.push(e);
       const cancelledCls = e.isCancelled ? 'cancelled' : '';
       const cancelledLabel = e.isCancelled ? ' (abgebrochen)' : '';
-      return `<span class="cal-event-tag ${typeClass(e.type)} ${cancelledCls}" onclick="openCalMenu(event, '${e.id}')" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})${cancelledLabel}">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
+      return `<span class="cal-event-tag ${typeClass(e.type)} ${cancelledCls}" title="${escapeHtml(e.title)} (${escapeHtml(e.time)})${cancelledLabel}">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></span>`;
     }).join('');
 
     html += `<div class="${cls}"${dayStyle}>${numHtml}${tagsHtml}</div>`;
@@ -422,11 +436,17 @@ function renderCalendar() {
   }
 
   document.getElementById('cal-grid').innerHTML = html;
+  document.querySelectorAll('#cal-grid .cal-event-tag').forEach((tag, index) => {
+    tag.addEventListener('click', (event) => {
+      event.stopPropagation();
+      openCalMenu(tag, tagEvents[index]);
+    });
+  });
 }
 
 function buildLegendPeriods() {
   const legend = document.getElementById('cal-legend');
-  PERIODS.forEach(p => {
+  periods.forEach(p => {
     const item = document.createElement('div');
     item.className = 'cal-legend-item';
     item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgba(${p.rgb},0.15);border-color:rgba(${p.rgb},0.5)"></span>${escapeHtml(p.label)}-Zeitraum (${formatDate(parseISOString(p.start))} – ${formatDate(parseISOString(p.end))})`;
@@ -448,7 +468,18 @@ function render(animate) {
   renderHero(upcoming[0], todayMid);
 
   const tl = buildTimeline(todayMid, animate);
-  document.getElementById('timeline-container').innerHTML = tl.html;
+  const timelineContainer = document.getElementById('timeline-container');
+  timelineContainer.innerHTML = tl.html;
+  timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
+    const item = tl.dotEvents[index];
+    dot.addEventListener('click', () => selectTimelineEvent(dot, item.id));
+    dot.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        selectTimelineEvent(dot, item.id);
+      }
+    });
+  });
   if (animate) {
     const bar = document.getElementById('timeline-progress-bar');
     requestAnimationFrame(() => requestAnimationFrame(() => {
@@ -511,7 +542,7 @@ function render(animate) {
     }
 
     const checkElement = isAbgabe
-      ? `<input type="checkbox" onchange="toggleDone('${item.id}')" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt">`
+      ? `<input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt">`
       : `<div class="dot-marker"></div>`;
 
     const card = document.createElement('div');
@@ -532,6 +563,9 @@ function render(animate) {
         <div class="countdown ${countdownClass}">${countdownContent}</div>
       </div>
     `;
+    if (isAbgabe) {
+      card.querySelector('input[type="checkbox"]').addEventListener('change', () => toggleDone(item.id));
+    }
     listEl.appendChild(card);
   });
 
