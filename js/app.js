@@ -55,7 +55,11 @@ function applyTheme(theme, { focus = false } = {}) {
     option.tabIndex = isSelected ? 0 : -1;
   });
 
-  localStorage.setItem('theme_pref', selectedTheme);
+  try {
+    localStorage.setItem('theme_pref', selectedTheme);
+  } catch {
+    // Das Farbschema bleibt auch ohne verfügbaren Speicher bedienbar.
+  }
 
   if (focus) {
     themeOptions.find((option) => option.dataset.themeValue === selectedTheme)?.focus();
@@ -86,7 +90,12 @@ themeSwitch.addEventListener('keydown', (event) => {
   applyTheme(THEME_VALUES[nextIndex], { focus: true });
 });
 
-const savedTheme = localStorage.getItem('theme_pref') || 'system';
+let savedTheme = 'system';
+try {
+  savedTheme = localStorage.getItem('theme_pref') || 'system';
+} catch {
+  // Bei gesperrtem Speicher mit der Systemeinstellung starten.
+}
 applyTheme(savedTheme);
 
 let showPast = false;
