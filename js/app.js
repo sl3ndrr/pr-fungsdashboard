@@ -143,19 +143,16 @@ let calMonth = initialCalMonthIndex % 12;
 function toggleDone(id) {
   doneItems = doneItems.includes(id) ? doneItems.filter(x => x !== id) : [...doneItems, id];
   saveCompletedItems();
-  render(false);
+  renderPreservingState();
 }
 
 /* Visuelles Feedback beim Auswählen eines Punkts im Zeitstrahl. */
 function selectTimelineEvent(dot, id) {
   const item = events.find(e => e.id === id);
   if (item && !showPast && calendarDayDiff(parseISOString(item.date), midnight(new Date())) < 0) {
-    const scroll = document.querySelector('.timeline-scroll');
-    const scrollLeft = scroll.scrollLeft;
     showPast = true;
     updatePastToggle();
-    render(false);
-    scroll.scrollLeft = scrollLeft;
+    renderPreservingState();
     dot = [...document.querySelectorAll('.timeline-dot')].find(button => button.dataset.eventId === id);
   }
 
@@ -576,6 +573,56 @@ function buildLegendPeriods() {
   });
 }
 
+function focusAfterRender() {
+  const active = document.activeElement;
+  const card = active.closest('#list .card');
+  if (card && active.matches('input[type="checkbox"]')) {
+    return () => document.getElementById(card.id)?.querySelector('input[type="checkbox"]');
+  }
+
+  const dot = active.closest('#timeline-container .timeline-dot');
+  if (dot) {
+    return () => [...document.querySelectorAll('#timeline-container .timeline-dot')]
+      .find(button => button.dataset.eventId === dot.dataset.eventId);
+  }
+
+  const day = active.closest('#cal-grid .cal-day-select[data-date]');
+  if (day) {
+    return () => [...document.querySelectorAll('#cal-grid .cal-day-select[data-date]')]
+      .find(button => button.dataset.date === day.dataset.date);
+  }
+
+  if (active.closest('#cal-day-details')) {
+    const index = [...document.querySelectorAll('#cal-day-details button')].indexOf(active);
+    return () => document.querySelectorAll('#cal-day-details button')[index];
+  }
+
+  return null;
+}
+
+function renderPreservingState() {
+  const restoreFocus = focusAfterRender();
+  const pageX = window.scrollX;
+  const pageY = window.scrollY;
+  const timelineScroll = document.querySelector('.timeline-scroll');
+  const timelineLeft = timelineScroll.scrollLeft;
+  const calendarScroll = document.querySelector('.cal-scroll');
+  const calendarLeft = calendarScroll.scrollLeft;
+
+  render(false);
+
+  let focusFallback = false;
+  if (restoreFocus) {
+    const target = restoreFocus();
+    if (target) target.focus({ preventScroll: true });
+    else focusFallback = true;
+  }
+  if (timelineScroll.scrollLeft !== timelineLeft) timelineScroll.scrollLeft = timelineLeft;
+  if (calendarScroll.scrollLeft !== calendarLeft) calendarScroll.scrollLeft = calendarLeft;
+  if (window.scrollX !== pageX || window.scrollY !== pageY) window.scrollTo(pageX, pageY);
+  if (focusFallback) document.getElementById('toggle-past-btn').focus();
+}
+
 const localDayKey = date => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 let renderedDay = null;
 let dayTimer;
@@ -640,7 +687,6 @@ function render(animate) {
 
   if (visibleEvents.length === 0) {
     listEl.innerHTML = `<div class="empty-state">Keine Termine in dieser Ansicht.</div>`;
-    return;
   }
 
   visibleEvents.forEach((item, idx) => {
@@ -708,7 +754,7 @@ function scheduleNextDay() {
 }
 
 function refreshCurrentDay() {
-  if (localDayKey(new Date()) !== renderedDay) render(false);
+  if (!document.hidden && localDayKey(new Date()) !== renderedDay) renderPreservingState();
   scheduleNextDay();
 }
 
@@ -725,7 +771,7 @@ function updatePastToggle() {
 togglePastBtn.addEventListener('click', () => {
   showPast = !showPast;
   updatePastToggle();
-  render(false);
+  renderPreservingState();
 });
 
 (async function init() {
