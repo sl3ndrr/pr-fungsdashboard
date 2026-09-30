@@ -1,4 +1,4 @@
-import { syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
+import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
@@ -421,6 +421,7 @@ function calNav(delta) {
 
 function renderSelectedCalDay(byDate) {
   const panel = document.getElementById('cal-day-details');
+  const wasOpen=panel.dataset.open==='true';
   if(!selectedCalDate)delete panel.dataset.date;
   setExpanded(panel,!!selectedCalDate);
   if(!selectedCalDate)return;
@@ -458,7 +459,7 @@ function renderSelectedCalDay(byDate) {
       }).join('')}
     </div>` : '<p class="cal-day-empty">Keine Termine an diesem Tag.</p>'}
   </div></div>`;
-  if(changed && panel.hasChildNodes())fadeChange(panel,()=>syncHTML(panel,detailsHTML));else syncHTML(panel,detailsHTML);
+  if(changed && wasOpen && panel.hasChildNodes())fadeChange(panel,()=>syncHTML(panel,detailsHTML));else syncHTML(panel,detailsHTML);
 
   listenOnce(panel.querySelector('.cal-day-details-close'), 'click', () => {
     const date=selectedCalDate;selectedCalDate=null;closeCalMenu();renderCalendar();
@@ -628,7 +629,7 @@ function renderPreservingState(animate = false) {
   const calendarScroll = document.querySelector('.cal-scroll');
   const calendarLeft = calendarScroll.scrollLeft;
 
-  render(animate);
+  batchUpdate(()=>render(animate));
 
   let focusFallback = false;
   if (restoreFocus) {
@@ -649,6 +650,7 @@ let dayTimer;
 function render(animate) {
   const today    = new Date();
   const todayMid = midnight(today);
+  const tl=buildTimeline(todayMid,animate);
   renderedDay = localDayKey(today);
   document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -663,7 +665,6 @@ function render(animate) {
   });
   renderHero(upcoming, todayMid, animate);
 
-  const tl = buildTimeline(todayMid, animate);
   const timelineContainer = document.getElementById('timeline-container');
   syncHTML(timelineContainer,tl.html);
   timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
