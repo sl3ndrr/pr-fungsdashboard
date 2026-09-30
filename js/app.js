@@ -32,6 +32,7 @@ async function saveCompletedItems() {
 }
 
 const THEME_VALUES = ['light', 'system', 'dark'];
+let requestedTheme='system';
 const THEME_LABELS = {
   light: 'Helles Design',
   system: 'Folgt der Systemeinstellung',
@@ -75,7 +76,7 @@ themeOptions.forEach((option) => {
 });
 
 themeSwitch.addEventListener('keydown', (event) => {
-  const currentIndex = Math.max(0, THEME_VALUES.indexOf(themeSwitch.dataset.value));
+  const currentIndex = Math.max(0, THEME_VALUES.indexOf(requestedTheme));
   let nextIndex;
 
   if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
@@ -98,6 +99,7 @@ function changeTheme(theme, options = {}) {
   const thumb = themeSwitch.querySelector('.theme-switch-thumb');
   const rect = thumb.getBoundingClientRect();
   withTransition(() => applyTheme(theme, options), {type:'theme', origin:{x:rect.left+rect.width/2,y:rect.top+rect.height/2}});
+  requestedTheme=theme;
   motion(thumb,[{scale:'1 1',borderRadius:'50%'},{scale:'1.28 .85',borderRadius:'16px',offset:.35},{scale:'1 1',borderRadius:'50%'}],{speed:'fast'});
 }
 let savedTheme = 'system';
@@ -107,6 +109,7 @@ try {
   // Bei gesperrtem Speicher mit der Systemeinstellung starten.
 }
 applyTheme(savedTheme);
+requestedTheme=themeSwitch.dataset.value;
 
 let showPast = false;
 let typeFilter = 'all';
@@ -404,15 +407,12 @@ function toggleCalendar() {
 }
 
 function calNav(delta) {
-  let nextMonth = calMonth + delta;
-  let nextYear = calYear;
-  if (nextMonth > 11) { nextMonth = 0; nextYear++; }
-  if (nextMonth < 0)  { nextMonth = 11; nextYear--; }
-
-  const nextMonthIndex = monthIndex(nextYear, nextMonth);
-  if (nextMonthIndex < CAL_MIN_MONTH_INDEX || nextMonthIndex > CAL_MAX_MONTH_INDEX) return;
-
   withTransition(()=>{
+    let nextMonth=calMonth+delta,nextYear=calYear;
+    if(nextMonth>11){nextMonth=0;nextYear++;}
+    if(nextMonth<0){nextMonth=11;nextYear--;}
+    const index=monthIndex(nextYear,nextMonth);
+    if(index<CAL_MIN_MONTH_INDEX||index>CAL_MAX_MONTH_INDEX)return;
     calMonth=nextMonth;calYear=nextYear;selectedCalDate=null;closeCalMenu();
     fadeChange(document.getElementById('cal-grid'),()=>renderCalendar(true),{direction:delta});
     fadeChange(document.getElementById('cal-month-label'),()=>{},{direction:delta,axis:'y'});
@@ -434,7 +434,7 @@ function renderSelectedCalDay(byDate) {
       ${escapeHtml(p.label)}
     </span>`).join('');
 
-  syncHTML(panel, `<div class="details-inner"><div class="details-content">
+  const detailsHTML = `<div class="details-inner"><div class="details-content">
     <div class="cal-day-details-head">
       <h4 id="cal-day-details-title">Termine am ${escapeHtml(formatDate(selectedDate))}</h4>
       <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">${ICONS.close}</button>
@@ -457,7 +457,8 @@ function renderSelectedCalDay(byDate) {
         </button>`;
       }).join('')}
     </div>` : '<p class="cal-day-empty">Keine Termine an diesem Tag.</p>'}
-  </div></div>`);
+  </div></div>`;
+  if(changed && panel.hasChildNodes())fadeChange(panel,()=>syncHTML(panel,detailsHTML));else syncHTML(panel,detailsHTML);
 
   listenOnce(panel.querySelector('.cal-day-details-close'), 'click', () => {
     const date=selectedCalDate;selectedCalDate=null;closeCalMenu();renderCalendar();
@@ -881,6 +882,7 @@ document.addEventListener('pointerdown',event=>{
   const rect=button.getBoundingClientRect();button.style.setProperty('--x',`${event.clientX-rect.left}px`);button.style.setProperty('--y',`${event.clientY-rect.top}px`);
   const overlay=document.createElement('span');overlay.className='ripple-overlay motion-decoration';overlay.setAttribute('aria-hidden','true');
   const ripple=document.createElement('span');ripple.className='ripple-origin';overlay.append(ripple);button.append(overlay);
+  overlay.style.setProperty('--x',`${event.clientX-rect.left}px`);overlay.style.setProperty('--y',`${event.clientY-rect.top}px`);
   overlay.style.setProperty('--ripple-size',`${Math.hypot(rect.width,rect.height)*2}px`);
   motion(ripple,[{scale:'0'},{scale:'1'}],{speed:'fast'});
   const fade=motion(ripple,[{opacity:.16},{opacity:0}],{kind:'effects',speed:'slow'});
