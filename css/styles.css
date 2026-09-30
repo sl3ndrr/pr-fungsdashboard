@@ -583,3 +583,12 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
 :root:is([data-transition='month-forward'],[data-transition='month-back'])::view-transition-old(calendar-month) { animation: month-out var(--dur-spatial-fast) var(--spring-spatial-fast) both, vt-fade-out var(--dur-effects) var(--spring-effects) both; }
 @keyframes axis-in { from { transform: translateX(var(--axis-enter)); } } @keyframes axis-out { to { transform: translateX(var(--axis-exit)); } }
 @keyframes month-in { from { transform: translateY(var(--month-enter)); } } @keyframes month-out { to { transform: translateY(var(--month-exit)); } }
+/* Reduced motion retains short state feedback and removes spatial interpolation. */
+@media (prefers-reduced-motion: reduce) {
+  :root { --dur-effects-fast: 140ms; --dur-effects: 140ms; --dur-effects-slow: 140ms; }
+  *, *::before, *::after { scroll-behavior: auto !important; transition-property: color, background-color, border-color, outline-color, opacity, visibility !important; transition-duration: 140ms !important; transition-timing-function: var(--spring-effects) !important; }
+  .card:hover, .card:active, button:active, .pill:active, .theme-option:hover, .theme-option:active { transform: none; }
+  .timeline-dot:is(:hover,:focus-visible) .timeline-point, .theme-option svg, .theme-option[aria-checked='true'] svg, .calendar-section, .timeline-tooltip, .cal-popover, .ripple-origin { scale: 1; rotate: 0deg; }
+  .mini-progress span::before { animation-play-state: paused; }
+  .filter-indicator { transition: opacity 140ms var(--spring-effects) !important; }
+}

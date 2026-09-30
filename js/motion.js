@@ -135,6 +135,7 @@ export function listenOnce(el,event,listener) {
   events.add(event);bound.set(el,events);el.addEventListener(event,listener);
 }
 function setNumber(el,value) {
+  const changed=el.dataset.number!==value;
   countRuns.delete(el);el.dataset.number=value;
   let visual=el.querySelector('.number-visual'),label=el.querySelector('.number-label');
   if(!visual){el.replaceChildren();visual=document.createElement('span');visual.className='number-visual';visual.setAttribute('aria-hidden','true');label=document.createElement('span');label.className='visually-hidden number-label';el.append(visual,label);}
@@ -146,6 +147,7 @@ function setNumber(el,value) {
     mask.firstChild.style.setProperty('--digit',digit);
   });
   masks.slice(value.length).forEach(mask=>mask.remove());
+  if(changed && reducedMotion.matches)motion(visual,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
 }
 export function startCount(el) {
   if(!el||reducedMotion.matches||!/^\d+$/.test(el.dataset.number||el.textContent))return;
