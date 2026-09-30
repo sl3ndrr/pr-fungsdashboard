@@ -7,6 +7,12 @@ const bound = new WeakMap();
 const countRuns = new WeakMap();
 let transition, pendingUpdate;
 let transaction = false;
+let updateRects;
+export function batchUpdate(update) {
+  const previous=updateRects;
+  updateRects=new WeakMap([...document.querySelectorAll('.hero,.countdown,#cal-grid,#cal-month-label,#cal-day-details')].map(el=>[el,el.getBoundingClientRect()]));
+  try{return update();}finally{updateRects=previous;}
+}
 const token = name => getComputedStyle(root).getPropertyValue(name).trim();
 
 export function motion(element, frames, {kind='spatial',speed='',delay=0,duration,channel=kind}={}) {
@@ -104,6 +110,11 @@ export function withTransition(update,{type='state',origin}={}) {
 
 const keyOf=node=>node.nodeType===1?node.id||node.dataset.key||(node.dataset.eventId?`${node.tagName}:${node.dataset.eventId}`:'')||(node.dataset.date?`${node.tagName}:${node.dataset.date}`:''):'';
 const sameKind=(a,b)=>a.nodeType===b.nodeType&&(a.nodeType!==1||a.tagName===b.tagName);
+function syncAttributes(live,fresh) {
+    for(const attr of [...live.attributes])if(!fresh.hasAttribute(attr.name)&&!['data-number','data-render-text'].includes(attr.name))live.removeAttribute(attr.name);
+    for(const attr of fresh.attributes)if(live.getAttribute(attr.name)!==attr.value)live.setAttribute(attr.name,attr.value);
+    if(live.matches('input')){live.checked=fresh.checked;live.disabled=fresh.disabled;}
+}
 export function syncChildren(target,source) {
   const old=[...target.childNodes],keyed=new Map(old.filter(keyOf).map(node=>[keyOf(node),node])),used=new Set();
   [...source.childNodes].forEach((fresh,index)=>{
@@ -116,12 +127,13 @@ export function syncChildren(target,source) {
     if(live.nodeType!==1)return;
     const numeric=live.matches('.hero-number,.countdown-number')&&/^\d+$/.test(fresh.textContent);
     const oldText=live.dataset.number||live.dataset.renderText||live.textContent;
-    for(const attr of [...live.attributes])if(!fresh.hasAttribute(attr.name)&&!['data-number','data-render-text'].includes(attr.name))live.removeAttribute(attr.name);
-    for(const attr of fresh.attributes)if(live.getAttribute(attr.name)!==attr.value)live.setAttribute(attr.name,attr.value);
-    if(live.matches('input')){live.checked=fresh.checked;live.disabled=fresh.disabled;}
+    if(live.matches('.countdown')&&oldText!==fresh.textContent) {
+      fadeChange(live,()=>{syncAttributes(live,fresh);syncChildren(live,fresh);});
+      live.dataset.renderText=fresh.textContent;return;
+    }
+    syncAttributes(live,fresh);
     if(numeric){if(live.dataset.number!==fresh.textContent)setNumber(live,fresh.textContent);}
     else if(live.matches('.hero-number,.countdown-number')) {delete live.dataset.number;countRuns.delete(live);syncChildren(live,fresh);}
-    else if(live.matches('.countdown')&&oldText!==fresh.textContent)fadeChange(live,()=>syncChildren(live,fresh));
     else syncChildren(live,fresh);
     if(live.matches('.countdown'))live.dataset.renderText=fresh.textContent;
   });
@@ -168,7 +180,7 @@ export function enterPage() {
 }
 export function fadeChange(el,update,{direction=0,axis='x'}={}) {
   if(!el||!el.childNodes.length||transaction){update();return;}
-  const rect=el.getBoundingClientRect(),ghost=makeGhost(el.cloneNode(true),rect);
+  const rect=updateRects?.get(el)||el.getBoundingClientRect(),ghost=makeGhost(el.cloneNode(true),rect);
   update();document.body.appendChild(ghost);
   if(direction){motion(ghost,[{transform:'none'},{transform:`translate${axis.toUpperCase()}(${-direction*30}px)`}]);motion(el,[{transform:`translate${axis.toUpperCase()}(${direction*30}px)`},{transform:'none'}]);}
   else motion(el,[{scale:'.96'},{scale:'1'}]);

@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="de">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard – Browser-Regressionen</title>
+<style>
+body{font:16px/1.5 system-ui;margin:24px;background:#f4f7fb;color:#17212d}button{min-height:44px;padding:8px 16px;border-radius:20px;border:1px solid #536479;background:white}pre{white-space:pre-wrap}iframe{display:block;border:1px solid #697585;height:900px;background:white;margin-top:20px} .pass{color:#006b46}.fail{color:#ae2035}
+</style>
+<h1>Browser-Regressionen</h1>
+<p>Mit einem lokalen HTTP-Server öffnen. Die Fixture nutzt ein festes Datum und isolierten In-Memory-Speicher. Produktdaten werden nicht geändert. Diese Prüfungen ersetzen keine visuelle, Tastatur-, Reduced-Motion- oder Performance-Prüfung.</p>
+<button id="run">Matrix prüfen: 360 / 768 / 1280 / 1600 px</button>
+<pre id="results" role="log" aria-live="polite"></pre>
+<div id="fixture"></div>
+<script type="module">
+const output=document.querySelector('#results'),host=document.querySelector('#fixture'),run=document.querySelector('#run');
+const wait=ms=>new Promise(resolve=>setTimeout(resolve,ms));
+async function until(condition,label){for(let i=0;i<200;i++){if(condition())return;await wait(25);}throw new Error(label);}
+function assert(condition,label){if(!condition)throw new Error(label);}
+async function fixture(width,fallback){
+  const markup=await fetch('../index.html').then(response=>response.text());
+  const frame=document.createElement('iframe');frame.title=`Fixture ${width}px ${fallback?'Fallback':'View Transitions'}`;frame.width=width;host.replaceChildren(frame);
+  const base=new URL('../',location.href).href;
+  const setup=`<base href="${base}"><script>
+    const NativeDate=window.Date;window.__fixtureNow=new NativeDate(2026,8,30,12).getTime();
+    window.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[window.__fixtureNow]));}static now(){return window.__fixtureNow;}};
+    const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)}});
+    window.storage={get:async key=>({value:memory.get(key)??null}),set:async(key,value)=>memory.set(key,value)};
+    window.__errors=[];window.addEventListener('error',event=>window.__errors.push(event.message));window.addEventListener('unhandledrejection',event=>window.__errors.push(String(event.reason)));
+    ${fallback?"Object.defineProperty(document,'startViewTransition',{value:undefined,configurable:true});":''}
+  <\/script>`;
+  frame.srcdoc=markup.replace('<head>','<head>'+setup);
+  await until(()=>frame.contentDocument?.querySelector('#card-p6'),'Fixture geladen');await wait(1000);
+  return {frame,doc:frame.contentDocument,win:frame.contentWindow};
+}
+async function check(width,fallback){
+  const {doc,win}=await fixture(width,fallback),q=selector=>doc.querySelector(selector);
+  assert(q('.hero-title').textContent==='ExPhy 2','Nächster Termin');
+  const rail=q('.timeline-track'),dots=[...doc.querySelectorAll('.timeline-dot')];
+  assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getDate()===26,'Achsenende');
+  const railY=rail.getBoundingClientRect().top+3;
+  dots.forEach(dot=>assert(Math.abs(dot.getBoundingClientRect().top+10-railY)<.1,'Punkt auf Schiene'));
+  for(let i=1;i<dots.length;i++)assert(dots[i].getBoundingClientRect().left-dots[i-1].getBoundingClientRect().left>=31.9,'32-px-Kollision');
+  const card=q('#card-p6');q('[data-filter="Prüfung"]').click();await wait(600);assert(q('#card-p6')===card,'Kartenidentität bleibt erhalten');
+  q('[data-filter="Abgabe"]').click();await wait(600);assert(!!q('#list .empty-state'),'Leerzustand');q('[data-filter="all"]').click();await wait(600);
+  q('#toggle-past-btn').click();await wait(600);const input=q('#card-a1 input'),progress=q('#stats-line .mini-progress span');input.focus();input.click();await wait(600);
+  assert(q('#card-a1 input')===input && doc.activeElement===input,'Checkbox und Fokus bleiben erhalten');assert(q('#stats-line .mini-progress span')===progress,'Fortschrittsbalken bleibt erhalten');assert(!input.checked,'Erledigt umgeschaltet');
+  q('#cal-toggle-btn').click();await wait(600);assert(q('#calendar-section').dataset.open==='true'&&!q('#calendar-section').inert,'Kalender offen / bedienbar');
+  q('.cal-day-select[data-date="2026-09-07"]').click();await wait(600);assert(q('#cal-day-details').dataset.open==='true','Tagesdetails offen');
+  q('#cal-day-details .cal-day-event').click();await wait(450);assert(q('#cal-popover').dataset.open==='true','Popover offen');doc.dispatchEvent(new win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await wait(450);assert(q('#cal-popover').inert,'Popover geschlossen / inert');
+  q('#cal-next').click();await wait(600);assert(q('#cal-month-label').textContent==='Oktober 2026','Monatswechsel vorwärts');
+  q('#cal-prev').click();q('#cal-prev').click();await wait(650);assert(q('#cal-month-label').textContent==='August 2026','Schnelle Monatswechsel bleiben korrekt');
+  q('#cal-toggle-btn').click();await wait(600);assert(q('#calendar-section').inert,'Kalender geschlossen / inert');
+  q('[data-theme-value="light"]').click();await wait(650);assert(doc.documentElement.dataset.theme==='light','Hell');
+  q('[data-theme-value="dark"]').click();await wait(650);assert(doc.documentElement.dataset.theme==='dark','Dunkel');
+  q('[data-theme-value="system"]').click();await wait(650);assert(!doc.documentElement.hasAttribute('data-theme'),'System');
+  win.__fixtureNow=new win.Date(2026,9,1,12).getTime();doc.dispatchEvent(new win.Event('visibilitychange'));await wait(1000);assert(q('#card-p6 .countdown-number').dataset.number==='6','Tageswechsel / Countdown');
+  const ids=[...doc.querySelectorAll('[id]')].map(el=>el.id);assert(new Set(ids).size===ids.length,'Eindeutige DOM-IDs');assert(win.__errors.length===0,'Keine JS-Fehler: '+win.__errors.join('; '));
+  return `${width}px, ${fallback?'Fallback':'native API sofern verfügbar'}: bestanden`;
+}
+run.addEventListener('click',async()=>{
+  run.disabled=true;output.textContent='';
+  try{for(const width of [360,768,1280,1600])for(const fallback of [false,true]){output.textContent+=`Prüfe ${width}px / ${fallback?'Fallback':'native'} …\n`;output.textContent+=await check(width,fallback)+'\n';}output.className='pass';}
+  catch(error){output.className='fail';output.textContent+='FEHLER: '+error.message+'\n';}finally{run.disabled=false;}
+});
+</script>
+</html>
