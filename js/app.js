@@ -784,7 +784,7 @@ function render(animate) {
           <div class="type-icon ${typeClass(item.type)}">${ICONS[item.type]}</div>
           <div class="info">
             <span class="badge ${typeClass(item.type)}">${escapeHtml(item.type)}</span>
-            <h4 class="title">${escapeHtml(item.title)}</h4>
+            <h4 class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
             <div class="meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
           </div>
         </div>

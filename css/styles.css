@@ -592,3 +592,8 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
   .mini-progress span::before { animation-play-state: paused; }
   .filter-indicator { transition: opacity 140ms var(--spring-effects) !important; }
 }
+/* Each wrapped title line gets its own growing strike rather than a line between rows. */
+.title { background-image: none; }
+.title-text { background: linear-gradient(currentColor,currentColor) left 55% / 0% 2px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-size var(--dur-effects) var(--spring-effects); }
+.card.done .title-text { background-size: 100% 2px; }
+.cal-day { border-color: var(--outline); }
