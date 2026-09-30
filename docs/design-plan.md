@@ -30,18 +30,18 @@ Stabile Checkboxen, Zahlen und Balken behalten ihre echten CSS-Transitions.
 
 ## Animationsinventar / Zielzustände
 
-- [ ] 1. Start/Tageswechsel: 16 px Hochgleiten, Scale .96 → 1 + separater Fade; Staffelung 25 ms, Deckel 250 ms.
-- [ ] 2. Theme: Thumb-Feder/Stretch/Shape, Icon-Rotation, kreisförmiger Reveal, Effects-Fallback.
-- [ ] 3. Buttons: State-Layer, Ripple vom Berührungspunkt, .97 Press und Pill → lg; Toggle Form/Farbe.
-- [ ] 4. Connected Group: gemeinsamer Indikator, federnde Breite/Position, betonte Auswahl.
-- [ ] 5. Liste: keyed Karten/Gruppen, Shared-Element/FLIP, Enter und Exit.
-- [ ] 6. Karten: tonaler Hover/Press, Scroll, Wash/Bounce statt Schatten-Pulse.
-- [ ] 7. Erledigt: SVG-Häkchen, Form/Farbe, wachsende Titellinie, Badge-Crossfade, Statistik-Feder.
-- [ ] 8. Countdown: stabile maskierte Ziffernreels, 600-ms-Hero-Start, imminent Effects.
-- [ ] 9. Fortschritt: scaleX Spatial-Slow, Wavy Track/Phase, 0/100 % gerade.
-- [ ] 10. Zeitstrahl: gestaffelte Punkte, Rail-Wachstum, Heute-Bounce, Tooltip Enter/Exit, Ping-Ring, Band-Reveal.
-- [ ] 11. Kalender: Grid-Kollaps, gerichteter Monatswechsel/Titel, Tages-Morph, Grid-Details/Staffelung, Wochenbänder, Anker-Popover Enter/Exit.
-- [ ] 12. Hero/Leerzustand: Container-Transform und Fade-Through bei geändertem nächsten Termin.
+- [x] 1. Start/Tageswechsel: 16 px Hochgleiten, Scale .96 → 1 + separater Fade; Staffelung 25 ms, Deckel 250 ms.
+- [x] 2. Theme: Thumb-Feder/Stretch/Shape, Icon-Rotation, kreisförmiger Reveal, Effects-Fallback.
+- [x] 3. Buttons: State-Layer, Ripple vom Berührungspunkt, .97 Press und Pill → lg; Toggle Form/Farbe.
+- [x] 4. Connected Group: gemeinsamer Indikator, federnde Breite/Position, betonte Auswahl.
+- [x] 5. Liste: keyed Karten/Gruppen, Shared-Element/FLIP, Enter und Exit.
+- [x] 6. Karten: tonaler Hover/Press, Scroll, Wash/Bounce statt Schatten-Pulse.
+- [x] 7. Erledigt: SVG-Häkchen, Form/Farbe, wachsende Titellinie, Badge-Crossfade, Statistik-Feder.
+- [x] 8. Countdown: stabile maskierte Ziffernreels, 600-ms-Hero-Start, imminent Effects.
+- [x] 9. Fortschritt: scaleX Spatial-Slow, Wavy Track/Phase, 0/100 % gerade.
+- [x] 10. Zeitstrahl: gestaffelte Punkte, Rail-Wachstum, Heute-Bounce, Tooltip Enter/Exit, Ping-Ring, Band-Reveal.
+- [x] 11. Kalender: Grid-Kollaps, gerichteter Monatswechsel/Titel, Tages-Morph, Grid-Details/Staffelung, Wochenbänder, Anker-Popover Enter/Exit.
+- [x] 12. Hero/Leerzustand: Container-Transform und Fade-Through bei geändertem nächsten Termin.
 
 ## Verifikation
 
@@ -62,3 +62,21 @@ wenn verfügbar. 4× CPU-Trace und echte 60 fps getrennt von automatisierten Che
 Web-Nachbildung, keine pixelgenaue Android-17-Implementierung. Kurven/Dauern aus
 dem Auftrag sind zeitbasierte Approximationen, keine physikalischen Integratoren.
 Semantische Typfarben und die vorhandenen Zeitraumfarben bleiben erhalten.
+
+## Abschlussstatus
+
+Alle zwölf Gruppen sind im Code umgesetzt; die Häkchen oben beziehen sich auf die
+Implementierung. Zehn Node-Regressionen bestehen. Syntax, HTML-Struktur/IDs,
+Daten-Unverändertheit und Whitespace geprüft. Siehe README für Animationstabelle
+und bewusste Abweichungen.
+
+- [x] Motion-/Zeitstrahl-/Farbrollen-Regressionen (Node, Europe/Berlin)
+- [x] Keine neuen Laufzeit-Abhängigkeiten oder Build-Schritte
+- [ ] Browser-Testmatrix 360/768/1280/1600 px, Hell/Dunkel/System
+- [ ] Vollständige Tastatur-/ARIA- und visuelle Kontrastprüfung
+- [ ] Echte Browser-Emulation von Reduced Motion und fehlenden Features
+- [ ] 4× CPU-Trace und 60-fps-Nachweis auf Mittelklasse-Hardware
+
+Browser-Binaries fehlen; die lokale Cloud-Browser-Vorschau ist mit
+`ERR_BLOCKED_BY_CLIENT` blockiert. `tests/regression.html` steht zur lokalen
+Ausführung bereit, wurde hier aber nicht ausgeführt. Daher Entwurfs-PR.
