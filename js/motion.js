@@ -164,11 +164,11 @@ export function enterPage() {
     const delay=Math.min(index*25,250);motion(el,[{transform:'translateY(16px) scale(.96)'},{transform:'none'}],{delay});motion(el,[{opacity:0},{opacity:1}],{kind:'effects',delay});
   });startCount(document.querySelector('.hero-number'));
 }
-export function fadeChange(el,update,{direction=0}={}) {
+export function fadeChange(el,update,{direction=0,axis='x'}={}) {
   if(!el||!el.childNodes.length||transaction){update();return;}
   const rect=el.getBoundingClientRect(),ghost=makeGhost(el.cloneNode(true),rect);
   update();document.body.appendChild(ghost);
-  if(direction){motion(ghost,[{transform:'none'},{transform:`translateX(${-direction*30}px)`}]);motion(el,[{transform:`translateX(${direction*30}px)`},{transform:'none'}]);}
+  if(direction){motion(ghost,[{transform:'none'},{transform:`translate${axis.toUpperCase()}(${-direction*30}px)`}]);motion(el,[{transform:`translate${axis.toUpperCase()}(${direction*30}px)`},{transform:'none'}]);}
   else motion(el,[{scale:'.96'},{scale:'1'}]);
   removeAfterFade(ghost,motion(ghost,[{opacity:1},{opacity:0}],{kind:'effects',speed:'fast'}));
   motion(el,[{opacity:0},{opacity:1}],{kind:'effects',delay:70});
