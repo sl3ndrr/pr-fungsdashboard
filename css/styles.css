@@ -1,36 +1,46 @@
-/* Design tokens: one palette, selected through the native color  scheme. */
+/* M3 roles share one light/dark definition. Semantic aliases retain existing markup. */
 :root {
   color-scheme: light dark;
-  --space-1: 0.25rem; --space-2: 0.5rem; --space-3: 0.75rem;
-  --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem;
-  --radius-sm: 0.5rem; --radius-md: 0.75rem; --radius-lg: 1rem; --radius-pill: 999px;
-  --font-xs: 0.75rem; --font-sm: 0.875rem; --font-md: 1rem;
-  --font-lg: 1.25rem; --font-xl: 1.5rem; --font-2xl: 2rem;
-  --font-body: 'Inter', system-ui, -apple-system, sans-serif;
-  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
-  --duration-fast: 150ms; --duration-normal: 240ms; --duration-entry: 360ms;
-  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
-  --surface-0: light-dark(#f4f5f7, #000000);
-  --surface-1: light-dark(#ffffff, #101216);
-  --surface-2: light-dark(#edf0f3, #1c2026);
-  --bg: var(--surface-0); --card: var(--surface-1); --card-done: var(--surface-2);
-  --border: light-dark(#dce0e5, #363e49);
-  --control-border: light-dark(#7a8594, #758397);
-  --period-ink: #000000;
-  --rail-past: light-dark(#8794a5, #69778a);
-  --text: light-dark(#19212d, #f3f5f7);
-  --text-muted: light-dark(#485568, #b8c1cf);
-  --text-faint: light-dark(#59677a, #9eabbc);
-  --pruefung: light-dark(#b42336, #ff8995);
-  --abgabe: light-dark(#08649d, #69c5ff);
-  --termin: light-dark(#08764f, #62d8aa);
-  --pruefung-bg: light-dark(#fff0f2, #321a22);
-  --abgabe-bg: light-dark(#edf6fe, #152a3b);
-  --termin-bg: light-dark(#eaf8f0, #142e24);
-  --urgent: var(--pruefung); --done: var(--termin);
-  --shadow-1: 0 1px 2px light-dark(#19212d08, #00000040), 0 4px 12px light-dark(#19212d05, #00000020);
-  --shadow-2: 0 4px 16px light-dark(#19212d0a, #00000060), 0 16px 40px light-dark(#19212d0d, #00000060);
-  --shadow: var(--shadow-1);
+  --primary: light-dark(#005a93, #94ccff); --on-primary: light-dark(#fff, #003353);
+  --primary-container: light-dark(#d0e6ff, #12476b); --on-primary-container: light-dark(#002f50, #d0e6ff);
+  --secondary: light-dark(#4e6072, #b6c8dc); --on-secondary: light-dark(#fff, #203243);
+  --secondary-container: light-dark(#d7e4f5, #35495c); --on-secondary-container: light-dark(#23384b, #d7e4f5);
+  --tertiary: light-dark(#006b46, #7cdbaf); --on-tertiary: light-dark(#fff, #003823);
+  --tertiary-container: light-dark(#b6f2d4, #005235); --on-tertiary-container: light-dark(#00432b, #b6f2d4);
+  --error: light-dark(#ae2035, #ffb2ba); --on-error: light-dark(#fff, #650019);
+  --error-container: light-dark(#ffdadf, #861127); --on-error-container: light-dark(#680018, #ffdadf);
+  --surface: light-dark(#f7f9ff, #10141b);
+  --surface-container-lowest: light-dark(#fff, #0b0f16);
+  --surface-container-low: light-dark(#f0f3fa, #181c23);
+  --surface-container: light-dark(#eaeef5, #1c2028);
+  --surface-container-high: light-dark(#e4e8ef, #272b33);
+  --surface-container-highest: light-dark(#dfe2e9, #32363e);
+  --on-surface: light-dark(#171c24, #e1e6f0); --on-surface-variant: light-dark(#414a57, #bdc7d6);
+  --outline: light-dark(#697585, #8d98a8); --outline-variant: light-dark(#bfc8d5, #424b58);
+  --shape-xs: 4px; --shape-sm: 8px; --shape-md: 12px; --shape-lg: 16px; --shape-lg-inc: 20px;
+  --shape-xl: 28px; --shape-xl-inc: 32px; --shape-xxl: 48px; --shape-full: 9999px;
+  --radius-sm: var(--shape-sm); --radius-md: var(--shape-md); --radius-lg: var(--shape-xl); --radius-pill: var(--shape-full);
+  --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem;
+  --font-body: 'Roboto Flex', Roboto, system-ui, -apple-system, sans-serif; --font-display: var(--font-body);
+  --type-display-large: 3.5625rem; --type-display-medium: 2.8125rem; --type-display-small: 2.25rem;
+  --type-headline-large: 2rem; --type-headline-medium: 1.75rem; --type-headline-small: 1.5rem;
+  --type-title-large: 1.375rem; --type-title-medium: 1rem; --type-title-small: .875rem;
+  --type-body-large: 1rem; --type-body-medium: .875rem; --type-body-small: .75rem;
+  --type-label-large: .875rem; --type-label-medium: .75rem; --type-label-small: .6875rem;
+  --weight-display: 500; --weight-title: 600; --weight-emphasized: 750;
+  --font-xs: var(--type-body-small); --font-sm: var(--type-body-medium); --font-md: var(--type-body-large);
+  --font-lg: var(--type-title-large); --font-xl: var(--type-headline-small); --font-2xl: var(--type-headline-large);
+  --state-hover: 8%; --state-focus: 10%; --state-pressed: 10%; --state-disabled-content: 38%; --state-disabled-container: 12%;
+  --surface-0: var(--surface); --surface-1: var(--surface-container-lowest); --surface-2: var(--surface-container-high);
+  --bg: var(--surface); --card: var(--surface-container-low); --card-done: var(--surface-container);
+  --border: var(--outline-variant); --control-border: var(--outline);
+  --text: var(--on-surface); --text-muted: var(--on-surface-variant); --text-faint: var(--on-surface-variant);
+  --pruefung: var(--error); --pruefung-bg: var(--error-container);
+  --abgabe: var(--primary); --abgabe-bg: var(--primary-container);
+  --termin: var(--tertiary); --termin-bg: var(--tertiary-container); --urgent: var(--error); --done: var(--tertiary);
+  --period-ink: #000; --rail-past: var(--primary);
+  --shadow-1: none; --shadow-2: 0 4px 18px light-dark(#171c2414, #00000055); --shadow: var(--shadow-1);
+  --duration-fast: 140ms; --duration-normal: 210ms; --duration-entry: 410ms; --ease: cubic-bezier(.2,0,0,1);
 }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
@@ -442,3 +452,4 @@ svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; vertical-align: middle; }
 .timeline-period-span { box-shadow: 0 0 0 1px light-dark(color-mix(in srgb, rgb(var(--period-rgb)) 65%, #000), rgb(var(--period-rgb))); }
 .cal-period-band { box-shadow: 0 0 0 1px light-dark(color-mix(in srgb, rgb(var(--period-rgb)) 65%, #000), rgb(var(--period-rgb))); }
 .hero-period .mini-progress span { background: light-dark(color-mix(in srgb, rgb(var(--period-rgb)) 80%, #000), rgb(var(--period-rgb))); }
+
