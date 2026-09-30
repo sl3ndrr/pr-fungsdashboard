@@ -503,3 +503,14 @@ body { font-optical-sizing: auto; }
 .done-toggle input:checked + .check-mark path { stroke-dashoffset: 0; }
 button { touch-action: manipulation; }
 .theme-option:focus-visible, button:focus-visible, input[type='checkbox']:focus-visible { outline: 3px solid var(--on-surface); outline-offset: 3px; }
+/* Spring curves are paired with their settling durations; sampled from the brief. */
+:root {
+  --spring-spatial-fast: linear(0,.027,.098,.197,.313,.435,.555,.668,.769,.856,.929,.986,1.03,1.061,1.081,1.092,1.095,1.092,1.086,1.076,1.065,1.054,1.042,1.032,1.022,1.014,1.007,1.001,.997,.994,.992,.991,.991,.991,.992,.993,.994,.995,.996,.997,1);
+  --spring-spatial: linear(0,.018,.065,.131,.208,.291,.376,.459,.538,.611,.677,.736,.788,.833,.871,.903,.93,.952,.969,.983,.994,1.001,1.007,1.011,1.013,1.015,1.015,1.015,1.014,1.013,1.012,1.011,1.01,1.008,1.007,1.006,1.005,1.004,1.003,1.003,1);
+  --spring-effects: linear(0,.049,.157,.285,.411,.525,.623,.705,.771,.824,.866,.898,.923,.943,.957,.968,.976,.982,.987,.99,.993,.995,.996,.997,1);
+  --dur-spatial-fast: 350ms; --dur-spatial: 410ms; --dur-spatial-slow: 570ms;
+  --dur-effects-fast: 140ms; --dur-effects: 210ms; --dur-effects-slow: 300ms;
+}
+@supports not (transition-timing-function: linear(0,1)) {
+  :root { --spring-spatial-fast: cubic-bezier(.34,1.45,.64,1); --spring-spatial: cubic-bezier(.3,1.2,.4,1); --spring-effects: cubic-bezier(.2,0,0,1); }
+}
