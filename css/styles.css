@@ -112,7 +112,7 @@ body {
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
   pointer-events: none;
   transition: transform var(--duration-normal) var(--ease), background-color var(--duration-normal) ease;
-  will-change: transform;
+
 }
 
 .theme-switch[data-value="system"] .theme-switch-thumb { transform: translateX(44px); }
@@ -214,8 +214,7 @@ body {
 .timeline-dot.cancelled { background: var(--surface-1); border: 2px solid color-mix(in srgb, var(--type-color) 85%, var(--surface-1)); box-shadow: none; }
 .timeline-dot:focus-visible { z-index: 8; }
 .timeline-dot:hover { z-index: 8; }
-.timeline-dot.enter { animation: dotAppear var(--duration-entry) ease both; animation-delay: var(--delay, 0s); }
-.timeline-dot.ping { box-shadow: 0 0 0 4px var(--border); }
+
 .timeline-tooltip { position: absolute; bottom: 30px; left: 50%; transform: translateX(calc(-50% + var(--tooltip-shift, 0px))); width: 220px; display: none; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-2); font: 400 var(--font-xs)/1.4 var(--font-body); text-align: left; pointer-events: none; }
 .timeline-tooltip strong { overflow-wrap: anywhere; }
 .timeline-dot:hover .timeline-tooltip, .timeline-dot:focus-visible .timeline-tooltip { display: flex; }
@@ -231,7 +230,6 @@ body {
 .scroll-hint { color: var(--text-muted); font-size: var(--font-xs); margin-top: var(--space-2); }
 @media (min-width: 880px) { .scroll-hint { display: none; } }
 @media (max-width: 480px) { .timeline-card { padding: var(--space-4); } }
-@keyframes dotAppear { from { opacity: 0; } to { opacity: 1; } }
 
 /* Stats & Filter Container */
 .stats-container { display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--space-3); flex-wrap: wrap; gap: var(--space-3); }
@@ -258,7 +256,6 @@ body {
 .card { position: relative; min-width: 0; background: var(--surface-1); border: 1px solid var(--border); border-left: 3px solid var(--type-color); border-radius: var(--radius-lg); padding: var(--space-6); box-shadow: var(--shadow-1); transition: transform var(--duration-fast), border-color var(--duration-fast), background-color var(--duration-normal); }
 .card.pruefung { --type-color: var(--pruefung); } .card.abgabe { --type-color: var(--abgabe); } .card.termin { --type-color: var(--termin); }
 .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-2); }
-.card.enter { animation: fadeInUp var(--duration-entry) var(--ease) both; animation-delay: var(--delay, 0s); }
 .card.past, .card.done, .card.cancelled { background: var(--surface-2); box-shadow: none; }
 .card.past .title, .card.done .title, .card.cancelled .title { color: var(--text-muted); }
 .card.done .title, .card.cancelled .title { text-decoration: line-through; }
@@ -291,8 +288,6 @@ body {
 .done-toggle input:checked { background: var(--done); border-color: var(--done); }
 .done-toggle input:checked::before { transform: scale(1); }
 .empty-state { padding: var(--space-12) var(--space-4); border: 1px dashed var(--border); border-radius: var(--radius-lg); text-align: center; font-size: var(--font-sm); color: var(--text-muted); }
-@keyframes cardPulse { 0%, 100% { box-shadow: var(--shadow-1); } 40% { box-shadow: 0 0 0 2px var(--text); } }
-.card.pulse-highlight { animation: cardPulse 700ms ease; }
 @media (max-width: 480px) { .card { padding: var(--space-4); } }
 
 /* Calendar: a week contains seven cells and continuous period overlays. */
@@ -375,7 +370,6 @@ body {
   .cal-day-event-meta { text-align: left; }
 }
 
-@keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
 
 
 
@@ -389,13 +383,7 @@ input[type="checkbox"]:focus-visible {
   outline-offset: 3px;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation: none !important;
-    transition: none !important;
-    scroll-behavior: auto !important;
-  }
-}
+
 
 
 .countdown, .stats-grid, .cal-day-num { font-variant-numeric: tabular-nums; }
@@ -437,10 +425,7 @@ svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; vertical-align: middle; }
 .stat-tile .mini-progress span { background: var(--done); }
 
 /* Brief first-render and completion feedback; never loop. */
-.hero.enter, .timeline-card.enter { animation: fadeInUp var(--duration-entry) var(--ease) both; }
 .timeline-card.enter { animation-delay: 40ms; }
-.card.just-completed .done-toggle input::before { animation: checkIn 200ms var(--ease); }
-@keyframes checkIn { from { transform: scale(0.7); } to { transform: scale(1); } }
 .cal-period-indicators:empty { display: none; }
 .cal-period-band:not(.starts) { border-top-left-radius: 0; border-bottom-left-radius: 0; }
 .cal-period-band:not(.ends) { border-top-right-radius: 0; border-bottom-right-radius: 0; }
@@ -514,3 +499,87 @@ button { touch-action: manipulation; }
 @supports not (transition-timing-function: linear(0,1)) {
   :root { --spring-spatial-fast: cubic-bezier(.34,1.45,.64,1); --spring-spatial: cubic-bezier(.3,1.2,.4,1); --spring-effects: cubic-bezier(.2,0,0,1); }
 }
+/* Property channels are separate: Spatial may overshoot, Effects never do. */
+body, .hero, .card, .countdown, .stat-tile, .theme-switch { transition: background-color var(--dur-effects) var(--spring-effects), color var(--dur-effects) var(--spring-effects), border-color var(--dur-effects) var(--spring-effects), transform var(--dur-spatial-fast) var(--spring-spatial-fast), border-radius var(--dur-spatial-fast) var(--spring-spatial-fast); }
+.theme-switch-thumb { transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast), border-radius var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects) var(--spring-effects); }
+.theme-option { transition: color var(--dur-effects) var(--spring-effects), transform var(--dur-spatial-fast) var(--spring-spatial-fast); }
+.theme-option svg { rotate: -15deg; scale: .85; transition: rotate var(--dur-spatial-fast) var(--spring-spatial-fast), scale var(--dur-spatial-fast) var(--spring-spatial-fast); }
+.theme-option[aria-checked='true'] svg { rotate: 0deg; scale: 1.1; }
+button, .pill { position: relative; --state-opacity: 0%; transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast), border-radius var(--dur-spatial-fast) var(--spring-spatial-fast), color var(--dur-effects) var(--spring-effects), background-color var(--dur-effects) var(--spring-effects), font-variation-settings var(--dur-spatial-fast) var(--spring-spatial-fast); }
+button:not(.timeline-dot)::after { content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; background: color-mix(in srgb,currentColor var(--state-opacity),transparent); transition: background-color var(--dur-effects-fast) var(--spring-effects); }
+button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --state-opacity: var(--state-focus); } button:active { --state-opacity: var(--state-pressed); }
+:is(.pill,.cal-nav-btn,.cal-popover-btn,.cal-popover-close,.cal-day-details-close,.hero-next,.segmented-filter button):active { transform: scale(.97); border-radius: var(--shape-lg); }
+.card:active { transform: scale(.98); border-radius: var(--shape-lg); }
+.filter-indicator { transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast), width var(--dur-spatial-fast) var(--spring-spatial-fast); }
+.title { transition: background-size var(--dur-effects) var(--spring-effects), color var(--dur-effects) var(--spring-effects), font-variation-settings var(--dur-spatial) var(--spring-spatial); }
+:is(.hero-label,.hero-number,.hero-title,.hero-meta,.hero-unit,.badge,.type-icon,.stat-value,.stat-label,.stat-note,.meta,.group-heading,.header-date,.cal-day-event-type,.cal-day-event-title,.cal-day-event-meta,.cal-period-indicator,.cal-day-period) { transition: background-color var(--dur-effects) var(--spring-effects), color var(--dur-effects) var(--spring-effects), font-variation-settings var(--dur-spatial) var(--spring-spatial); }
+.done-toggle input { transition: border-radius var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects-fast) var(--spring-effects), border-color var(--dur-effects-fast) var(--spring-effects); }
+.check-mark path { transition: stroke-dashoffset var(--dur-effects) var(--spring-effects); }
+.digit-mask { display: inline-block; overflow: hidden; vertical-align: bottom; width: 1ch; height: 1.12em; line-height: 1.12; }
+.digit-reel { display: block; transform: translateY(calc(var(--digit,0) * -1.12em)); transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast); }
+.digit-cell { display: block; height: 1.12em; line-height: 1.12; }
+.mini-progress span, .timeline-progress { transform-origin: left; transition: transform var(--dur-spatial-slow) var(--spring-spatial), background-color var(--dur-effects) var(--spring-effects); }
+/* Only changing layout regions are snapshotted. Stable controls animate in their real DOM. */
+:root { view-transition-name: none; }
+:root[data-transition='theme'] { view-transition-name: root; }
+:root:not([data-transition='filter']) :is(.card,.group-heading,.empty-state) { view-transition-name: none !important; }
+#hero { view-transition-name: none; }
+#cal-grid { view-transition-name: calendar-grid; } #cal-month-label { view-transition-name: calendar-month; }
+:root:not([data-transition='month-forward']):not([data-transition='month-back']) :is(#cal-grid,#cal-month-label) { view-transition-name: none; }
+::view-transition-group(*) { animation-duration: var(--dur-spatial); animation-timing-function: var(--spring-spatial); }
+::view-transition-old(*), ::view-transition-new(*) { mix-blend-mode: normal; }
+::view-transition-old(*) { animation: vt-fade-out var(--dur-effects-fast) var(--spring-effects) both, item-shrink var(--dur-spatial-fast) var(--spring-spatial-fast) both; }
+::view-transition-new(*) { animation: vt-fade-in var(--dur-effects) var(--spring-effects) both, item-grow var(--dur-spatial-fast) var(--spring-spatial-fast) both; }
+@keyframes vt-fade-out { to { opacity: 0; } } @keyframes vt-fade-in { from { opacity: 0; } }
+@keyframes item-grow { from { scale: .96; } } @keyframes item-shrink { to { scale: .96; } }
+:root[data-transition='theme']::view-transition-old(root) { animation: none; }
+:root[data-transition='theme']::view-transition-new(root) { animation: theme-reveal var(--dur-spatial-slow) var(--spring-spatial) both; }
+@keyframes theme-reveal { from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); } to { clip-path: circle(var(--reveal-radius) at var(--reveal-x) var(--reveal-y)); } }
+/* Determinate wavy indicator: moving SVG-mask fill, stationary track, flat endpoints. */
+.mini-progress { --wave-amplitude: 1; --progress-color: var(--tertiary); --progress-track: color-mix(in srgb,var(--on-surface) 16%,var(--surface-container)); position: relative; height: 12px; background: transparent; outline: 0; overflow: hidden; }
+.mini-progress span { position: absolute; inset: 0; width: 100%; height: 12px; background: transparent !important; overflow: hidden; }
+.mini-progress::before, .mini-progress span::before { content: ''; position: absolute; inset: 0; width: calc(100% + 24px); background: var(--progress-track); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cpath d='M0 6 Q6 0 12 6 T24 6' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E") repeat-x left center / 24px 12px; opacity: var(--wave-amplitude); scale: 1 max(.1,var(--wave-amplitude)); transition: scale var(--dur-spatial-slow) var(--spring-spatial), opacity var(--dur-effects) var(--spring-effects); }
+.mini-progress::after, .mini-progress span::after { content: ''; position: absolute; left: 0; right: 0; height: 4px; top: 4px; border-radius: var(--shape-full); background: var(--progress-track); opacity: calc(1 - var(--wave-amplitude)); transition: opacity var(--dur-effects) var(--spring-effects); }
+.mini-progress span::before, .mini-progress span::after { background: var(--progress-color); }
+.mini-progress span::before { animation: wave-phase 2.5s linear infinite; }
+.mini-progress[data-flat='true'] span::before { animation-play-state: paused; }
+.hero .mini-progress { --progress-color: var(--on-primary-container); --progress-track: color-mix(in srgb,var(--on-primary-container) 20%,var(--primary-container)); }
+.hero.imminent .mini-progress { --progress-color: var(--on-error-container); --progress-track: color-mix(in srgb,var(--on-error-container) 20%,var(--error-container)); }
+.stat-tile:nth-child(2) .mini-progress { --progress-track: color-mix(in srgb,var(--on-tertiary-container) 16%,var(--tertiary-container)); }
+@keyframes wave-phase { to { transform: translateX(-24px); } }
+.card-wash { position: absolute; inset: 0; border-radius: inherit; background: var(--type-color); pointer-events: none; opacity: 0; }
+.ripple-overlay { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
+.ripple-origin { position: absolute; left: calc(var(--x,50%) - var(--ripple-size) / 2); top: calc(var(--y,50%) - var(--ripple-size) / 2); width: var(--ripple-size); height: var(--ripple-size); border-radius: 50%; background: radial-gradient(circle,currentColor 0%,currentColor 60%,transparent 71%); opacity: 0; }
+/* The dot's visual shell scales; tooltip and rail center remain stable. */
+.timeline-track::before { background: var(--outline-variant); }
+.timeline-dot, .timeline-dot:is(:hover,:focus-visible) { scale: 1; background: transparent; border-color: transparent; box-shadow: none; }
+.timeline-dot.cancelled { border: 3px solid transparent; background: transparent; }
+.timeline-dot::before { width: 44px; margin-left: -22px; }
+.timeline-point { position: absolute; inset: -3px; border: 3px solid var(--surface-container-low); border-radius: 50%; background: var(--type-color); box-shadow: 0 0 0 1px var(--type-color); transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects) var(--spring-effects); pointer-events: none; }
+.timeline-dot.past .timeline-point { background: color-mix(in srgb,var(--type-color) 75%,var(--surface-container-low)); }
+.timeline-dot.cancelled .timeline-point { border: 2px solid var(--type-color); background: var(--surface-container-low); box-shadow: none; }
+.timeline-dot:is(:hover,:focus-visible) .timeline-point { scale: 1.3; }
+.ping-ring { position: absolute; inset: -3px; border: 2px solid var(--type-color); border-radius: 50%; pointer-events: none; }
+.timeline-tooltip { display: flex; visibility: hidden; opacity: 0; scale: .8; transform-origin: center bottom; transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), opacity var(--dur-effects-fast) var(--spring-effects), visibility 0s linear var(--dur-effects-fast); }
+.timeline-dot:is(:hover,:focus-visible) .timeline-tooltip { visibility: visible; scale: 1; opacity: 1; transition-delay: 0s; }
+@starting-style { .timeline-dot:is(:hover,:focus-visible) .timeline-tooltip { opacity: 0; scale: .8; } }
+/* Grid collapse keeps content during exits; inert removes closed controls from tab order. */
+.calendar-section { display: grid; grid-template-rows: 0fr; opacity: 0; margin-bottom: 0; transform-origin: top right; scale: .96; transition: grid-template-rows var(--dur-spatial) var(--spring-spatial), scale var(--dur-spatial) var(--spring-spatial), opacity var(--dur-effects-fast) var(--spring-effects), margin-bottom var(--dur-spatial) var(--spring-spatial); }
+.calendar-shell { min-height: 0; overflow: hidden; }
+.calendar-section[data-open='true'] { grid-template-rows: 1fr; opacity: 1; scale: 1; margin-bottom: var(--space-8); }
+.cal-day-details { display: grid; grid-template-rows: 0fr; padding: 0; margin-top: 0; border-width: 0; opacity: 0; transition: grid-template-rows var(--dur-spatial) var(--spring-spatial), opacity var(--dur-effects-fast) var(--spring-effects), margin-top var(--dur-spatial) var(--spring-spatial); }
+.cal-day-details[data-open='true'] { grid-template-rows: 1fr; opacity: 1; margin-top: var(--space-6); }
+.details-inner { min-height: 0; overflow: hidden; } .details-content { padding: var(--space-4); }
+.cal-day-num-inner { transition: border-radius var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects-fast) var(--spring-effects), color var(--dur-effects-fast) var(--spring-effects); }
+.cal-day { transition: outline-color var(--dur-effects-fast) var(--spring-effects), background-color var(--dur-effects-fast) var(--spring-effects); }
+.cal-popover { display: flex; visibility: hidden; opacity: 0; scale: .85; contain: layout; transition: opacity var(--dur-effects-fast) var(--spring-effects), scale var(--dur-spatial-fast) var(--spring-spatial-fast), visibility 0s linear var(--dur-effects-fast); }
+.cal-popover[data-open='true'] { visibility: visible; opacity: 1; scale: 1; transition-delay: 0s; }
+@starting-style { .cal-popover[data-open='true'] { opacity: 0; scale: .85; } }
+:root[data-transition='month-forward'] { --axis-enter: 30px; --axis-exit: -30px; --month-enter: 100%; --month-exit: -100%; }
+:root[data-transition='month-back'] { --axis-enter: -30px; --axis-exit: 30px; --month-enter: -100%; --month-exit: 100%; }
+:root:is([data-transition='month-forward'],[data-transition='month-back'])::view-transition-new(calendar-grid) { animation: axis-in var(--dur-spatial) var(--spring-spatial) both, vt-fade-in var(--dur-effects) var(--spring-effects) both; }
+:root:is([data-transition='month-forward'],[data-transition='month-back'])::view-transition-old(calendar-grid) { animation: axis-out var(--dur-spatial) var(--spring-spatial) both, vt-fade-out var(--dur-effects) var(--spring-effects) both; }
+:root:is([data-transition='month-forward'],[data-transition='month-back'])::view-transition-new(calendar-month) { animation: month-in var(--dur-spatial-fast) var(--spring-spatial-fast) both, vt-fade-in var(--dur-effects) var(--spring-effects) both; }
+:root:is([data-transition='month-forward'],[data-transition='month-back'])::view-transition-old(calendar-month) { animation: month-out var(--dur-spatial-fast) var(--spring-spatial-fast) both, vt-fade-out var(--dur-effects) var(--spring-effects) both; }
+@keyframes axis-in { from { transform: translateX(var(--axis-enter)); } } @keyframes axis-out { to { transform: translateX(var(--axis-exit)); } }
+@keyframes month-in { from { transform: translateY(var(--month-enter)); } } @keyframes month-out { to { transform: translateY(var(--month-exit)); } }

@@ -1,3 +1,4 @@
+import { syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
@@ -70,7 +71,7 @@ function applyTheme(theme, { focus = false } = {}) {
 }
 
 themeOptions.forEach((option) => {
-  option.addEventListener('click', () => applyTheme(option.dataset.themeValue));
+  option.addEventListener('click', () => changeTheme(option.dataset.themeValue));
 });
 
 themeSwitch.addEventListener('keydown', (event) => {
@@ -90,9 +91,15 @@ themeSwitch.addEventListener('keydown', (event) => {
   }
 
   event.preventDefault();
-  applyTheme(THEME_VALUES[nextIndex], { focus: true });
+  changeTheme(THEME_VALUES[nextIndex], { focus: true });
 });
 
+function changeTheme(theme, options = {}) {
+  const thumb = themeSwitch.querySelector('.theme-switch-thumb');
+  const rect = thumb.getBoundingClientRect();
+  withTransition(() => applyTheme(theme, options), {type:'theme', origin:{x:rect.left+rect.width/2,y:rect.top+rect.height/2}});
+  motion(thumb,[{scale:'1 1',borderRadius:'50%'},{scale:'1.28 .85',borderRadius:'16px',offset:.35},{scale:'1 1',borderRadius:'50%'}],{speed:'fast'});
+}
 let savedTheme = 'system';
 try {
   savedTheme = localStorage.getItem('theme_pref') || 'system';
@@ -142,46 +149,43 @@ let calYear  = Math.floor(initialCalMonthIndex / 12);
 let calMonth = initialCalMonthIndex % 12;
 
 function toggleDone(id) {
-  doneItems = doneItems.includes(id) ? doneItems.filter(x => x !== id) : [...doneItems, id];
-  saveCompletedItems();
-  renderPreservingState();
-  if (doneItems.includes(id)) document.getElementById(`card-${id}`)?.classList.add('just-completed');
+  return withTransition(() => {
+    doneItems = doneItems.includes(id) ? doneItems.filter(x=>x!==id) : [...doneItems,id];
+    saveCompletedItems(); renderPreservingState();
+  }, {type:'done'});
 }
-
-/* Visuelles Feedback beim Auswählen eines Punkts im Zeitstrahl. */
-function selectTimelineEvent(dot, id) {
-  const item = events.find(e => e.id === id);
-  if (item && !showPast && calendarDayDiff(parseISOString(item.date), midnight(new Date())) < 0) {
-    showPast = true;
-    updatePastToggle();
-    renderPreservingState();
-    dot = [...document.querySelectorAll('.timeline-dot')].find(button => button.dataset.eventId === id);
+let highlightTimer;
+async function selectTimelineEvent(dot,id) {
+  const item=events.find(e=>e.id===id);
+  if(item && ((!showPast && calendarDayDiff(parseISOString(item.date),midnight(new Date()))<0) || (typeFilter!=='all' && typeFilter!==item.type))) {
+    await withTransition(()=>{
+      if(calendarDayDiff(parseISOString(item.date),midnight(new Date()))<0)showPast=true;
+      if(typeFilter!=='all' && typeFilter!==item.type)typeFilter='all';
+      updatePastToggle();updateTypeFilter();renderPreservingState();
+    },{type:'filter'});
+    dot=[...document.querySelectorAll('.timeline-dot')].find(button=>button.dataset.eventId===id);
   }
-
-  if (item && typeFilter !== 'all' && typeFilter !== item.type) {
-    typeFilter = 'all';
-    updateTypeFilter();
-    renderPreservingState();
+  if(dot && !reducedMotion.matches) {
+    const ring=document.createElement('span');ring.className='ping-ring motion-decoration';ring.setAttribute('aria-hidden','true');dot.append(ring);
+    motion(ring,[{scale:'1'},{scale:'2.2'}],{speed:'fast'});
+    motion(ring,[{opacity:.4},{opacity:0}],{kind:'effects',speed:'slow'})?.finished.catch(()=>{}).finally(()=>ring.remove());
   }
-  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (dot && !reduceMotion) {
-    dot.classList.add('ping');
-    setTimeout(() => dot?.classList.remove('ping'), 350);
-  }
-
-  const card = document.getElementById(`card-${id}`);
-  if (card) {
-    card.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'center' });
-    if (!reduceMotion) {
-      card.classList.remove('pulse-highlight');
-      void card.offsetWidth;
-      card.classList.add('pulse-highlight');
-    }
+  const card=document.getElementById(`card-${id}`);
+  if(card) {
+    card.scrollIntoView({behavior:reducedMotion.matches?'auto':'smooth',block:'center'});
+    clearTimeout(highlightTimer);
+    highlightTimer=setTimeout(()=>{
+      if(!card.isConnected)return;
+      const wash=document.createElement('span');wash.className='card-wash motion-decoration';wash.setAttribute('aria-hidden','true');card.append(wash);
+      motion(card,[{scale:'1'},{scale:'1.025',offset:.35},{scale:'1'}]);
+      motion(wash,[{opacity:0},{opacity:.16,offset:.3},{opacity:0}],{kind:'effects',speed:'slow'})?.finished.catch(()=>{}).finally(()=>wash.remove());
+    },reducedMotion.matches?0:350);
   }
 }
 
 function openCalMenu(anchor, ev) {
   const pop = document.getElementById('cal-popover');
+  const alreadyOpen = pop.dataset.open === 'true';
   const isDone = ev.type === 'Abgabe' && doneItems.includes(ev.id);
   const cancelledBadge = ev.isCancelled ? `<div class="cal-popover-cancelled">${ICONS.cancelled}Abgebrochen</div>` : '';
 
@@ -192,7 +196,7 @@ function openCalMenu(anchor, ev) {
     </button>`;
   }
 
-  pop.innerHTML = `
+  const popoverHTML = `
     <div class="cal-popover-head">
       <span class="badge ${ev.calOnly ? 'cal-only' : typeClass(ev.type)}">${ICONS[ev.type]}${ev.calOnly ? 'Nur im Kalender' : escapeHtml(ev.type)}</span>
       <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">${ICONS.close}</button>
@@ -202,13 +206,15 @@ function openCalMenu(anchor, ev) {
     ${cancelledBadge}
     ${actionBtn}
   `;
-  pop.querySelector('.cal-popover-close').addEventListener('click', closeCalMenu);
-  pop.querySelector('.cal-popover-btn')?.addEventListener('click', () => {
-    toggleDone(ev.id);
+  if(alreadyOpen)fadeChange(pop,()=>syncHTML(pop,popoverHTML));else syncHTML(pop,popoverHTML);
+  pop.dataset.eventId=ev.id;
+  listenOnce(pop.querySelector('.cal-popover-close'), 'click', closeCalMenu);
+  listenOnce(pop.querySelector('.cal-popover-btn'), 'click', () => {
+    toggleDone(pop.dataset.eventId);
     closeCalMenu();
   });
 
-  pop.style.display = 'flex';
+  pop.dataset.open='true';pop.inert=false;pop.setAttribute('aria-hidden','false');popoverAnchor=anchor;
 
   const tRect = anchor.getBoundingClientRect();
   const pRect = pop.getBoundingClientRect();
@@ -220,20 +226,25 @@ function openCalMenu(anchor, ev) {
 
   pop.style.top  = `${Math.max(10, top)}px`;
   pop.style.left = `${Math.max(10, left)}px`;
+  pop.style.transformOrigin=`${tRect.left+tRect.width/2-Math.max(10,left)}px ${tRect.top+tRect.height/2-Math.max(10,top)}px`;
+  pop.querySelector('.cal-popover-close').focus({preventScroll:true});
 }
 
+let popoverAnchor;
 function closeCalMenu() {
-  const p = document.getElementById('cal-popover');
-  if (p) p.style.display = 'none';
+  const pop=document.getElementById('cal-popover'),restore=pop.contains(document.activeElement);
+  pop.dataset.open='false';pop.inert=true;pop.setAttribute('aria-hidden','true');
+  if(restore)popoverAnchor?.focus({preventScroll:true});
 }
 
 document.addEventListener('click', (e) => {
   const pop = document.getElementById('cal-popover');
-  if (pop && pop.style.display === 'flex' && !pop.contains(e.target) && !e.target.closest('.cal-event-tag, .cal-day-event')) {
+  if (pop && pop.dataset.open === 'true' && !pop.contains(e.target) && !e.target.closest('.cal-event-tag, .cal-day-event')) {
     closeCalMenu();
   }
 });
 window.addEventListener('scroll', closeCalMenu, true);
+document.addEventListener('keydown',event=>{if(event.key==='Escape' && document.getElementById('cal-popover').dataset.open==='true'){event.preventDefault();closeCalMenu();}});
 
 function buildTimeline(todayMid, animate) {
   const mainEvents = events.filter(e => !e.calOnly)
@@ -300,9 +311,9 @@ function buildTimeline(todayMid, animate) {
     dateGroups.get(e.date).push(dotXs[i]);
     const past = times[i] < todayMid.getTime();
     const description = `${e.type}: ${e.title}, ${escapeHtml(formatDate(parseISOString(e.date)))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
-    dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} ${animate ? 'enter' : ''}"
-      style="left:${dotXs[i]}px;--delay:${i * 0.02}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}" aria-describedby="timeline-tip-${escapeHtml(e.id)}">
-      <span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? '<span>Abgebrochen</span>' : ''}</span>
+    dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} "
+      style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}" aria-describedby="timeline-tip-${escapeHtml(e.id)}">
+      <span class="timeline-point" aria-hidden="true"></span><span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? '<span>Abgebrochen</span>' : ''}</span>
     </button>`;
     if (Math.abs(dotXs[i] - trueXs[i]) > 6) dots += `<span class="timeline-date-tick" style="left:${trueXs[i]}px" aria-hidden="true"></span>`;
   });
@@ -323,25 +334,31 @@ function buildTimeline(todayMid, animate) {
   }
   return {
     html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="width:${trackWidth}px">
-      <div class="timeline-progress" id="timeline-progress-bar" style="width:${todayPct}%"></div>${periodsHtml}${months}${dots}</div>`,
+      <div class="timeline-progress" id="timeline-progress-bar" style="width:100%;transform:scaleX(${todayPct / 100})"></div>${periodsHtml}${months}${dots}</div>`,
     targetPct: todayPct, dotEvents: mainEvents
   };
 }
 
 function renderHero(upcoming, todayMid, animate) {
+  const hero=document.getElementById('hero'),key=upcoming[0]?.id||'empty';
+  if(hero.dataset.eventId && hero.dataset.eventId!==key && !animate)fadeChange(hero,()=>buildHero(upcoming,todayMid,animate));
+  else buildHero(upcoming,todayMid,animate);
+  hero.dataset.eventId=key;
+}
+function buildHero(upcoming, todayMid, animate) {
   const el = document.getElementById('hero');
   const item = upcoming[0];
   if (!item) {
-    el.className = `hero ${animate ? 'enter' : ''}`;
-    el.innerHTML = `<div class="hero-label">Als Nächstes</div><div class="hero-empty">${ICONS.check}<span>Keine offenen Termine</span></div>`;
+    el.className = `hero `;
+    syncHTML(el, `<div class="hero-label">Als Nächstes</div><div class="hero-empty">${ICONS.check}<span>Keine offenen Termine</span></div>`);
     return;
   }
   const d = parseISOString(item.date);
   const diffDays = calendarDayDiff(d, todayMid);
-  el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''} ${animate ? 'enter' : ''}`;
+  el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''} `;
   const count = diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : diffDays;
   const activePeriods = periodsOnDay(todayMid, periods);
-  el.innerHTML = `
+  syncHTML(el, `
     <h2 class="hero-label">Als Nächstes</h2>
     <div class="hero-main">
       <div class="hero-countdown"><span class="hero-number ${diffDays < 2 ? 'word' : ''}">${count}</span>${diffDays > 1 ? '<span class="hero-unit">Tage</span>' : ''}</div>
@@ -362,24 +379,28 @@ function renderHero(upcoming, todayMid, animate) {
     ${activePeriods.map(p => {
       const day = calendarDayDiff(todayMid, parseISOString(p.start)) + 1;
       const total = calendarDayDiff(parseISOString(p.end), parseISOString(p.start)) + 1;
-      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · Tag ${day} von ${total}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}"><span style="width:${day / total * 100}%"></span></div></div>`;
+      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · Tag ${day} von ${total}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}"><span style="transform:scaleX(${day / total})"></span></div></div>`;
     }).join('')}
-  `;
+  `);
   el.querySelectorAll('.hero-next').forEach(button => {
-    button.addEventListener('click', () => selectTimelineEvent(null, button.dataset.eventId));
+    listenOnce(button, 'click', () => selectTimelineEvent(null, button.dataset.eventId));
   });
 }
 
 const MONTH_NAMES = ['Januar','Februar','März','April','Mai','Juni',
                      'Juli','August','September','Oktober','November','Dezember'];
 
+function setExpanded(el,open) {
+  el.dataset.open=String(open);el.inert=!open;el.setAttribute('aria-hidden',String(!open));
+}
 function toggleCalendar() {
-  calVisible = !calVisible;
-  document.getElementById('calendar-section').hidden = !calVisible;
-  const toggleBtn = document.getElementById('cal-toggle-btn');
-  toggleBtn.classList.toggle('active', calVisible);
-  toggleBtn.setAttribute('aria-expanded', String(calVisible));
-  if (calVisible) renderCalendar();
+  withTransition(()=>{
+    calVisible=!calVisible;
+    if(calVisible)renderCalendar(true);else closeCalMenu();
+    setExpanded(document.getElementById('calendar-section'),calVisible);
+    const button=document.getElementById('cal-toggle-btn');
+    button.classList.toggle('active',calVisible);button.setAttribute('aria-expanded',String(calVisible));
+  },{type:'calendar'});
 }
 
 function calNav(delta) {
@@ -391,20 +412,19 @@ function calNav(delta) {
   const nextMonthIndex = monthIndex(nextYear, nextMonth);
   if (nextMonthIndex < CAL_MIN_MONTH_INDEX || nextMonthIndex > CAL_MAX_MONTH_INDEX) return;
 
-  calMonth = nextMonth;
-  calYear = nextYear;
-  selectedCalDate = null;
-  closeCalMenu();
-  renderCalendar();
+  withTransition(()=>{
+    calMonth=nextMonth;calYear=nextYear;selectedCalDate=null;closeCalMenu();
+    fadeChange(document.getElementById('cal-grid'),()=>renderCalendar(true),{direction:delta});
+    fadeChange(document.getElementById('cal-month-label'),()=>{},{direction:delta,axis:'y'});
+  },{type:delta>0?'month-forward':'month-back'});
 }
 
 function renderSelectedCalDay(byDate) {
   const panel = document.getElementById('cal-day-details');
-  panel.hidden = !selectedCalDate;
-  if (!selectedCalDate) {
-    panel.innerHTML = '';
-    return;
-  }
+  if(!selectedCalDate)delete panel.dataset.date;
+  setExpanded(panel,!!selectedCalDate);
+  if(!selectedCalDate)return;
+  const changed=panel.dataset.date!==selectedCalDate;panel.dataset.date=selectedCalDate;
 
   const selectedDate = parseISOString(selectedCalDate);
   const dayEvents = byDate.get(selectedCalDate) || [];
@@ -414,7 +434,7 @@ function renderSelectedCalDay(byDate) {
       ${escapeHtml(p.label)}
     </span>`).join('');
 
-  panel.innerHTML = `
+  syncHTML(panel, `<div class="details-inner"><div class="details-content">
     <div class="cal-day-details-head">
       <h4 id="cal-day-details-title">Termine am ${escapeHtml(formatDate(selectedDate))}</h4>
       <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">${ICONS.close}</button>
@@ -424,7 +444,7 @@ function renderSelectedCalDay(byDate) {
       ${dayEvents.map(e => {
         const isDone = e.type === 'Abgabe' && doneItems.includes(e.id);
         const status = e.isCancelled ? 'Abgebrochen' : isDone ? 'Erledigt' : e.type === 'Abgabe' ? 'Offen' : '';
-        return `<button class="cal-day-event ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" type="button"
+        return `<button data-event-id="${escapeHtml(e.id)}" class="cal-day-event ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" type="button"
           aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)}, ${escapeHtml(e.time)}${status ? ', ' + status : ''}. Termindetails öffnen">
           <span class="cal-day-event-main">
             <span class="cal-day-event-type">${ICONS[e.type]}${e.calOnly ? 'Nur im Kalender' : escapeHtml(e.type)}</span>
@@ -437,22 +457,22 @@ function renderSelectedCalDay(byDate) {
         </button>`;
       }).join('')}
     </div>` : '<p class="cal-day-empty">Keine Termine an diesem Tag.</p>'}
-  `;
+  </div></div>`);
 
-  panel.querySelector('.cal-day-details-close').addEventListener('click', () => {
-    selectedCalDate = null;
-    closeCalMenu();
-    renderCalendar();
+  listenOnce(panel.querySelector('.cal-day-details-close'), 'click', () => {
+    const date=selectedCalDate;selectedCalDate=null;closeCalMenu();renderCalendar();
+    document.querySelector(`#cal-grid .cal-day-select[data-date="${date}"]`)?.focus({preventScroll:true});
   });
   panel.querySelectorAll('.cal-day-event').forEach((button, index) => {
-    button.addEventListener('click', (event) => {
+    if(changed){motion(button,[{translate:'0 8px'},{translate:'0 0'}],{delay:Math.min(index*25,250)});motion(button,[{opacity:0},{opacity:1}],{kind:'effects',delay:Math.min(index*25,250)});}
+    listenOnce(button, 'click', (event) => {
       event.stopPropagation();
-      openCalMenu(button, dayEvents[index]);
+      openCalMenu(button, events.find(e=>e.id===button.dataset.eventId));
     });
   });
 }
 
-function renderCalendar() {
+function renderCalendar(animate = false) {
   const today = midnight(new Date());
 
   document.getElementById('cal-month-label').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
@@ -471,10 +491,10 @@ function renderCalendar() {
     const e = midnight(parseISOString(p.end));
     return monthEnd >= s && monthStart <= e;
   });
-  document.getElementById('cal-period-indicators').innerHTML = overlappingPeriods.map(p => `
+  syncHTML(document.getElementById('cal-period-indicators'), overlappingPeriods.map(p => `
     <span class="cal-period-indicator" style="--period-rgb:${p.rgb}">
       <span class="cal-period-dot-sm" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}
-    </span>`).join('');
+    </span>`).join(''));
 
   const byDate = new Map();
   events.forEach(e => {
@@ -494,7 +514,7 @@ function renderCalendar() {
     const weekStart = new Date(start); weekStart.setDate(weekStart.getDate() + week * 7);
     const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
     const weekPeriods = periods.filter(p => parseISOString(p.end) >= weekStart && parseISOString(p.start) <= weekEnd);
-    html += `<div class="cal-week" role="row" style="--period-rows:${weekPeriods.length}">`;
+    html += `<div class="cal-week" role="row" data-key="week-${week}" style="--period-rows:${weekPeriods.length}">`;
     for (let weekday = 0; weekday < 7; weekday++) {
       const cur = new Date(weekStart); cur.setDate(cur.getDate() + weekday);
       const iso = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
@@ -516,14 +536,14 @@ function renderCalendar() {
     weekPeriods.forEach((p, row) => {
       const left = Math.max(0, calendarDayDiff(parseISOString(p.start), weekStart));
       const right = Math.min(6, calendarDayDiff(parseISOString(p.end), weekStart));
-      html += `<div class="cal-period-band ${parseISOString(p.start) >= weekStart ? 'starts' : ''} ${parseISOString(p.end) <= weekEnd ? 'ends' : ''}" style="--period-rgb:${p.rgb};left:calc(${left} * 100% / 7 + 2px);width:calc(${right-left+1} * 100% / 7 - 4px);top:calc(48px + ${row} * 22px)"><span>${escapeHtml(p.label)}</span></div>`;
+      html += `<div data-key="band-${week}-${p.id}" class="cal-period-band ${parseISOString(p.start) >= weekStart ? 'starts' : ''} ${parseISOString(p.end) <= weekEnd ? 'ends' : ''}" style="--period-rgb:${p.rgb};left:calc(${left} * 100% / 7 + 2px);width:calc(${right-left+1} * 100% / 7 - 4px);top:calc(48px + ${row} * 22px)"><span>${escapeHtml(p.label)}</span></div>`;
     });
     html += '</div>';
   }
 
-  document.getElementById('cal-grid').innerHTML = html;
+  syncHTML(document.getElementById('cal-grid'),html);
   document.querySelectorAll('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]').forEach(button => {
-    button.addEventListener('click', () => {
+    listenOnce(button, 'click', () => {
       selectedCalDate = selectedCalDate === button.dataset.date ? null : button.dataset.date;
       closeCalMenu();
       renderCalendar();
@@ -531,12 +551,13 @@ function renderCalendar() {
     });
   });
   document.querySelectorAll('#cal-grid .cal-event-tag').forEach((tag, index) => {
-    tag.addEventListener('click', (event) => {
+    listenOnce(tag, 'click', (event) => {
       event.stopPropagation();
-      openCalMenu(tag, tagEvents[index]);
+      openCalMenu(tag, events.find(e=>e.id===tag.dataset.eventId));
     });
   });
   renderSelectedCalDay(byDate);
+  if(animate)document.querySelectorAll('.cal-period-band').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:Math.min(index*25,250)}));
 }
 
 function buildLegendPeriods() {
@@ -597,7 +618,7 @@ function centerTimelineToday() {
   scroller.scrollLeft = Math.max(0, Math.min(scroller.scrollWidth - scroller.clientWidth, x - scroller.clientWidth / 2));
 }
 
-function renderPreservingState() {
+function renderPreservingState(animate = false) {
   const restoreFocus = focusAfterRender();
   const pageX = window.scrollX;
   const pageY = window.scrollY;
@@ -606,7 +627,7 @@ function renderPreservingState() {
   const calendarScroll = document.querySelector('.cal-scroll');
   const calendarLeft = calendarScroll.scrollLeft;
 
-  render(false);
+  render(animate);
 
   let focusFallback = false;
   if (restoreFocus) {
@@ -643,10 +664,10 @@ function render(animate) {
 
   const tl = buildTimeline(todayMid, animate);
   const timelineContainer = document.getElementById('timeline-container');
-  timelineContainer.innerHTML = tl.html;
+  syncHTML(timelineContainer,tl.html);
   timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
     const item = tl.dotEvents[index];
-    dot.addEventListener('click', () => selectTimelineEvent(dot, item.id));
+    listenOnce(dot, 'click', () => selectTimelineEvent(dot, item.id));
     const positionTooltip = () => {
       const bounds = document.querySelector('.timeline-scroll').getBoundingClientRect();
       const rect = dot.getBoundingClientRect();
@@ -654,11 +675,11 @@ function render(animate) {
       const center = Math.max(bounds.left + 114, Math.min(bounds.right - 114, x));
       dot.style.setProperty('--tooltip-shift', `${center - x}px`);
     };
-    dot.addEventListener('pointerenter', positionTooltip);
-    dot.addEventListener('focus', positionTooltip);
+    listenOnce(dot, 'pointerenter', positionTooltip);
+    listenOnce(dot, 'focus', positionTooltip);
 
   });
-  document.querySelector('.timeline-card').classList.toggle('enter', animate);
+
   if (animate) centerTimelineToday();
 
   const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
@@ -668,13 +689,13 @@ function render(animate) {
     return diff >= 0 && diff <= 7 && !e.isCancelled;
   }).length;
 
-  document.getElementById('stats-line').innerHTML =
+  syncHTML(document.getElementById('stats-line'),
     `<div class="stat-tile"><span class="stat-label">Termine</span><strong class="stat-value">${mainEvents.filter(e => !e.isCancelled).length}</strong><span class="stat-note">ohne abgebrochene</span></div>
-     <div class="stat-tile"><span class="stat-label">Abgaben erledigt</span><strong class="stat-value">${abgabenDone}<span class="stat-total"> / ${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="width:${abgaben.length ? abgabenDone / abgaben.length * 100 : 0}%"></span></div></div>
-     <div class="stat-tile"><span class="stat-label">In den nächsten 7 Tagen</span><strong class="stat-value">${next7}</strong><span class="stat-note">heute eingeschlossen</span></div>`;
+     <div class="stat-tile"><span class="stat-label">Abgaben erledigt</span><strong class="stat-value">${abgabenDone}<span class="stat-total"> / ${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="transform:scaleX(${abgaben.length ? abgabenDone / abgaben.length : 0})"></span></div></div>
+     <div class="stat-tile"><span class="stat-label">In den nächsten 7 Tagen</span><strong class="stat-value">${next7}</strong><span class="stat-note">heute eingeschlossen</span></div>`);
 
-  const listEl = document.getElementById('list');
-  listEl.innerHTML = '';
+  const listTarget=document.getElementById('list');
+  const listEl=document.createElement('div');
   
   // Filter-Logik für die Liste
   const visibleEvents = sorted.filter(item => {
@@ -688,7 +709,7 @@ function render(animate) {
   });
 
   if (visibleEvents.length === 0) {
-    listEl.innerHTML = `<div class="empty-state" role="listitem">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
+    listEl.innerHTML = `<div class="empty-state" data-key="empty" style="view-transition-name:empty-state" role="listitem">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
   }
 
   const weekStart = new Date(todayMid);
@@ -714,9 +735,10 @@ function render(animate) {
       currentGroup = group;
       const section = document.createElement('div');
       section.className = 'appointment-group';
+      section.dataset.key=group;
       section.setAttribute('role', 'listitem');
-      const headingId = `appointment-group-${idx}`;
-      section.innerHTML = `<h3 id="${headingId}" class="group-heading">${escapeHtml(group)}</h3><div class="group-list" role="list" aria-labelledby="${headingId}"></div>`;
+      const headingId=transitionName(group,'group');
+      section.innerHTML = `<h3 id="${headingId}" class="group-heading" style="view-transition-name:${transitionName(group, 'heading')}">${escapeHtml(group)}</h3><div class="group-list" role="list" aria-labelledby="${headingId}"></div>`;
       groupList = section.querySelector('.group-list');
       listEl.appendChild(section);
     }
@@ -745,12 +767,13 @@ function render(animate) {
     }
 
     const checkElement = isAbgabe
-      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><span>${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
+      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
       : '';
 
     const card = document.createElement('div');
-    card.className = `card ${typeClass(item.type)} ${diffDays < 0 ? 'past' : ''} ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} ${animate ? 'enter' : ''}`;
+    card.className = `card ${typeClass(item.type)} ${diffDays < 0 ? 'past' : ''} ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} `;
     card.id = `card-${item.id}`;
+    card.style.viewTransitionName=transitionName(item.id);
     card.setAttribute('role', 'listitem');
     if (animate) card.style.setProperty('--delay', Math.min(idx * 0.025, 0.15) + 's');
     card.innerHTML = `
@@ -767,13 +790,15 @@ function render(animate) {
       </div>
       ${checkElement}
     `;
-    if (isAbgabe) {
-      card.querySelector('input[type="checkbox"]').addEventListener('change', () => toggleDone(item.id));
-    }
+
     groupList.appendChild(card);
   });
 
-  if (calVisible) renderCalendar();
+  syncChildren(listTarget,listEl);
+  listTarget.querySelectorAll('.done-toggle input').forEach(input=>listenOnce(input,'change',()=>toggleDone(input.closest('.card').id.slice(5))));
+  if(calVisible)renderCalendar();
+  enhanceProgress(animate);
+  if(animate){enterPage();enterTimeline();}
 }
 
 function scheduleNextDay() {
@@ -785,7 +810,7 @@ function scheduleNextDay() {
 }
 
 function refreshCurrentDay() {
-  if (!document.hidden && localDayKey(new Date()) !== renderedDay) renderPreservingState();
+  if (!document.hidden && localDayKey(new Date()) !== renderedDay)withTransition(()=>renderPreservingState(true),{type:'day'});
   scheduleNextDay();
 }
 
@@ -805,21 +830,18 @@ function updatePastToggle() {
   togglePastBtn.setAttribute('aria-pressed', String(showPast));
 }
 togglePastBtn.addEventListener('click', () => {
-  showPast = !showPast;
-  updatePastToggle();
-  renderPreservingState();
+  withTransition(()=>{showPast=!showPast;updatePastToggle();renderPreservingState();},{type:'filter'});
 });
 
 function updateTypeFilter() {
   document.querySelectorAll('#type-filter button').forEach(button => {
     button.setAttribute('aria-pressed', String(button.dataset.filter === typeFilter));
   });
+  updateFilterIndicator();
 }
 document.querySelectorAll('#type-filter button').forEach(button => {
   button.addEventListener('click', () => {
-    typeFilter = button.dataset.filter;
-    updateTypeFilter();
-    renderPreservingState();
+    withTransition(()=>{typeFilter=button.dataset.filter;updateTypeFilter();renderPreservingState();},{type:'filter'});
   });
 });
 
@@ -827,6 +849,7 @@ document.querySelectorAll('#type-filter button').forEach(button => {
   buildLegendPeriods();
   await initialiseDoneItems();
   render(true);
+  updateFilterIndicator();
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) refreshCurrentDay();
   });
@@ -842,3 +865,43 @@ document.querySelectorAll('#type-filter button').forEach(button => {
   });
   refreshCurrentDay();
 })();
+
+
+function updateFilterIndicator() {
+  const group=document.getElementById('type-filter');
+  let indicator=group.querySelector('.filter-indicator');
+  if(!indicator){indicator=document.createElement('span');indicator.className='filter-indicator';indicator.setAttribute('aria-hidden','true');group.prepend(indicator);}
+  const selected=group.querySelector('[aria-pressed="true"]'),x=selected.offsetLeft,width=selected.offsetWidth;
+  if(reducedMotion.matches&&indicator.style.getPropertyValue('--indicator-x')!==`${x}px`)motion(indicator,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
+  indicator.style.setProperty('--indicator-x',`${x}px`);indicator.style.setProperty('--indicator-width',`${width}px`);
+}
+new ResizeObserver(updateFilterIndicator).observe(document.getElementById('type-filter'));
+document.addEventListener('pointerdown',event=>{
+  const button=event.target.closest('button:not(:disabled):not(.timeline-dot)');if(!button)return;
+  const rect=button.getBoundingClientRect();button.style.setProperty('--x',`${event.clientX-rect.left}px`);button.style.setProperty('--y',`${event.clientY-rect.top}px`);
+  const overlay=document.createElement('span');overlay.className='ripple-overlay motion-decoration';overlay.setAttribute('aria-hidden','true');
+  const ripple=document.createElement('span');ripple.className='ripple-origin';overlay.append(ripple);button.append(overlay);
+  overlay.style.setProperty('--ripple-size',`${Math.hypot(rect.width,rect.height)*2}px`);
+  motion(ripple,[{scale:'0'},{scale:'1'}],{speed:'fast'});
+  const fade=motion(ripple,[{opacity:.16},{opacity:0}],{kind:'effects',speed:'slow'});
+  if(fade)fade.finished.catch(()=>{}).finally(()=>overlay.remove());else overlay.remove();
+});
+const progressValues=new WeakMap();
+function enhanceProgress(animate) {
+  document.querySelectorAll('.mini-progress').forEach(bar=>{
+    const value=Number(bar.getAttribute('aria-valuenow'))/Number(bar.getAttribute('aria-valuemax')),fill=bar.querySelector('span');
+    bar.dataset.flat=String(value<=0||value>=1);
+    bar.style.setProperty('--wave-amplitude',String(Math.min(1,Math.max(0,Math.min(value,1-value)*4))));
+    if(!animate&&reducedMotion.matches&&progressValues.get(bar)!==value)motion(fill,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
+    progressValues.set(bar,value);
+    if(animate)motion(fill,[{transform:'scaleX(0)'},{transform:`scaleX(${value})`}],{speed:'slow'});
+  });
+}
+function enterTimeline() {
+  document.querySelectorAll('.timeline-dot').forEach((dot,index)=>{
+    const delay=Math.min(index*20,400);motion(dot,[{scale:'0'},{scale:'1'}],{speed:'fast',delay});motion(dot,[{opacity:0},{opacity:1}],{kind:'effects',delay});
+  });
+  const bar=document.querySelector('.timeline-progress');motion(bar,[{transform:'scaleX(0)'},{transform:bar.style.transform}],{speed:'slow'});
+  motion(document.querySelector('.timeline-today'),[{translate:'0 -16px',scale:'.8'},{translate:'0 0',scale:'1'}]);
+  document.querySelectorAll('.timeline-period-span').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:index*25}));
+}

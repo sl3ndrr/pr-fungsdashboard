@@ -110,7 +110,8 @@
         </section>
       </section>
 
-      <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-heading" hidden>
+      <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-heading" data-open="false" aria-hidden="true" inert>
+        <div class="calendar-shell">
         <h2 id="calendar-heading" class="visually-hidden">Kalender</h2>
         <div class="calendar-card">
           <div class="cal-header">
@@ -122,13 +123,14 @@
           <div class="cal-scroll">
             <div class="cal-grid" id="cal-grid" role="grid" aria-labelledby="cal-month-label"></div>
           </div>
-          <section class="cal-day-details" id="cal-day-details" aria-labelledby="cal-day-details-title" hidden></section>
+          <section class="cal-day-details" id="cal-day-details" aria-labelledby="cal-day-details-title" data-open="false" aria-hidden="true" inert></section>
           <div class="cal-legend" id="cal-legend" aria-label="Legende">
             <div class="cal-legend-item"><span class="cal-legend-dot pruefung"></span>Prüfung</div>
             <div class="cal-legend-item"><span class="cal-legend-dot abgabe"></span>Abgabe</div>
             <div class="cal-legend-item"><span class="cal-legend-dot termin"></span>Termin</div>
             <div class="cal-legend-item"><span class="cal-legend-dot cal-only"></span>Nur im Kalender</div>
           </div>
+        </div>
         </div>
       </section>
 
@@ -153,7 +155,7 @@
       </section>
     </main>
 
-    <aside id="cal-popover" class="cal-popover" role="dialog" aria-modal="false" aria-label="Termindetails"></aside>
+    <aside id="cal-popover" class="cal-popover" role="dialog" aria-modal="false" aria-label="Termindetails" data-open="false" aria-hidden="true" inert></aside>
   </body>
 </html>
 
