@@ -1,73 +1,111 @@
-# PR C – CSS-Hygiene
+# PR C – CSS-Hygiene und Gleichheitsprüfung
 
-67 überschattete/identische Deklarationen und zwei obsolete Datumsregeln
-wurden entfernt. Keine neuen Pakete, kein Refactoring von JS/HTML, keine
-verschobenen Regeln, keine geänderten Tokens oder Motion-Werte.
+Ausgangsstand ist der gemergte PR B, Commit
+`5810e5a06681225084c482a6ad3cb68005e023a2`. README (Designsystem & Motion),
+Design-Plan und die in PR A notierten toten Deklarationen wurden berücksichtigt.
 
-Automatische Bereinigung ist bewusst auf bedingungslose Top-Level-Regeln mit
-exakt demselben Selektor und derselben Property beschränkt. Spätere Deklarationen
-gewinnen (unter Beachtung von `!important`). `@media`, `@supports`, Keyframes und
-registrierte Properties bleiben unverändert. Teilüberschreibungen durch
-Shorthands, mögliche Fallbacks und nicht sicher bewiesene Duplikate bleiben stehen.
+Das Skript `scripts/css-duplicates.mjs` erfasst einzelne Selektoren auch in
+Selektorlisten sowie ihre Media-/Supports-/Starting-Style-Kontexte. Es findet in B
+108 wiederholte Selektoren mit 275 Fundstellen, nach dem Cleanup 99 mit 248.
+Das vollständige, automatisch erzeugte Inventar klassifiziert jede Fundstelle:
+[css-duplicate-inventory.md](css-duplicate-inventory.md). Dort stehen auch pro
+Selektor die entfernten Properties und Gewinnerzeilen aus B.
 
-Zusätzlich entfallen die durch die transparente Fill-Fläche überschatteten
-Backgrounds für Hero/Statistik, der identische Tooltip-Fokus-/Hover-Display-Wert
-und die seit Fix 4b nicht mehr gerenderten Datumsticks/-labels.
+Vollständig überschriebene Regeln/Deklarationen entfallen. Teilregeln werden nur
+zusammengeführt, wenn die dazwischenliegende Kaskade unverändert bleibt. Zehn
+Selektoren sind konsolidiert: `.page-header`, `.hero-number`, `.stats-container`,
+`.card`, `.mini-progress`, `.mini-progress span`, `.countdown`,
+`.timeline-period-label`, `.timeline-dot::before` und `.cal-day-details`.
 
-## Entfernte Deklarationen
+Die Zielstellen entsprechen B-Zeilen 400, 453, 409, 265, 550, 551, 483, 427,
+567 und 580. Bei `.card` bleibt die Basis vor dem mobilen Padding; eine Verlagerung
+nach 461 würde dieses Padding überschreiben. Der Header bleibt vor dem mobilen
+Gap. Die spezifischeren Textstatus-/Zeitraum-/Done-Regeln behalten Vorrang.
+Beim Hero steht der Font-Shorthand vor den weiter wirksamen Größe-/Variations-
+Deklarationen. Bei Details steht der Border-Shorthand vor `border-width: 0`.
+Die zwischenliegenden Regeln schreiben ansonsten keine verschobene Property mit
+gleicher oder geringerer Spezifität auf denselben Elementen.
 
-Zeilennummern beziehen sich auf PR B vor der Bereinigung.
+Bewusst getrennt bleiben Basisregeln mit mobilen Overrides (`.hero`, `.cal-day`),
+geteilte Control-/Button-/Typografieregeln, spezifische Hover/Focus/Status-Regeln,
+alle bedingten Fallbacks und Reduced Motion. Die Font-/Background-Shorthands
+werden nicht pauschal entfernt: einzelne spätere Longhands ersetzen nicht deren
+gesamtes Ergebnis. Die seit Fix 4b nicht mehr gerenderten Datumticks/-labels
+entfallen ebenfalls.
 
-| Selektor | Entfernte Properties | Alte Zeilen → spätere Gewinner |
-| --- | --- | --- |
-| `.badge` | border-radius | 269 → 466 |
-| `.cal-day` | border-radius | 313 → 479 |
-| `.cal-day-details` | margin-top, padding | 333 → 580, 333 → 580 |
-| `.cal-day-num-inner` | border-radius | 321 → 480 |
-| `.cal-nav-btn:disabled` | color | 307 → 469 |
-| `.cal-popover` | background, border-radius, display | 354 → 482, 354 → 482, 354 → 585 |
-| `.calendar-section` | margin-bottom | 298 → 577 |
-| `.card` | background, border-radius | 259 → 461, 259 → 461 |
-| `.card:hover` | box-shadow | 261 → 462 |
-| `.done-toggle input` | border-radius, transition | 290 → 524, 290 → 488 |
-| `.done-toggle input::before` | content | 291 → 490 |
-| `.done-toggle input:checked` | background | 292 → 489 |
-| `.hero` | background, border, border-radius | 167 → 449, 167 → 449, 167 → 449 |
-| `.hero-next` | border-radius | 183 → 456 |
-| `.hero-period .mini-progress span` | background | 192 → 444, identischer/!important-Wert |
-| `.hero.imminent` | background | 169 → 451 |
-| `.mini-progress` | background, height, outline, overflow | 428 → 550, 428 → 550, 190 → 550, 190 → 550, 190 → 550 |
-| `.mini-progress span` | background, height | 191 → 551, 191 → 551 |
-| `.page-header` | gap, justify-content, margin-bottom | 81 → 400, 80 → 400, 78 → 400 |
-| `.pill` | font-size, min-height, padding | 242 → 405, 242 → 405, 242 → 405 |
-| `.pill.active` | background, color | 245 → 468, 245 → 468 |
-| `.segmented-filter` | background, border, border-radius, padding | 420 → 473, 420 → 473, 420 → 473, 420 → 473 |
-| `.segmented-filter button` | border-radius, color | 421 → 474, 421 → 474 |
-| `.stat-tile` | background, border, border-radius | 411 → 458, 411 → 458, 411 → 458 |
-| `.stat-tile .mini-progress span` | background | identischer/!important-Wert |
-| `.stats-container` | display, margin-bottom | 238 → 409, 238 → 409 |
-| `.theme-option` | transition | 134 → 510 |
-| `.theme-switch` | background, box-shadow | 99 → 470, 98 → 470 |
-| `.theme-switch-thumb` | background, transition | 113 → 509, 110 → 471 |
-| `.timeline-date-label` | (obsolete rule) | 221 |
-| `.timeline-date-tick` | (obsolete rule) | 222 |
-| `.timeline-dot.cancelled` | background, border | 214 → 566, 214 → 566 |
-| `.timeline-dot::before` | margin-left, width | 211 → 567, 211 → 567 |
-| `.timeline-dot:hover .timeline-tooltip, .timeline-dot:focus-visible .timeline-tooltip` | display | identischer/!important-Wert |
-| `.timeline-period-label` | color, white-space | 208 → 427, 208 → 427 |
-| `.timeline-tooltip` | bottom, display | 218 → 573, 218 → 573 |
-| `.timeline-track::before` | background | 205 → 564 |
-| `.type-icon` | border-radius | 194 → 465 |
+HTML, Anwendungs-JS, Daten, Tokens, Motion-Werte und die Testfälle aus PR B werden
+nicht geändert. Es gibt keine neuen Abhängigkeiten. Die Anwendung bleibt ohne
+Build. Die README-Beschreibung von Design und Verhalten gilt weiterhin.
 
-## Prüfung
+## Inventar reproduzieren
 
-Die letzten bedingungslosen Selektor-/Property-Werte wurden vor/nach der
-Bereinigung statisch verglichen, mit ausdrücklich dokumentierten Ausnahmen für
-die redundanten/obsoleten Regeln. Bestehende Node-Regressionen, Modulsyntax und
-Whitespace-Prüfung bestehen. Produktdaten und JS sind im Diff zu B unverändert.
+Vom Repo-Root, nach Checkout des C-Branches:
 
-Die visuelle Gleichheit ist noch offen. PR C bleibt ein Entwurf. Die aktualisierte
-Test-Infrastruktur aus B wurde nachgezogen; der nicht freigegebene CI-Workflow
-ist entfernt. Nach Erzeugung und Prüfung der B-Baselines ist der Vergleich im
-gepinnten Docker-Image auszuführen (siehe `docs/visual-tests.md`). Ein grüner
-Browserlauf oder echte Screenshots werden hier nicht behauptet.
+```bash
+git show 5810e5a06681225084c482a6ad3cb68005e023a2:css/styles.css > /tmp/pr-b-styles.css
+node scripts/css-duplicates.mjs /tmp/pr-b-styles.css > /tmp/css-duplicates-before.json
+node scripts/css-duplicates.mjs css/styles.css > /tmp/css-duplicates-after.json
+node scripts/css-hygiene-report.mjs /tmp/pr-b-styles.css > /tmp/css-duplicate-inventory.md
+node --test scripts/css-duplicates.test.mjs
+TZ=Europe/Berlin node --test tests/
+```
+
+Der Klassifikationsbericht ist auf diesen B-Stand und die geprüften Zielstellen
+bezogen; das reine Inventarskript funktioniert auch auf dem aktuellen CSS.
+
+## Browser-Nachweis
+
+`tests/visual/compare-css.mjs` liest das Original-CSS als Pflichtargument. Es
+liefert beide Versionen in frischen Browserkontexten per Route-Override aus; HTML,
+JS, Datum, Daten-Fixtures, Schrift-Fallback und Browser sind identisch. Es nutzt
+die bestehenden Helfer aus B. Für jedes DOM-Element (auch versteckte Elemente)
+werden sämtliche von `getComputedStyle` aufgelisteten Properties einschließlich
+Custom Properties verglichen, zusätzlich `::before`, `::after` und `::marker`.
+Es gibt keine Property-Ausnahmeliste.
+
+Chromium/Firefox/WebKit prüfen alle B-Zustände: Viewports 360/768/1280/1600,
+Hell/Dunkel/System samt dunklem OS, Statuskarten, Hero-Tagesvarianten,
+Fokus/Escape/Touch, Filter und Resize. Reduced Motion wird zusätzlich bei allen
+Breiten/Themes und den Wellenzuständen geprüft. Echte Balken erhalten
+0/3/50/76/97/100 %; Animationen werden bei 0/600/1300 ms pausiert.
+
+Die Komponenten- und Ganzseitenbilder verwenden dieselben Regionen wie B.
+PNG-Bytes müssen identisch sein; es gibt keine Farb-/Pixel-Toleranz. Abweichungen
+liefern beide PNGs bzw. einen JSON-Property-Diff. `report.json` nennt CSS-Hashes,
+Zustands-/Bildanzahl und Browser. **Erfolg verlangt `complete: true`, alle drei
+Browser und `differences: []` sowie Exitcode 0.** Ein Startfehler liefert
+`complete: false`, einen Fehlertext und Exitcode 1; eine dann leere Differenzliste
+ist kein Gleichheitsnachweis.
+
+Im gepinnten offiziellen Image aus dem Repo-Root:
+
+```bash
+git show 5810e5a06681225084c482a6ad3cb68005e023a2:css/styles.css > tests/visual/test-results-before.css
+docker run --rm --ipc=host -v "$PWD:/work" -w /work/tests/visual \
+  mcr.microsoft.com/playwright:v1.62.1-noble \
+  bash -lc 'npm ci --ignore-scripts && node compare-css.mjs test-results-before.css'
+rm tests/visual/test-results-before.css
+```
+
+Zusätzlich müssen die unveränderten B-Screenshot-Tests gegen geprüfte B-PNGs
+bestehen. Diese PNGs waren in B noch nicht eingecheckt. Sie zuerst **auf dem
+B-Stand** im selben Image mit `npm run update` erzeugen, prüfen und anschließend
+auf C mit `npm test` vergleichen (siehe [visual-tests.md](visual-tests.md)).
+Baselines dürfen nicht erst aus dem bereinigten C-CSS erzeugt werden.
+
+## Tatsächlich ausgeführte Prüfung
+
+- 16/16 bestehende Node-Checks sowie 3/3 Scanner-Checks bestanden.
+- Syntax der neuen Skripte und `git diff --check` bestanden.
+- Statischer Vergleich der letzten bedingungslosen Einzelselektor-/Property-Werte
+  bestätigt die gleichen Werte, außer den dokumentierten obsoleten Regeln,
+  redundanten Tooltip-Display-Werten und den durch transparent `!important`
+  überschriebenen Fill-Backgrounds. Dieser Vergleich beweist keine Browserkaskade.
+- Der echte Vergleichsaufruf startet den Python-Server, scheitert aber am fehlenden
+  Chromium-Binary vor dem ersten Seitenaufruf: **0 geprüfte Browserzustände**.
+  Der Browser-Download wurde mit HTTP 403 (`Forbidden. Calls to this URL are not
+  allowed.`) blockiert. Docker ist nicht installiert.
+
+**Offen:** pixelgleiche B-Screenshots und tatsächlich leere Computed-Style-Diffs
+in allen drei Browsern. PR C bleibt ein Entwurf und ist noch nicht visuell
+abgenommen. Kein CI-Workflow wird angelegt.

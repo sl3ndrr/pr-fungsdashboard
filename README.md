@@ -257,7 +257,6 @@ Implementierungs-Checkliste ist kein vollständiger Nachweis der Definition of D
 
 Referenzen und der abgearbeitete Plan: [`docs/design-plan.md`](docs/design-plan.md).
 
-
 ### Visuelle Regressionen (PR B)
 
 Playwright 1.62.1 ist die einzige neue direkte Abhängigkeit und liegt ausschließlich
