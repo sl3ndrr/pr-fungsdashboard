@@ -622,10 +622,23 @@ function layoutTimelineLabels() {
     const target = Number(label.dataset.center) * width / 100;
     label.style.left = `${Math.max(half, Math.min(width - half, target))}px`;
   });
-  const tipHeight = Math.max(0, ...[...track.querySelectorAll('.timeline-tooltip')]
-    .map(tip => tip.offsetHeight));
-  // Tooltips end above both period-label rows; reserve their full height.
-  scroller.style.paddingTop = `${Math.max(112, tipHeight + 116)}px`;
+  const tips = [...track.querySelectorAll('.timeline-tooltip')];
+  if (window.matchMedia('(max-width: 879px)').matches) {
+    const labelTop = Math.max(0, ...[...track.querySelectorAll('.timeline-period-label')]
+      .map(label => -parseFloat(getComputedStyle(label).top)));
+    // Closed tooltips take no space. Open/exiting ones sit below the month marks;
+    // adding bottom space keeps the rail under the pointer and out of the labels.
+    const tooltipBottom = Math.max(track.offsetHeight, ...tips
+      .filter(tip => getComputedStyle(tip).visibility === 'visible')
+      .map(tip => tip.parentElement.offsetTop + tip.offsetTop + tip.offsetHeight));
+    scroller.style.paddingTop = `${labelTop}px`;
+    scroller.style.paddingBottom = `calc(var(--space-8) + ${tooltipBottom - track.offsetHeight}px)`;
+  } else {
+    const tipHeight = Math.max(0, ...tips.map(tip => tip.offsetHeight));
+    // Desktop tooltips end above both period-label rows.
+    scroller.style.paddingTop = `${Math.max(112, tipHeight + 116)}px`;
+    scroller.style.removeProperty('padding-bottom');
+  }
 }
 
 let timelineCentered = false;
@@ -722,9 +735,9 @@ function render(animate) {
       delete dot.dataset.tooltipOpen;
       selectTimelineEvent(dot, item.id);
     });
-    listenOnce(dot, 'blur', () => { delete dot.dataset.tooltipOpen; delete dot.dataset.tooltipDismissed; });
+    listenOnce(dot, 'blur', () => { delete dot.dataset.tooltipOpen; delete dot.dataset.tooltipDismissed; layoutTimelineLabels(); });
     listenOnce(dot, 'keydown', event => {
-      if (event.key === 'Escape') { delete dot.dataset.tooltipOpen; dot.dataset.tooltipDismissed = 'true'; }
+      if (event.key === 'Escape') { delete dot.dataset.tooltipOpen; dot.dataset.tooltipDismissed = 'true'; layoutTimelineLabels(); }
     });
     const positionTooltip = () => {
       delete dot.dataset.tooltipDismissed;
@@ -733,9 +746,14 @@ function render(animate) {
       const x = rect.left + rect.width / 2;
       const center = Math.max(bounds.left + 114, Math.min(bounds.right - 114, x));
       dot.style.setProperty('--tooltip-shift', `${center - x}px`);
+      layoutTimelineLabels();
     };
     listenOnce(dot, 'pointerenter', positionTooltip);
     listenOnce(dot, 'focus', positionTooltip);
+    listenOnce(dot, 'pointerleave', layoutTimelineLabels);
+    listenOnce(dot.querySelector('.timeline-tooltip'), 'transitionend', event => {
+      if (event.propertyName === 'visibility' || event.propertyName === 'opacity') layoutTimelineLabels();
+    });
 
   });
 

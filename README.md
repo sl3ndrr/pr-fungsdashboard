@@ -84,8 +84,11 @@ verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`.
 Datumsstriche und Gruppendaten unter den Punkten entfallen; Monatsmarken bleiben.
 Datum und Status stehen im zugänglichen Namen und Tooltip jedes Punkts. Fokus
 öffnet den Tooltip, Escape schließt ihn; bei Touch zeigt die erste Berührung die
-Details und die zweite führt zur Karte. Tooltips erhalten Platz oberhalb beider
-Zeitraum-Zeilen. Die Legende trennt Terminarten, Status und Zeiträume.
+Details und die zweite führt zur Karte. Auf Desktop erhalten Tooltips Platz
+oberhalb beider Zeitraum-Zeilen. Unter 880 px stehen sie bei Bedarf unter den
+Monatsmarken; geschlossene Tooltips vergrößern die Zeitstrahlkachel nicht.
+Zeitraum-Labels wie „in Wiesbaden“ bleiben einzeilig und werden innerhalb der
+Schiene positioniert. Die Legende trennt Terminarten, Status und Zeiträume.
 Beim ersten Layout wird „Heute“ sofort innerhalb des Zeitstrahl-Containers
 zentriert und an dessen Scrollgrenzen begrenzt. Fonts und Containerbreiten können
 die Startposition korrigieren, bis die Person den Zeitstrahl selbst bedient;
