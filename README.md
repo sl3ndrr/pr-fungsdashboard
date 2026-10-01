@@ -186,6 +186,11 @@ vererbte Property `--wave-shift` am Balken treibt Track und Füllung gemeinsam a
 Der Füllwert animiert über Clip-Path mit Spatial-slow; die Zeitstrahl-Pille ändert
 ihre Breite ohne skalierte Endkappen. Ohne Property-Registrierung bleibt die
 Phase zwischen beiden Layern gleich, kann aber nur diskret interpolieren.
+Der SVG-Pfad läuft über beide Kachelränder hinaus, damit keine Stroke-Enden
+an den Wiederholungsnähten liegen. Eine kleine senkrechte Markierung am
+Zeitraum-Balken zeigt die Füllgrenze auch unabhängig von der Farbe. Sie folgt
+derselben Spatial-slow-Bewegung wie die Füllung und steht bei Reduced Motion
+sofort am neuen Wert; an 0/100 % bleibt sie innerhalb des Balkens.
 
 „Als nächstes“ stellt Zahl und Einheit auch auf schmalen Geräten untereinander
 („1 Tag“, „Heute“ ohne Einheit). Zeitraum-Fortschritt nennt Tag/Total und Resttage
@@ -212,8 +217,8 @@ Transitions werden beim Wechsel beendet. Es gibt keinen globalen
 - Die Palette ist von Hand auf die vorhandenen semantischen Farbtöne abgestimmt,
   ohne Android-Dynamic-Color. Bestehende Zeitraumfarben bleiben erhalten.
 - Der Wavy Indicator nutzt eine unskalierte, rechts beschnittene CSS/SVG-Mask und eine
-  Überblendung zur geraden Linie; Compose-Wellengeometrie und Stop-Indicator
-  werden nicht exakt reproduziert.
+  Überblendung zur geraden Linie; die Füllgrenze erhält eine eigene kleine
+  Markierung. Die Compose-Wellengeometrie wird nicht exakt reproduziert.
 - Tooltips/Popover bleiben montiert und verwenden Opacity/Scale mit verzögerter
   Visibility; Kalender/Details verwenden Grid plus `inert`/ARIA. Das ermöglicht
   Exit-Animationen auch ohne `allow-discrete`. `@starting-style` ergänzt den Einstieg.
