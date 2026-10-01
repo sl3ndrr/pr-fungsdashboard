@@ -101,3 +101,10 @@ export function validateData(rawEvents, rawPeriods) {
 
   return { events, periods };
 }
+
+
+/** Optional cancellation text; absent/invalid values keep the neutral status. */
+export function cancelledStatus(event) {
+  return typeof event.cancelReason === 'string' && event.cancelReason.trim()
+    ? event.cancelReason.trim() : 'Abgebrochen';
+}

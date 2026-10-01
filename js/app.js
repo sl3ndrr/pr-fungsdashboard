@@ -2,6 +2,7 @@ import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transi
 import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
+  cancelledStatus,
   escapeHtml,
   formatDate,
   midnight,
@@ -311,10 +312,10 @@ function buildTimeline(todayMid, animate) {
   let dots = '';
   mainEvents.forEach((e, i) => {
     const past = times[i] < todayMid.getTime();
-    const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
+    const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}`;
     dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} "
       style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}" aria-describedby="timeline-tip-${escapeHtml(e.id)}">
-      <span class="timeline-point" aria-hidden="true"></span><span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? '<span>Abgebrochen</span>' : ''}</span>
+      <span class="timeline-point" aria-hidden="true"></span><span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? `<span>Abgebrochen${cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + escapeHtml(cancelledStatus(e))}</span>` : ''}</span>
     </button>`;
   });
   const todayPct = todayMid.getTime() < axisStart ? 0 : todayMid.getTime() > axisEnd ? 100 : posOf(todayMid.getTime());
@@ -523,7 +524,7 @@ function renderCalendar(animate = false) {
       const dayButton = `<button class="cal-day-select" type="button" data-date="${iso}" aria-label="${escapeHtml(formatDate(cur))}: ${countLabel} anzeigen" aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">${numHtml}<span class="cal-day-dots" aria-hidden="true">${mobileDots}</span></button>`;
       const tagsHtml = dayEvts.slice(0,3).map(e => {
         tagEvents.push(e);
-        return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', abgebrochen' : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
+        return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
       }).join('');
       html += `<div class="cal-day ${inMonth ? '' : 'other-month'} ${weekday >= 5 ? 'weekend' : ''} ${isToday ? 'today' : ''} ${selectedCalDate === iso ? 'selected' : ''}" role="gridcell">
         ${dayButton}<span class="cal-band-space" aria-hidden="true"></span>${tagsHtml}${count > 3 ? `<button class="cal-more" type="button" data-date="${iso}" aria-label="Alle ${count} Termine am ${escapeHtml(formatDate(cur))} anzeigen" aria-controls="cal-day-details">+${count - 3}</button>` : ''}</div>`;
@@ -804,8 +805,7 @@ function render(animate) {
 
     let countdownClass = '', countdownContent = '';
     if (item.isCancelled) {
-      countdownClass   = 'cancelled-badge';
-      countdownContent = `<span class="primary">${ICONS.cancelled}Abgebrochen</span><span class="secondary">nicht angetreten</span>`;
+      // Cancellation is represented once in the meta row, without a countdown tile.
     } else if (isDone) {
       countdownClass   = 'done-badge';
       countdownContent = `<span class="primary">${ICONS.check}Erledigt</span><span class="secondary">abgehakt</span>`;
@@ -825,7 +825,7 @@ function render(animate) {
       : '';
 
     const card = document.createElement('div');
-    card.className = `card ${typeClass(item.type)} ${diffDays < 0 ? 'past' : ''} ${isDone ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} `;
+    card.className = `card ${typeClass(item.type)} ${diffDays < 0 && !item.isCancelled ? 'past' : ''} ${isDone && !item.isCancelled ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} `;
     card.id = `card-${item.id}`;
     card.style.viewTransitionName=transitionName(item.id);
     card.setAttribute('role', 'listitem');
@@ -837,10 +837,10 @@ function render(animate) {
           <div class="info">
             <span class="badge ${typeClass(item.type)}">${escapeHtml(item.type)}</span>
             <h4 class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
-            <div class="meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
+            <div class="meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span>${item.isCancelled ? `<span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span>` : ''}</div>
           </div>
         </div>
-        <div class="countdown ${countdownClass}">${countdownContent}</div>
+        ${item.isCancelled ? '' : `<div class="countdown ${countdownClass}">${countdownContent}</div>`}
       </div>
       ${checkElement}
     `;

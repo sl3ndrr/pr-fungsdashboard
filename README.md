@@ -8,7 +8,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
 - Nach Heute, Kalenderwochen, Monaten und Vergangenheit gruppierte Terminkarten
 - Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
-- Abgebrochene Termine werden gedämpft dargestellt und aus der nächsten Fälligkeit ausgeblendet
+- Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
 - Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
@@ -62,6 +62,9 @@ Alle fachlichen Daten liegen zentral in [`js/data.js`](js/data.js):
 - `PERIODS`: mehrtägige Zeiträume für Kalender und Zeitstrahl
 - `isDone: true`: markiert eine Abgabe beim ersten Laden als erledigt
 - `isCancelled: true`: markiert einen Termin als abgebrochen
+- `cancelReason`: optionaler kurzer String für den Status-Chip, z. B. „verschoben“;
+  ohne Angabe steht dort neutral „Abgebrochen“. Der Zeitstrahl nennt zusätzlich
+  den Status und gegebenenfalls den Grund. Bestehende Daten erhalten keine erfundenen Gründe.
 - `calOnly: true`: zeigt einen Termin nur im Kalender
 
 Die Darstellung und Interaktionen müssen für neue Termine nicht angepasst werden.
