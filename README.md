@@ -4,7 +4,8 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 
 ## Funktionen
 
-- Nächster offener Termin mit großem Countdown, zwei Folgeterminen und aktuellem Zeitraum-Fortschritt
+- Nächster offener Termin mit großem Countdown, zwei Folgeterminen und aktuellem Zeitraum-Fortschritt mit Resttagen
+- „Danach“-Buttons mit Wochentag, State-Layer und Fokus auf der Zielkarte
 - Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
 - Nach Heute, Kalenderwochen, Monaten und Vergangenheit gruppierte Terminkarten
 - Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
@@ -186,6 +187,14 @@ Der Füllwert animiert über Clip-Path mit Spatial-slow; die Zeitstrahl-Pille ä
 ihre Breite ohne skalierte Endkappen. Ohne Property-Registrierung bleibt die
 Phase zwischen beiden Layern gleich, kann aber nur diskret interpolieren.
 
+„Als nächstes“ stellt Zahl und Einheit auch auf schmalen Geräten untereinander
+(„1 Tag“, „Heute“ ohne Einheit). Zeitraum-Fortschritt nennt Tag/Total und Resttage
+auch in `aria-valuetext`, mit „letzter Tag“ am Ende. Statistik-Texte bleiben gleich.
+„Danach“ bleibt ein echter Button (mindestens 56 px); Hover bei Hover-Geräten,
+Fokus und Press verwenden Effects-State-Layer. Nach Auswahl wird die passende
+Karte sichtbar, fokussiert und gemäß Reduced Motion gescrollt. Die kurzen Daten
+entstehen mit `Intl.DateTimeFormat('de-DE')` aus lokal geparsten Kalendertagen.
+
 ### Reduced Motion
 
 `prefers-reduced-motion: reduce` und ein Live-`matchMedia`-Listener entfernen
@@ -223,7 +232,7 @@ Ohne zusätzliche Pakete mit Node.js 24:
 TZ=Europe/Berlin node --test tests/*.test.mjs
 ```
 
-Zehn automatisierte Checks bestehen: Motion-Kanäle und Unterbrechungen, schnelle
+Die automatisierten Node-Checks prüfen: Motion-Kanäle und Unterbrechungen, schnelle
 View-Transition-Updates, Live-Reduced-Motion, `linear()`-Fallback, eindeutige
 CSS-Namen, rechnerische AA-Kontraste der Rollen, Fortschritt/Past-Punkte,
 Zeitstrahl-Achse/Kollisionen und DST-Tagesberechnung. Syntax aller ES-Module,
@@ -236,12 +245,14 @@ und 1600 px mit nativer API und erzwungenem View-Transition-Fallback, einschlie�
 Filter, Knoten-/Fokuserhalt, Erledigt, Kalender, Popover, Themes und Tageswechsel.
 Die Fixture verwendet isolierten In-Memory-Speicher und ein festes Datum.
 
-**Noch offen:** Diese Browser-Testseite wurde in der Arbeitsumgebung nicht
+**Noch offen:** Diese Browser-Testseite und die visuellen Prüfungen für Fix 1–6 wurden hier nicht
 ausgeführt: Chromium-/Firefox-/WebKit-Binaries fehlen, und der Cloud-Browser
 blockiert die lokale Vorschau (`ERR_BLOCKED_BY_CLIENT`). Deshalb bleiben visuelle
 Prüfungen in allen drei Browsern, die vollständige Tastatur-/ARIA- und Kontrast-
 Prüfung, echte Reduced-Motion-Emulation sowie ein Performance-Trace mit 4× CPU und
-60-fps-Nachweis offen. Der Pull Request bleibt bis dahin ein Entwurf; die
+60-fps-Nachweis offen. Der Nutzer hat die Implementierung ohne Vorab-Reproduktion ausdrücklich erlaubt.
+Die drei PRs (Fixes, visuelle Tests, CSS-Hygiene) bleiben bis zur Browser-Prüfung
+Entwürfe; die
 Implementierungs-Checkliste ist kein vollständiger Nachweis der Definition of Done.
 
 Referenzen und der abgearbeitete Plan: [`docs/design-plan.md`](docs/design-plan.md).

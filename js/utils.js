@@ -114,3 +114,10 @@ export function remainingDaysText(day, total) {
   const remaining = Math.max(0, total - day);
   return remaining === 0 ? 'letzter Tag' : `noch ${remaining} ${remaining === 1 ? 'Tag' : 'Tage'}`;
 }
+
+const followupDateFormatter = new Intl.DateTimeFormat('de-DE', {
+  weekday: 'short', day: '2-digit', month: '2-digit',
+});
+export function formatFollowupDate(date) {
+  return followupDateFormatter.format(date);
+}

@@ -5,6 +5,7 @@ import {
   cancelledStatus,
   escapeHtml,
   formatDate,
+  formatFollowupDate,
   midnight,
   parseISOString,
   periodsOnDay,
@@ -177,6 +178,7 @@ async function selectTimelineEvent(dot,id) {
   }
   const card=document.getElementById(`card-${id}`);
   if(card) {
+    card.focus({preventScroll:true});
     card.scrollIntoView({behavior:reducedMotion.matches?'auto':'smooth',block:'center'});
     clearTimeout(highlightTimer);
     highlightTimer=setTimeout(()=>{
@@ -370,7 +372,7 @@ function buildHero(upcoming, todayMid, animate) {
       const days = calendarDayDiff(parseISOString(e.date), todayMid);
       return `<button class="hero-next" type="button" data-event-id="${escapeHtml(e.id)}">
         <span class="type-icon ${typeClass(e.type)}">${ICONS[e.type]}</span>
-        <span class="hero-next-info"><span class="hero-next-title">${escapeHtml(e.title)}</span><span class="hero-next-date">${escapeHtml(formatDate(parseISOString(e.date)))}</span></span>
+        <span class="hero-next-info"><span class="hero-next-title">${escapeHtml(e.title)}</span><span class="hero-next-date">${escapeHtml(formatFollowupDate(parseISOString(e.date)))}</span></span>
         <span class="hero-next-days">${days === 0 ? 'Heute' : days === 1 ? 'Morgen' : `in ${days} Tagen`}</span>
       </button>`;
     }).join('')}</div>` : ''}
@@ -829,6 +831,7 @@ function render(animate) {
     const card = document.createElement('div');
     card.className = `card ${typeClass(item.type)} ${diffDays < 0 && !item.isCancelled ? 'past' : ''} ${isDone && !item.isCancelled ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} `;
     card.id = `card-${item.id}`;
+    card.tabIndex = -1;
     card.style.viewTransitionName=transitionName(item.id);
     card.setAttribute('role', 'listitem');
     if (animate) card.style.setProperty('--delay', Math.min(idx * 0.025, 0.15) + 's');
