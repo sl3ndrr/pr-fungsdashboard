@@ -66,7 +66,7 @@ Semantische Typfarben und die vorhandenen Zeitraumfarben bleiben erhalten.
 ## Abschlussstatus
 
 Alle zwölf Gruppen sind im Code umgesetzt; die Häkchen oben beziehen sich auf die
-Implementierung. Zehn Node-Regressionen bestehen. Syntax, HTML-Struktur/IDs,
+Implementierung. Node-Regressionen für Motion, Zeitstrahl, Fortschrittsgeometrie, Status und Resttage bestehen. Syntax, HTML-Struktur/IDs,
 Daten-Unverändertheit und Whitespace geprüft. Siehe README für Animationstabelle
 und bewusste Abweichungen.
 
