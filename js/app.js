@@ -305,7 +305,7 @@ function buildTimeline(todayMid, animate) {
     const row = placedRanges.some(r => mid > r.l - 6 && mid < r.r + 6) ? 1 : 0;
     placedRanges.push({ l: left, r: right });
     periodsHtml += `<div class="timeline-period-span" style="left:${left}%;width:${right - left}%;--period-rgb:${p.rgb}"></div>
-      <div class="timeline-period-label" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
+      <div class="timeline-period-label" data-center="${mid}" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
   });
   const dateGroups = new Map();
   let dots = '';
@@ -611,6 +611,23 @@ function focusAfterRender() {
   return null;
 }
 
+function layoutTimelineLabels() {
+  const scroller = document.querySelector('.timeline-scroll');
+  const track = scroller.querySelector('.timeline-track');
+  if (!track) return;
+  const width = track.clientWidth;
+  track.querySelectorAll('.timeline-period-label').forEach(label => {
+    // Keep the text inside the rail, including after fonts and width change.
+    const half = label.offsetWidth / 2;
+    const target = Number(label.dataset.center) * width / 100;
+    label.style.left = `${Math.max(half, Math.min(width - half, target))}px`;
+  });
+  const tipHeight = Math.max(0, ...[...track.querySelectorAll('.timeline-tooltip')]
+    .map(tip => tip.offsetHeight));
+  // Tooltips end above both period-label rows; reserve their full height.
+  scroller.style.paddingTop = `${Math.max(112, tipHeight + 116)}px`;
+}
+
 function centerTimelineToday() {
   const scroller = document.querySelector('.timeline-scroll');
   const track = document.querySelector('.timeline-track');
@@ -667,6 +684,7 @@ function render(animate) {
 
   const timelineContainer = document.getElementById('timeline-container');
   syncHTML(timelineContainer,tl.html);
+  layoutTimelineLabels();
   timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
     const item = tl.dotEvents[index];
     listenOnce(dot, 'click', () => selectTimelineEvent(dot, item.id));
