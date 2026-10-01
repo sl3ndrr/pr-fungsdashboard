@@ -6,15 +6,11 @@ export async function openDashboard(page,{width=1280,theme='light',reduced=false
   // Use the same system font in base/head; external font availability is not deterministic.
   await page.route('https://fonts.googleapis.com/**',route=>route.abort());
   await page.route('https://fonts.gstatic.com/**',route=>route.abort());
-  await page.addInitScript(({date,theme})=>{
-    const NativeDate=Date,[y,m,d]=date.split('-').map(Number);
-    const now=new NativeDate(y,m-1,d,12).getTime();
-    window.Date=class extends NativeDate {
-      constructor(...args){super(...(args.length?args:[now]));}
-      static now(){return now;}
-    };
+  // Freeze Date without pausing animation frames or application timers.
+  await page.clock.setFixedTime(new Date(`${date}T12:00:00+02:00`));
+  await page.addInitScript(theme=>{
     localStorage.clear();localStorage.setItem('theme_pref',theme);
-  },{date,theme});
+  },theme);
   if(extraEvents.length)await page.route('**/js/data.js',async route=>{
     const response=await route.fetch();
     await route.fulfill({response,body:await response.text()+`\nEVENTS.push(...${JSON.stringify(extraEvents)});`});
@@ -39,3 +35,4 @@ export async function freeze(page,waveTime=0) {
     }
   },waveTime);
 }
+

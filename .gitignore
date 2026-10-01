@@ -22,7 +22,7 @@ yarn-debug.log*
 pnpm-debug.log*
 
 
-# Visuelle Test-Artefakte (Referenzen werden im CI aus dem PR-Basisstand erzeugt)
+# Visuelle Lauf-Artefakte; __snapshots__ wird eingecheckt
 playwright-report/
 test-results/
-tests/visual/__snapshots__/
+
