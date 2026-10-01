@@ -518,7 +518,8 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
 .digit-mask { display: inline-block; overflow: hidden; vertical-align: bottom; width: 1ch; height: 1.12em; line-height: 1.12; }
 .digit-reel { display: block; transform: translateY(calc(var(--digit,0) * -1.12em)); transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast); }
 .digit-cell { display: block; height: 1.12em; line-height: 1.12; }
-.mini-progress span, .timeline-progress { transform-origin: left; transition: transform var(--dur-spatial-slow) var(--spring-spatial), background-color var(--dur-effects) var(--spring-effects); }
+.mini-progress span { transition: clip-path var(--dur-spatial-slow) var(--spring-spatial); }
+.timeline-progress { transition: width var(--dur-spatial-slow) var(--spring-spatial), background-color var(--dur-effects) var(--spring-effects); }
 /* Only changing layout regions are snapshotted. Stable controls animate in their real DOM. */
 :root { view-transition-name: none; }
 :root[data-transition='theme'] { view-transition-name: root; }
@@ -535,18 +536,18 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
 :root[data-transition='theme']::view-transition-old(root) { animation: none; }
 :root[data-transition='theme']::view-transition-new(root) { animation: theme-reveal var(--dur-spatial-slow) var(--spring-spatial) both; }
 @keyframes theme-reveal { from { clip-path: circle(0 at var(--reveal-x) var(--reveal-y)); } to { clip-path: circle(var(--reveal-radius) at var(--reveal-x) var(--reveal-y)); } }
-/* Determinate wavy indicator: moving SVG-mask fill, stationary track, flat endpoints. */
-.mini-progress { --wave-amplitude: 1; --progress-color: var(--tertiary); --progress-track: color-mix(in srgb,var(--on-surface) 16%,var(--surface-container)); position: relative; height: 12px; background: transparent; outline: 0; overflow: hidden; }
+/* One inherited phase drives both masks; clipping never scales the 24px pattern. */
+@property --wave-shift { syntax: "<length>"; inherits: true; initial-value: 0px; }
+.mini-progress { --wave-amplitude: 1; --wave-shift: 0px; animation: wave-phase 2.5s linear infinite; --progress-color: var(--tertiary); --progress-track: color-mix(in srgb,var(--on-surface) 16%,var(--surface-container)); position: relative; height: 12px; background: transparent; outline: 0; overflow: hidden; }
 .mini-progress span { position: absolute; inset: 0; width: 100%; height: 12px; background: transparent !important; overflow: hidden; }
-.mini-progress::before, .mini-progress span::before { content: ''; position: absolute; inset: 0; width: calc(100% + 24px); background: var(--progress-track); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cpath d='M0 6 Q6 0 12 6 T24 6' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E") repeat-x left center / 24px 12px; opacity: var(--wave-amplitude); scale: 1 max(.1,var(--wave-amplitude)); transition: scale var(--dur-spatial-slow) var(--spring-spatial), opacity var(--dur-effects) var(--spring-effects); }
+.mini-progress::before, .mini-progress span::before { content: ''; position: absolute; inset: 0; width: calc(100% + 24px); transform: translateX(var(--wave-shift)); background: var(--progress-track); mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='12' viewBox='0 0 24 12'%3E%3Cpath d='M0 6 Q6 0 12 6 T24 6' fill='none' stroke='white' stroke-width='3'/%3E%3C/svg%3E") repeat-x left center / 24px 12px; opacity: var(--wave-amplitude); scale: 1 max(.1,var(--wave-amplitude)); transition: scale var(--dur-spatial-slow) var(--spring-spatial), opacity var(--dur-effects) var(--spring-effects); }
 .mini-progress::after, .mini-progress span::after { content: ''; position: absolute; left: 0; right: 0; height: 4px; top: 4px; border-radius: var(--shape-full); background: var(--progress-track); opacity: calc(1 - var(--wave-amplitude)); transition: opacity var(--dur-effects) var(--spring-effects); }
 .mini-progress span::before, .mini-progress span::after { background: var(--progress-color); }
-.mini-progress span::before { animation: wave-phase 2.5s linear infinite; }
-.mini-progress[data-flat='true'] span::before { animation-play-state: paused; }
+.mini-progress[data-flat='true'] { animation-play-state: paused; }
 .hero .mini-progress { --progress-color: var(--on-primary-container); --progress-track: color-mix(in srgb,var(--on-primary-container) 20%,var(--primary-container)); }
 .hero.imminent .mini-progress { --progress-color: var(--on-error-container); --progress-track: color-mix(in srgb,var(--on-error-container) 20%,var(--error-container)); }
 .stat-tile:nth-child(2) .mini-progress { --progress-track: color-mix(in srgb,var(--on-tertiary-container) 16%,var(--tertiary-container)); }
-@keyframes wave-phase { to { transform: translateX(-24px); } }
+@keyframes wave-phase { to { --wave-shift: -24px; } }
 .card-wash { position: absolute; inset: 0; border-radius: inherit; background: var(--type-color); pointer-events: none; opacity: 0; }
 .ripple-overlay { position: absolute; inset: 0; overflow: hidden; pointer-events: none; border-radius: inherit; }
 .ripple-origin { position: absolute; left: calc(var(--x,50%) - var(--ripple-size) / 2); top: calc(var(--y,50%) - var(--ripple-size) / 2); width: var(--ripple-size); height: var(--ripple-size); border-radius: 50%; background: radial-gradient(circle,currentColor 0%,currentColor 60%,transparent 71%); opacity: 0; }
@@ -589,7 +590,7 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
   *, *::before, *::after { scroll-behavior: auto !important; transition-property: color, background-color, border-color, outline-color, opacity, visibility !important; transition-duration: 140ms !important; transition-timing-function: var(--spring-effects) !important; }
   .card:hover, .card:active, button:active, .pill:active, .theme-option:hover, .theme-option:active { transform: none; }
   .timeline-dot:is(:hover,:focus-visible) .timeline-point, .theme-option svg, .theme-option[aria-checked='true'] svg, .calendar-section, .timeline-tooltip, .cal-popover, .ripple-origin { scale: 1; rotate: 0deg; }
-  .mini-progress span::before { animation-play-state: paused; }
+  .mini-progress { animation-play-state: paused; }
   .filter-indicator { transition: opacity 140ms var(--spring-effects) !important; }
 }
 /* Each wrapped title line gets its own growing strike rather than a line between rows. */
@@ -597,3 +598,4 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
 .title-text { background: linear-gradient(currentColor,currentColor) left 55% / 0% 2px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-size var(--dur-effects) var(--spring-effects); }
 .card.done .title-text { background-size: 100% 2px; }
 .cal-day { border-color: var(--outline); }
+

@@ -160,14 +160,18 @@ Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
 | 6. Karten | Tonaler Hover/Press, Scroll, Wash/Bounce | Spatial-fast/default / Effects-slow | 350–410 / 300 ms |
 | 7. Erledigt | SVG-Häkchen, Form/Farbe, Titellinie, Badge, Balken | Spatial-fast/slow / Effects | 350–570 / 140–210 ms |
 | 8. Countdown | Maskierte Ziffernreels, initiales Hochzählen, imminent | Spatial-fast / Effects | 350 / 210 ms; Start 600 ms |
-| 9. Fortschritt | scaleX, Wavy-Mask, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
+| 9. Fortschritt | Clip-Path, gemeinsame Wavy-Phase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
 | 10. Zeitstrahl | Punktstaffelung, Rail, Heute, Tooltip, Ring, Bänder | Spatial-fast/default/slow / Effects | 350–570 / 140–300 ms |
 | 11. Kalender | Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
 | 12. Hero/Leerzustand | Container-Transform und Fade-Through / Shared Element | Spatial / Effects | 350–410 / 140–210 ms |
 
 Wellen werden mit einer kleinen SVG-Mask dargestellt. Die Amplitude nimmt nahe
 0 % und 100 % ab und überblendet in eine gerade Linie. Die langsame Phase läuft
-nur im normalen Bewegungsmodus; volle/leere Balken sind statisch.
+nur im normalen Bewegungsmodus; volle/leere Balken sind statisch. Die registrierte,
+vererbte Property `--wave-shift` am Balken treibt Track und Füllung gemeinsam an.
+Der Füllwert animiert über Clip-Path mit Spatial-slow; die Zeitstrahl-Pille ändert
+ihre Breite ohne skalierte Endkappen. Ohne Property-Registrierung bleibt die
+Phase zwischen beiden Layern gleich, kann aber nur diskret interpolieren.
 
 ### Reduced Motion
 
@@ -185,7 +189,7 @@ Transitions werden beim Wechsel beendet. Es gibt keinen globalen
   Federintegratoren; Retargeting erhält den sichtbaren Wert, keine Feder-Velocity.
 - Die Palette ist von Hand auf die vorhandenen semantischen Farbtöne abgestimmt,
   ohne Android-Dynamic-Color. Bestehende Zeitraumfarben bleiben erhalten.
-- Der Wavy Indicator nutzt eine skalierte determinate CSS/SVG-Mask und eine
+- Der Wavy Indicator nutzt eine unskalierte, rechts beschnittene CSS/SVG-Mask und eine
   Überblendung zur geraden Linie; Compose-Wellengeometrie und Stop-Indicator
   werden nicht exakt reproduziert.
 - Tooltips/Popover bleiben montiert und verwenden Opacity/Scale mit verzögerter
@@ -228,3 +232,4 @@ Prüfung, echte Reduced-Motion-Emulation sowie ein Performance-Trace mit 4× CPU
 Implementierungs-Checkliste ist kein vollständiger Nachweis der Definition of Done.
 
 Referenzen und der abgearbeitete Plan: [`docs/design-plan.md`](docs/design-plan.md).
+

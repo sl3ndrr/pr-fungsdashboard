@@ -38,7 +38,7 @@ Stabile Checkboxen, Zahlen und Balken behalten ihre echten CSS-Transitions.
 - [x] 6. Karten: tonaler Hover/Press, Scroll, Wash/Bounce statt Schatten-Pulse.
 - [x] 7. Erledigt: SVG-Häkchen, Form/Farbe, wachsende Titellinie, Badge-Crossfade, Statistik-Feder.
 - [x] 8. Countdown: stabile maskierte Ziffernreels, 600-ms-Hero-Start, imminent Effects.
-- [x] 9. Fortschritt: scaleX Spatial-Slow, Wavy Track/Phase, 0/100 % gerade.
+- [x] 9. Fortschritt: Clip-Path Spatial-Slow, gemeinsame Wavy Track/Phase, 0/100 % gerade.
 - [x] 10. Zeitstrahl: gestaffelte Punkte, Rail-Wachstum, Heute-Bounce, Tooltip Enter/Exit, Ping-Ring, Band-Reveal.
 - [x] 11. Kalender: Grid-Kollaps, gerichteter Monatswechsel/Titel, Tages-Morph, Grid-Details/Staffelung, Wochenbänder, Anker-Popover Enter/Exit.
 - [x] 12. Hero/Leerzustand: Container-Transform und Fade-Through bei geändertem nächsten Termin.
@@ -80,3 +80,4 @@ und bewusste Abweichungen.
 Browser-Binaries fehlen; die lokale Cloud-Browser-Vorschau ist mit
 `ERR_BLOCKED_BY_CLIENT` blockiert. `tests/regression.html` steht zur lokalen
 Ausführung bereit, wurde hier aber nicht ausgeführt. Daher Entwurfs-PR.
+
