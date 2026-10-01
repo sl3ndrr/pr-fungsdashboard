@@ -108,3 +108,9 @@ export function cancelledStatus(event) {
   return typeof event.cancelReason === 'string' && event.cancelReason.trim()
     ? event.cancelReason.trim() : 'Abgebrochen';
 }
+
+/** Inclusive period progress: the final day never produces a negative remainder. */
+export function remainingDaysText(day, total) {
+  const remaining = Math.max(0, total - day);
+  return remaining === 0 ? 'letzter Tag' : `noch ${remaining} ${remaining === 1 ? 'Tag' : 'Tage'}`;
+}

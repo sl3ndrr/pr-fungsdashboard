@@ -8,6 +8,7 @@ import {
   midnight,
   parseISOString,
   periodsOnDay,
+  remainingDaysText,
   typeClass,
   validateData,
 } from "./utils.js";
@@ -376,7 +377,8 @@ function buildHero(upcoming, todayMid, animate) {
     ${activePeriods.map(p => {
       const day = calendarDayDiff(todayMid, parseISOString(p.start)) + 1;
       const total = calendarDayDiff(parseISOString(p.end), parseISOString(p.start)) + 1;
-      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · Tag ${day} von ${total}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}"><span style="clip-path:inset(0 ${100 - day / total * 100}% 0 0)"></span></div></div>`;
+      const progressText = `Tag ${day} von ${total}, ${remainingDaysText(day, total)}`;
+      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · ${progressText}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}" aria-valuetext="${escapeHtml(progressText)}"><span style="clip-path:inset(0 ${100 - day / total * 100}% 0 0)"></span></div></div>`;
     }).join('')}
   `);
   el.querySelectorAll('.hero-next').forEach(button => {
