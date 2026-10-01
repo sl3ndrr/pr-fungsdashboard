@@ -337,7 +337,7 @@ function buildTimeline(todayMid, animate) {
   }
   return {
     html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="width:${trackWidth}px">
-      <div class="timeline-progress" id="timeline-progress-bar" style="width:100%;transform:scaleX(${todayPct / 100})"></div>${periodsHtml}${months}${dots}</div>`,
+      <div class="timeline-progress" id="timeline-progress-bar" style="width:${todayPct}%"></div>${periodsHtml}${months}${dots}</div>`,
     targetPct: todayPct, dotEvents: mainEvents
   };
 }
@@ -382,7 +382,7 @@ function buildHero(upcoming, todayMid, animate) {
     ${activePeriods.map(p => {
       const day = calendarDayDiff(todayMid, parseISOString(p.start)) + 1;
       const total = calendarDayDiff(parseISOString(p.end), parseISOString(p.start)) + 1;
-      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · Tag ${day} von ${total}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}"><span style="transform:scaleX(${day / total})"></span></div></div>`;
+      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · Tag ${day} von ${total}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}"><span style="clip-path:inset(0 ${100 - day / total * 100}% 0 0)"></span></div></div>`;
     }).join('')}
   `);
   el.querySelectorAll('.hero-next').forEach(button => {
@@ -693,7 +693,7 @@ function render(animate) {
 
   syncHTML(document.getElementById('stats-line'),
     `<div class="stat-tile"><span class="stat-label">Termine</span><strong class="stat-value">${mainEvents.filter(e => !e.isCancelled).length}</strong><span class="stat-note">ohne abgebrochene</span></div>
-     <div class="stat-tile"><span class="stat-label">Abgaben erledigt</span><strong class="stat-value">${abgabenDone}<span class="stat-total"> / ${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="transform:scaleX(${abgaben.length ? abgabenDone / abgaben.length : 0})"></span></div></div>
+     <div class="stat-tile"><span class="stat-label">Abgaben erledigt</span><strong class="stat-value">${abgabenDone}<span class="stat-total"> / ${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="clip-path:inset(0 ${100 - (abgaben.length ? abgabenDone / abgaben.length : 0) * 100}% 0 0)"></span></div></div>
      <div class="stat-tile"><span class="stat-label">In den nächsten 7 Tagen</span><strong class="stat-value">${next7}</strong><span class="stat-note">heute eingeschlossen</span></div>`);
 
   const listTarget=document.getElementById('list');
@@ -897,14 +897,15 @@ function enhanceProgress(animate) {
     bar.style.setProperty('--wave-amplitude',String(Math.min(1,Math.max(0,Math.min(value,1-value)*4))));
     if(!animate&&reducedMotion.matches&&progressValues.get(bar)!==value)motion(fill,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
     progressValues.set(bar,value);
-    if(animate)motion(fill,[{transform:'scaleX(0)'},{transform:`scaleX(${value})`}],{speed:'slow'});
+    if(animate)motion(fill,[{clipPath:'inset(0 100% 0 0)'},{clipPath:fill.style.clipPath}],{speed:'slow'});
   });
 }
 function enterTimeline() {
   document.querySelectorAll('.timeline-dot').forEach((dot,index)=>{
     const delay=Math.min(index*20,400);motion(dot,[{scale:'0'},{scale:'1'}],{speed:'fast',delay});motion(dot,[{opacity:0},{opacity:1}],{kind:'effects',delay});
   });
-  const bar=document.querySelector('.timeline-progress');motion(bar,[{transform:'scaleX(0)'},{transform:bar.style.transform}],{speed:'slow'});
+  const bar=document.querySelector('.timeline-progress');motion(bar,[{width:'0%'},{width:bar.style.width}],{speed:'slow'});
   motion(document.querySelector('.timeline-today'),[{translate:'0 -16px',scale:'.8'},{translate:'0 0',scale:'1'}]);
   document.querySelectorAll('.timeline-period-span').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:index*25}));
 }
+
