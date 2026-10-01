@@ -81,3 +81,21 @@ Browser-Binaries fehlen; die lokale Cloud-Browser-Vorschau ist mit
 `ERR_BLOCKED_BY_CLIENT` blockiert. `tests/regression.html` steht zur lokalen
 Ausführung bereit, wurde hier aber nicht ausgeführt. Daher Entwurfs-PR.
 
+
+
+## Visuelle Testmatrix (PR B)
+
+- [x] 102 Testfälle definiert und geladen: Chromium/Firefox/WebKit;
+  360/768/1280/1600 px; Hell/Dunkel/System; kleine Reduced-Motion-Variante.
+- [x] Eigener Playwright-Dev-Paketbereich, Python-HTTP-Server und festes Datum;
+  Komponenten-/Statusbilder und reale DOM-Werte 0/3/50/76/97/100 %;
+  eingefrorene Wellenphasen 0/600/1300 ms.
+- [x] Node-Einstieg `node --test tests/` unabhängig von Playwright (16 Tests).
+- [ ] Ausführung im offiziellen gepinnten Docker-Image und geprüfte,
+  eingecheckte Baselines.
+- [ ] Nachweis, dass die Tests ursprüngliche Fehler vor PR A erkennen.
+
+Die Browsermatrix ist vorbereitet, **nicht abgeschlossen**. Docker fehlt und
+Chromium startet mangels Binary nicht. Es wurde kein visueller Erfolg behauptet.
+Ausführung, Baseline-Update und Gegenprobe: [visual-tests.md](visual-tests.md).
+Ein CI-Workflow benötigt erst die Freigabe des Nutzers.

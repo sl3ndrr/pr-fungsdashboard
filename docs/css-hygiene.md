@@ -66,6 +66,8 @@ Bereinigung statisch verglichen, mit ausdrücklich dokumentierten Ausnahmen für
 die redundanten/obsoleten Regeln. Bestehende Node-Regressionen, Modulsyntax und
 Whitespace-Prüfung bestehen. Produktdaten und JS sind im Diff zu B unverändert.
 
-Die visuelle Gleichheit ist noch offen. PR C bleibt ein Entwurf; der Workflow aus
-B vergleicht seine Screenshots gegen B in Chromium/Firefox/WebKit. Ein grüner
+Die visuelle Gleichheit ist noch offen. PR C bleibt ein Entwurf. Die aktualisierte
+Test-Infrastruktur aus B wurde nachgezogen; der nicht freigegebene CI-Workflow
+ist entfernt. Nach Erzeugung und Prüfung der B-Baselines ist der Vergleich im
+gepinnten Docker-Image auszuführen (siehe `docs/visual-tests.md`). Ein grüner
 Browserlauf oder echte Screenshots werden hier nicht behauptet.

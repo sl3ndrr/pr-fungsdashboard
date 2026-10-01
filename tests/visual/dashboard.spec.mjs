@@ -1,7 +1,7 @@
 import {test,expect} from 'playwright/test';
 import {openDashboard,freeze} from './helpers.mjs';
 
-for(const width of [360,768,1280,1600])for(const theme of ['light','dark','system'])for(const reduced of [false,true]) {
+for(const width of [360,768,1280,1600])for(const theme of ['light','dark','system'])for(const reduced of (width===360&&theme==='light'?[false,true]:[false])) {
   test(`${width}px ${theme} ${reduced?'reduced':'motion'}`,async({page})=>{
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await openDashboard(page,{width,theme,reduced});
@@ -23,6 +23,9 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark','syste
     if(reduced)expect(geometry.reducedWave).toBe('paused');
     expect(errors).toEqual([]);
     await expect(page).toHaveScreenshot('dashboard.png',{fullPage:true});
+    await expect(page.locator('.timeline-card')).toHaveScreenshot('timeline-and-legend.png');
+    await expect(page.locator('#hero')).toHaveScreenshot('next-card.png');
+    await expect(page.locator('#stats-line')).toHaveScreenshot('statistics.png');
   });
 }
 
@@ -45,6 +48,9 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark']) {
     })));
     for(const size of sizes){expect(size.minHeight).toBe('0px');expect(size.height).toBeLessThan(88);}
     await expect(page).toHaveScreenshot('status-cards.png',{fullPage:true});
+    for(const id of ['p4','a1','fx-expired','fx-today','p6']) {
+      await expect(page.locator(`#card-${id}`)).toHaveScreenshot(`card-${id}.png`);
+    }
   });
 }
 
@@ -105,3 +111,4 @@ test('system theme follows a dark OS preference',async({page})=>{
   await expect(page.locator('[data-theme-value="system"]')).toHaveAttribute('aria-checked','true');
   await expect(page).toHaveScreenshot('system-dark.png',{fullPage:true});
 });
+

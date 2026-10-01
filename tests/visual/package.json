@@ -2,12 +2,12 @@
   "name": "pr-fungsdashboard-checks",
   "private": true,
   "scripts": {
-    "test": "node --test tests/*.test.mjs",
-    "test:visual": "playwright test",
-    "test:visual:update": "playwright test --update-snapshots"
+    "test": "playwright test",
+    "update": "playwright test --update-snapshots"
   },
   "devDependencies": {
     "playwright": "1.62.1"
   },
   "type": "module"
 }
+
