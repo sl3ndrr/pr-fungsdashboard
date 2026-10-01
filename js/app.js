@@ -623,13 +623,35 @@ function layoutTimelineLabels() {
   scroller.style.paddingTop = `${Math.max(112, tipHeight + 116)}px`;
 }
 
+let timelineCentered = false;
+let timelineManuallyScrolled = false;
+let timelineProgrammaticLeft = null;
+const timelineScroller = document.querySelector('.timeline-scroll');
+for (const type of ['wheel', 'pointerdown', 'touchstart']) {
+  timelineScroller.addEventListener(type, () => { timelineManuallyScrolled = true; }, {passive:true});
+}
+timelineScroller.addEventListener('keydown', event => {
+  if (['ArrowLeft','ArrowRight','Home','End','PageUp','PageDown'].includes(event.key)) timelineManuallyScrolled = true;
+});
+timelineScroller.addEventListener('scroll', () => {
+  if (timelineProgrammaticLeft === null || Math.abs(timelineScroller.scrollLeft - timelineProgrammaticLeft) > 1) timelineManuallyScrolled = true;
+}, {passive:true});
+function scheduleTimelineLayout() {
+  requestAnimationFrame(() => {
+    layoutTimelineLabels();
+    centerTimelineToday();
+  });
+}
 function centerTimelineToday() {
+  if (timelineManuallyScrolled) return;
   const scroller = document.querySelector('.timeline-scroll');
   const track = document.querySelector('.timeline-track');
   const today = document.querySelector('.timeline-today');
   if (!track || !today) return;
   const x = track.offsetLeft + today.offsetLeft;
-  scroller.scrollLeft = Math.max(0, Math.min(scroller.scrollWidth - scroller.clientWidth, x - scroller.clientWidth / 2));
+  timelineProgrammaticLeft = Math.max(0, Math.min(scroller.scrollWidth - scroller.clientWidth, x - scroller.clientWidth / 2));
+  scroller.scrollLeft = timelineProgrammaticLeft;
+  timelineCentered = true;
 }
 
 function renderPreservingState(animate = false) {
@@ -712,7 +734,7 @@ function render(animate) {
 
   });
 
-  if (animate) centerTimelineToday();
+  if (!timelineCentered) scheduleTimelineLayout();
 
   const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
   const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
@@ -886,15 +908,16 @@ document.querySelectorAll('#type-filter button').forEach(button => {
     if (!document.hidden) refreshCurrentDay();
   });
   window.addEventListener('pageshow', refreshCurrentDay);
-  let timelineWidth = document.getElementById('timeline-container').clientWidth;
-  window.addEventListener('resize', () => {
-    const width = document.getElementById('timeline-container').clientWidth;
+  document.fonts?.ready.then(scheduleTimelineLayout);
+  let timelineWidth = timelineScroller.clientWidth;
+  new ResizeObserver(() => {
+    const width = timelineScroller.clientWidth;
     if (width !== timelineWidth) {
       timelineWidth = width;
       renderPreservingState();
-      centerTimelineToday();
+      scheduleTimelineLayout();
     }
-  });
+  }).observe(timelineScroller);
   refreshCurrentDay();
 })();
 

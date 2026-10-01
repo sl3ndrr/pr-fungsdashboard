@@ -82,6 +82,10 @@ Datum und Status stehen im zugänglichen Namen und Tooltip jedes Punkts. Fokus
 öffnet den Tooltip, Escape schließt ihn; bei Touch zeigt die erste Berührung die
 Details und die zweite führt zur Karte. Tooltips erhalten Platz oberhalb beider
 Zeitraum-Zeilen. Die Legende trennt Terminarten, Status und Zeiträume.
+Beim ersten Layout wird „Heute“ sofort innerhalb des Zeitstrahl-Containers
+zentriert und an dessen Scrollgrenzen begrenzt. Fonts und Containerbreiten können
+die Startposition korrigieren, bis die Person den Zeitstrahl selbst bedient;
+spätere Render und Tageswechsel setzen ihre Scrollposition nicht zurück.
 
 Design-Tokens und beide Farbpaletten liegen in `css/styles.css`. `color-scheme` und
 `light-dark()` wählen Hell, Dunkel oder das Systemdesign aus einer gemeinsamen
