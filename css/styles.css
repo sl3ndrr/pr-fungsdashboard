@@ -399,7 +399,7 @@ svg { width: 1.25rem; height: 1.25rem; flex-shrink: 0; vertical-align: middle; }
 
 /* Semantic colors belong to event types and periods; selection stays neutral. */
 .pill, .theme-switch, .cal-nav-btn, .cal-day-details-close, .cal-popover-close, .cal-popover-btn, .segmented-filter { border-color: var(--control-border); }
-.timeline-period-label { position: absolute; top: -58px; transform: translateX(-50%); font-size: var(--font-xs); background: transparent; border-left: 3px solid rgb(var(--period-rgb)); padding-left: var(--space-2); font-weight: 600; color: var(--on-surface); max-width: 100%; white-space: normal; overflow-wrap: anywhere; }
+.timeline-period-label { position: absolute; top: -58px; transform: translateX(-50%); font-size: var(--font-xs); background: transparent; border-left: 3px solid rgb(var(--period-rgb)); padding-left: var(--space-2); font-weight: 600; color: var(--on-surface); width: max-content; max-width: 100%; white-space: nowrap; overflow-wrap: normal; }
 
 /* Brief first-render and completion feedback; never loop. */
 .timeline-card.enter { animation-delay: 40ms; }
@@ -546,6 +546,10 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .ping-ring { position: absolute; inset: -3px; border: 2px solid var(--type-color); border-radius: 50%; pointer-events: none; }
 .timeline-tooltip { bottom: 100px; display: flex; visibility: hidden; opacity: 0; scale: .8; transform-origin: center bottom; transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), opacity var(--dur-effects-fast) var(--spring-effects), visibility 0s linear var(--dur-effects-fast); }
 .timeline-dot:not([data-tooltip-dismissed]):is(:hover,:focus,[data-tooltip-open='true']) .timeline-tooltip { visibility: visible; scale: 1; opacity: 1; transition-delay: 0s; }
+@media (max-width: 879px) {
+  .timeline-card { justify-content: flex-start; }
+  .timeline-tooltip { top: calc(100px + var(--space-2)); bottom: auto; transform-origin: center top; }
+}
 @starting-style { .timeline-dot:not([data-tooltip-dismissed]):is(:hover,:focus,[data-tooltip-open='true']) .timeline-tooltip { opacity: 0; scale: .8; } }
 /* Grid collapse keeps content during exits; inert removes closed controls from tab order. */
 .calendar-section { display: grid; grid-template-rows: 0fr; opacity: 0; margin-bottom: 0; transform-origin: top right; scale: .96; transition: grid-template-rows var(--dur-spatial) var(--spring-spatial), scale var(--dur-spatial) var(--spring-spatial), opacity var(--dur-effects-fast) var(--spring-effects), margin-bottom var(--dur-spatial) var(--spring-spatial); }
