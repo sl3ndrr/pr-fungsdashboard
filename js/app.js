@@ -353,12 +353,12 @@ function buildHero(upcoming, todayMid, animate) {
   const d = parseISOString(item.date);
   const diffDays = calendarDayDiff(d, todayMid);
   el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''} `;
-  const count = diffDays === 0 ? 'Heute' : diffDays === 1 ? 'Morgen' : diffDays;
+  const count = diffDays === 0 ? 'Heute' : diffDays;
   const activePeriods = periodsOnDay(todayMid, periods);
   syncHTML(el, `
     <h2 class="hero-label">Als Nächstes</h2>
     <div class="hero-main">
-      <div class="hero-countdown"><span class="hero-number ${diffDays < 2 ? 'word' : ''}">${count}</span>${diffDays > 1 ? '<span class="hero-unit">Tage</span>' : ''}</div>
+      <div class="hero-countdown"><span class="hero-number ${diffDays === 0 ? 'word' : ''}">${count}</span>${diffDays > 0 ? `<span class="hero-unit">${diffDays === 1 ? 'Tag' : 'Tage'}</span>` : ''}</div>
       <div class="hero-text">
         <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}</span>
         <h3 class="hero-title">${escapeHtml(item.title)}</h3>
