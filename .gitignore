@@ -20,3 +20,7 @@ coverage/
 npm-debug.log*
 yarn-debug.log*
 pnpm-debug.log*
+
+# Visuelle Lauf-Artefakte; __snapshots__ wird eingecheckt
+playwright-report/
+test-results/
