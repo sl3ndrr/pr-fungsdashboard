@@ -380,7 +380,7 @@ function buildHero(upcoming, todayMid, animate) {
       const day = calendarDayDiff(todayMid, parseISOString(p.start)) + 1;
       const total = calendarDayDiff(parseISOString(p.end), parseISOString(p.start)) + 1;
       const progressText = `Tag ${day} von ${total}, ${remainingDaysText(day, total)}`;
-      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · ${progressText}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}" aria-valuetext="${escapeHtml(progressText)}"><span style="clip-path:inset(0 ${100 - day / total * 100}% 0 0)"></span></div></div>`;
+      return `<div class="hero-period" style="--period-rgb:${p.rgb}"><span>${escapeHtml(p.label)} · ${progressText}</span><div class="mini-progress" role="progressbar" aria-label="${escapeHtml(p.label)}" aria-valuemin="0" aria-valuemax="${total}" aria-valuenow="${day}" aria-valuetext="${escapeHtml(progressText)}"><span style="clip-path:inset(0 ${100 - day / total * 100}% 0 0)"></span><i class="progress-marker" aria-hidden="true"></i></div></div>`;
     }).join('')}
   `);
   el.querySelectorAll('.hero-next').forEach(button => {
@@ -953,9 +953,14 @@ function enhanceProgress(animate) {
     const value=Number(bar.getAttribute('aria-valuenow'))/Number(bar.getAttribute('aria-valuemax')),fill=bar.querySelector('span');
     bar.dataset.flat=String(value<=0||value>=1);
     bar.style.setProperty('--wave-amplitude',String(Math.min(1,Math.max(0,Math.min(value,1-value)*4))));
+    bar.style.setProperty('--progress-position',`${Math.max(0,Math.min(1,value))*100}%`);
     if(!animate&&reducedMotion.matches&&progressValues.get(bar)!==value)motion(fill,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
     progressValues.set(bar,value);
-    if(animate)motion(fill,[{clipPath:'inset(0 100% 0 0)'},{clipPath:fill.style.clipPath}],{speed:'slow'});
+    if(animate){
+      motion(fill,[{clipPath:'inset(0 100% 0 0)'},{clipPath:fill.style.clipPath}],{speed:'slow'});
+      const marker=bar.querySelector('.progress-marker');
+      if(marker)motion(marker,[{transform:'translateX(2px)'},{transform:`translateX(clamp(2px, ${Math.max(0,Math.min(1,value))*100}%, calc(100% - 2px)))`}],{speed:'slow'});
+    }
   });
 }
 function enterTimeline() {
@@ -966,4 +971,3 @@ function enterTimeline() {
   motion(document.querySelector('.timeline-today'),[{translate:'0 -16px',scale:'.8'},{translate:'0 0',scale:'1'}]);
   document.querySelectorAll('.timeline-period-span').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:index*25}));
 }
-

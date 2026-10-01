@@ -10,6 +10,7 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark']) {
         for(const bar of bars){
           bar.setAttribute('aria-valuemax','100');bar.setAttribute('aria-valuenow',String(value));
           bar.setAttribute('aria-valuetext',`${value} %`);
+          bar.style.setProperty('--progress-position',`${value}%`);
           bar.dataset.flat=String(value<=0||value>=100);
           bar.style.setProperty('--wave-amplitude',String(Math.min(1,Math.min(value/100,1-value/100)*4)));
           bar.querySelector('span').style.clipPath=`inset(0 ${100-value}% 0 0)`;
@@ -31,11 +32,16 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark']) {
         value:bar.style.width,transform:getComputedStyle(bar).transform,
       }));
       expect(rail.value).toBe(`${percentage}%`);expect(rail.transform).toBe('none');
+      const marker=await page.locator('#hero .progress-marker').evaluate(el=>{
+        const bar=el.parentElement.getBoundingClientRect();
+        return {position:el.getBoundingClientRect().left-bar.left,width:bar.width};
+      });
+      expect(marker.position).toBeCloseTo(Math.max(2,Math.min(marker.width-2,marker.width*percentage/100)),0);
       // Keep explicitly paused wave phases; other screenshots disable animations.
-      await expect(page.locator('#hero .mini-progress')).toHaveScreenshot(`hero-${percentage}-${time}ms.png`,{animations:'allow'});
-      await expect(page.locator('#stats-line .mini-progress')).toHaveScreenshot(`stats-${percentage}-${time}ms.png`,{animations:'allow'});
+      await expect(page.locator('#hero .mini-progress')).toHaveScreenshot(`hero-${width}-${theme}-${percentage}-${time}ms.png`,{animations:'allow'});
+      await expect(page.locator('#stats-line .mini-progress')).toHaveScreenshot(`stats-${width}-${theme}-${percentage}-${time}ms.png`,{animations:'allow'});
       // Capture the enclosing rail, so 0% produces a valid screenshot.
-      await expect(page.locator('.timeline-track')).toHaveScreenshot(`timeline-${percentage}-${time}ms.png`,{animations:'allow'});
+      await expect(page.locator('.timeline-track')).toHaveScreenshot(`timeline-${width}-${theme}-${percentage}-${time}ms.png`,{animations:'allow'});
     }
   });
 }
