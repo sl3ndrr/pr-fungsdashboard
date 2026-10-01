@@ -241,6 +241,7 @@ function closeCalMenu() {
 }
 
 document.addEventListener('click', (e) => {
+  if (!e.target.closest('.timeline-dot')) document.querySelectorAll('.timeline-dot[data-tooltip-open]').forEach(dot => delete dot.dataset.tooltipOpen);
   const pop = document.getElementById('cal-popover');
   if (pop && pop.dataset.open === 'true' && !pop.contains(e.target) && !e.target.closest('.cal-event-tag, .cal-day-event')) {
     closeCalMenu();
@@ -307,22 +308,14 @@ function buildTimeline(todayMid, animate) {
     periodsHtml += `<div class="timeline-period-span" style="left:${left}%;width:${right - left}%;--period-rgb:${p.rgb}"></div>
       <div class="timeline-period-label" data-center="${mid}" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
   });
-  const dateGroups = new Map();
   let dots = '';
   mainEvents.forEach((e, i) => {
-    if (!dateGroups.has(e.date)) dateGroups.set(e.date, []);
-    dateGroups.get(e.date).push(dotXs[i]);
     const past = times[i] < todayMid.getTime();
-    const description = `${e.type}: ${e.title}, ${escapeHtml(formatDate(parseISOString(e.date)))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
+    const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', abgebrochen' : ''}`;
     dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} "
       style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}" aria-describedby="timeline-tip-${escapeHtml(e.id)}">
       <span class="timeline-point" aria-hidden="true"></span><span class="timeline-tooltip" id="timeline-tip-${escapeHtml(e.id)}" role="tooltip"><strong>${escapeHtml(e.title)}</strong><span>${escapeHtml(formatDate(parseISOString(e.date)))} · ${escapeHtml(e.time)}</span>${e.isCancelled ? '<span>Abgebrochen</span>' : ''}</span>
     </button>`;
-    if (Math.abs(dotXs[i] - trueXs[i]) > 6) dots += `<span class="timeline-date-tick" style="left:${trueXs[i]}px" aria-hidden="true"></span>`;
-  });
-  dateGroups.forEach((xs, date) => {
-    if (xs.length < 2) return;
-    dots += `<span class="timeline-date-label" style="left:${xs.reduce((a,b) => a+b,0) / xs.length}px" aria-hidden="true">${escapeHtml(formatDate(parseISOString(date)).slice(0, 6))}</span>`;
   });
   const todayPct = todayMid.getTime() < axisStart ? 0 : todayMid.getTime() > axisEnd ? 100 : posOf(todayMid.getTime());
   dots += `<div class="timeline-today" style="left:${todayPct}%" aria-hidden="true"></div><div class="timeline-today-label" style="left:${todayPct}%">Heute</div>`;
@@ -689,8 +682,25 @@ function render(animate) {
   layoutTimelineLabels();
   timelineContainer.querySelectorAll('.timeline-dot').forEach((dot, index) => {
     const item = tl.dotEvents[index];
-    listenOnce(dot, 'click', () => selectTimelineEvent(dot, item.id));
+    let touchActivation = false;
+    listenOnce(dot, 'pointerdown', event => { touchActivation = event.pointerType === 'touch'; });
+    listenOnce(dot, 'click', event => {
+      if (touchActivation && event.detail !== 0 && dot.dataset.tooltipOpen !== 'true') {
+        document.querySelectorAll('.timeline-dot[data-tooltip-open]').forEach(other => delete other.dataset.tooltipOpen);
+        dot.dataset.tooltipOpen = 'true';
+        positionTooltip();
+        dot.focus({preventScroll:true});
+        return; // First touch reads details; a second touch navigates to the card.
+      }
+      delete dot.dataset.tooltipOpen;
+      selectTimelineEvent(dot, item.id);
+    });
+    listenOnce(dot, 'blur', () => { delete dot.dataset.tooltipOpen; delete dot.dataset.tooltipDismissed; });
+    listenOnce(dot, 'keydown', event => {
+      if (event.key === 'Escape') { delete dot.dataset.tooltipOpen; dot.dataset.tooltipDismissed = 'true'; }
+    });
     const positionTooltip = () => {
+      delete dot.dataset.tooltipDismissed;
       const bounds = document.querySelector('.timeline-scroll').getBoundingClientRect();
       const rect = dot.getBoundingClientRect();
       const x = rect.left + rect.width / 2;

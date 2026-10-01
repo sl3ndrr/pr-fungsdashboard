@@ -566,8 +566,8 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
 .timeline-dot:is(:hover,:focus-visible) .timeline-point { scale: 1.3; }
 .ping-ring { position: absolute; inset: -3px; border: 2px solid var(--type-color); border-radius: 50%; pointer-events: none; }
 .timeline-tooltip { bottom: 100px; display: flex; visibility: hidden; opacity: 0; scale: .8; transform-origin: center bottom; transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), opacity var(--dur-effects-fast) var(--spring-effects), visibility 0s linear var(--dur-effects-fast); }
-.timeline-dot:is(:hover,:focus-visible) .timeline-tooltip { visibility: visible; scale: 1; opacity: 1; transition-delay: 0s; }
-@starting-style { .timeline-dot:is(:hover,:focus-visible) .timeline-tooltip { opacity: 0; scale: .8; } }
+.timeline-dot:not([data-tooltip-dismissed]):is(:hover,:focus,[data-tooltip-open='true']) .timeline-tooltip { visibility: visible; scale: 1; opacity: 1; transition-delay: 0s; }
+@starting-style { .timeline-dot:not([data-tooltip-dismissed]):is(:hover,:focus,[data-tooltip-open='true']) .timeline-tooltip { opacity: 0; scale: .8; } }
 /* Grid collapse keeps content during exits; inert removes closed controls from tab order. */
 .calendar-section { display: grid; grid-template-rows: 0fr; opacity: 0; margin-bottom: 0; transform-origin: top right; scale: .96; transition: grid-template-rows var(--dur-spatial) var(--spring-spatial), scale var(--dur-spatial) var(--spring-spatial), opacity var(--dur-effects-fast) var(--spring-effects), margin-bottom var(--dur-spatial) var(--spring-spatial); }
 .calendar-shell { min-height: 0; overflow: hidden; }

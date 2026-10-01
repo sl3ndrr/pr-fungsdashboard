@@ -77,6 +77,12 @@ Achse mit einer Konsolenwarnung. `calOnly`-Termine und Zeiträume verändern die
 nicht. Kollisionsgruppen werden nur horizontal und mit mindestens 32 px Abstand
 verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`.
 
+Datumsstriche und Gruppendaten unter den Punkten entfallen; Monatsmarken bleiben.
+Datum und Status stehen im zugänglichen Namen und Tooltip jedes Punkts. Fokus
+öffnet den Tooltip, Escape schließt ihn; bei Touch zeigt die erste Berührung die
+Details und die zweite führt zur Karte. Tooltips erhalten Platz oberhalb beider
+Zeitraum-Zeilen. Die Legende trennt Terminarten, Status und Zeiträume.
+
 Design-Tokens und beide Farbpaletten liegen in `css/styles.css`. `color-scheme` und
 `light-dark()` wählen Hell, Dunkel oder das Systemdesign aus einer gemeinsamen
 Definition. Roboto Flex wird über Google Fonts geladen; bei
