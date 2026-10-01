@@ -229,7 +229,7 @@ Transitions werden beim Wechsel beendet. Es gibt keinen globalen
 Ohne zusätzliche Pakete mit Node.js 24:
 
 ```bash
-TZ=Europe/Berlin node --test tests/*.test.mjs
+TZ=Europe/Berlin node --test tests/
 ```
 
 Die automatisierten Node-Checks prüfen: Motion-Kanäle und Unterbrechungen, schnelle
@@ -257,3 +257,25 @@ Implementierungs-Checkliste ist kein vollständiger Nachweis der Definition of D
 
 Referenzen und der abgearbeitete Plan: [`docs/design-plan.md`](docs/design-plan.md).
 
+### Visuelle Regressionen (PR B)
+
+Playwright 1.62.1 ist die einzige neue direkte Abhängigkeit und liegt ausschließlich
+als Dev-Werkzeug mit eigenem Paket in `tests/visual/`. Anwendung und Python-HTTP-
+Vorschau bleiben ohne Build. `node --test tests/` benötigt diese Abhängigkeit nicht.
+Chromium/Firefox/WebKit prüfen 360/768/1280/1600 px, Hell/Dunkel, Komponenten,
+Status und eine kleine Reduced-Motion-Variante.
+
+Aus dem Repo-Verzeichnis im gepinnten offiziellen Image ausführen:
+
+```bash
+docker run --rm --ipc=host -v "$PWD:/work" -w /work/tests/visual \
+  mcr.microsoft.com/playwright:v1.62.1-noble \
+  bash -lc 'npm ci --ignore-scripts && npm test'
+```
+
+Zum Aktualisieren der Baselines im selben Befehl `npm test` durch `npm run update`
+ersetzen, die PNGs prüfen und `tests/visual/__snapshots__/` einchecken.
+Datum, Fixtures, Wellenzeiten und die Gegenprobe vor PR A sind in
+[`docs/visual-tests.md`](docs/visual-tests.md) dokumentiert. Ein CI-Workflow ist
+nur vorgeschlagen. Docker-/Browserläufe, eingecheckte Baselines und die
+Vor-A-Gegenprobe stehen noch aus; PR B bleibt ein Entwurf.
