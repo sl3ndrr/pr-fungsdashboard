@@ -565,7 +565,9 @@ function renderCalendar(animate = false) {
 function buildLegendPeriods() {
   const legend = document.getElementById('cal-legend');
   const timelineLegend = document.getElementById('timeline-legend');
-  timelineLegend.innerHTML = ['Prüfung', 'Abgabe', 'Termin'].map(type => `<span class="cal-legend-item"><span class="cal-legend-dot ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + periods.filter((p, i, all) => all.findIndex(other => other.label === p.label) === i).map(p => `<span class="cal-legend-item"><span class="period-swatch" style="--period-rgb:${p.rgb}" aria-hidden="true"></span>${escapeHtml(p.label)}</span>`).join('');
+  timelineLegend.innerHTML = `<span class="timeline-legend-group" aria-label="Terminarten">${['Prüfung', 'Abgabe', 'Termin'].map(type => `<span class="cal-legend-item"><span class="cal-legend-dot ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('')}</span>
+    <span class="timeline-legend-group" aria-label="Status"><span class="cal-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span><span class="cal-legend-item"><span class="timeline-legend-today" aria-hidden="true"></span>Heute</span></span>
+    <span class="timeline-legend-group" aria-label="Zeiträume">${periods.filter((p, i, all) => all.findIndex(other => other.label === p.label) === i).map(p => `<span class="cal-legend-item"><span class="period-swatch" style="--period-rgb:${p.rgb}" aria-hidden="true"></span>${escapeHtml(p.label)}</span>`).join('')}</span>`;
   periods.forEach(p => {
     const item = document.createElement('div');
     item.className = 'cal-legend-item';

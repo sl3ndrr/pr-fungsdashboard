@@ -226,6 +226,9 @@ body {
 .timeline-month { position: absolute; bottom: -30px; transform: translateX(-50%); font-size: var(--font-xs); color: var(--text-muted); }
 .timeline-month::before { content: ''; position: absolute; left: 50%; top: -8px; width: 1px; height: 5px; background: var(--border); }
 .timeline-legend { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); border-top: 1px solid var(--border); padding-top: var(--space-4); margin-top: var(--space-4); }
+.timeline-legend-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); max-width: 100%; }
+.timeline-legend-cancelled { --type-color: var(--error); width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; }
+.timeline-legend-today { width: 2px; height: 20px; margin-inline: var(--space-2); background: var(--on-surface); }
 .period-swatch { width: 16px; height: 6px; border-radius: var(--radius-pill); background: rgb(var(--period-rgb)); }
 .scroll-hint { color: var(--text-muted); font-size: var(--font-xs); margin-top: var(--space-2); }
 @media (min-width: 880px) { .scroll-hint { display: none; } }
@@ -559,7 +562,7 @@ button:hover { --state-opacity: var(--state-hover); } button:focus-visible { --s
 .timeline-dot::before { width: 44px; margin-left: -22px; }
 .timeline-point { position: absolute; inset: -3px; border: 3px solid var(--surface-container-low); border-radius: 50%; background: var(--type-color); box-shadow: 0 0 0 1px var(--type-color); transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects) var(--spring-effects); pointer-events: none; }
 .timeline-dot.past .timeline-point { background: color-mix(in srgb,var(--type-color) 75%,var(--surface-container-low)); }
-.timeline-dot.cancelled .timeline-point { border: 2px solid var(--type-color); background: var(--surface-container-low); box-shadow: none; }
+.timeline-dot.cancelled .timeline-point, .timeline-legend-cancelled { border: 2px solid var(--type-color); background: var(--surface-container-low); box-shadow: none; }
 .timeline-dot:is(:hover,:focus-visible) .timeline-point { scale: 1.3; }
 .ping-ring { position: absolute; inset: -3px; border: 2px solid var(--type-color); border-radius: 50%; pointer-events: none; }
 .timeline-tooltip { bottom: 100px; display: flex; visibility: hidden; opacity: 0; scale: .8; transform-origin: center bottom; transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), opacity var(--dur-effects-fast) var(--spring-effects), visibility 0s linear var(--dur-effects-fast); }
