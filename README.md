@@ -257,3 +257,12 @@ Implementierungs-Checkliste ist kein vollständiger Nachweis der Definition of D
 
 Referenzen und der abgearbeitete Plan: [`docs/design-plan.md`](docs/design-plan.md).
 
+
+### Visuelle Regressionen (PR B)
+
+Playwright ist eine reine Test-Abhängigkeit; Anwendung und lokale HTTP-Vorschau
+benötigen weiterhin keinen Build. Die Browsermatrix, eingefrorene Wellenbilder,
+Status-Fixtures und Screenshot-Vergleiche stehen in
+[`docs/visual-tests.md`](docs/visual-tests.md). CI vergleicht Basisbranch und
+PR-Stand mit demselben Test-Harness; Screenshots bleiben als Review-Artefakte
+verfügbar. Hier wurden keine Browser-Ergebnisse oder Baselines erzeugt.
