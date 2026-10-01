@@ -495,7 +495,7 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 :is(.hero-label,.hero-number,.hero-title,.hero-meta,.hero-unit,.badge,.type-icon,.stat-value,.stat-label,.stat-note,.meta,.group-heading,.header-date,.cal-day-event-type,.cal-day-event-title,.cal-day-event-meta,.cal-period-indicator,.cal-day-period) { transition: background-color var(--dur-effects) var(--spring-effects), color var(--dur-effects) var(--spring-effects), font-variation-settings var(--dur-spatial) var(--spring-spatial); }
 .done-toggle input { transition: border-radius var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects-fast) var(--spring-effects), border-color var(--dur-effects-fast) var(--spring-effects); }
 .check-mark path { transition: stroke-dashoffset var(--dur-effects) var(--spring-effects); }
-.digit-mask { display: inline-block; overflow: hidden; vertical-align: bottom; width: 1ch; height: 1.12em; line-height: 1.12; }
+.digit-mask { display: inline-block; flex: 0 0 auto; overflow: hidden; vertical-align: bottom; width: calc(1ch + .08em); padding-inline-end: .08em; height: 1.12em; line-height: 1.12; }
 .hero-number .number-visual { display: flex; }
 .digit-reel { display: block; transform: translateY(calc(var(--digit,0) * -1.12em)); transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast); }
 .digit-cell { display: block; height: 1.12em; line-height: 1.12; }
@@ -579,5 +579,4 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .title-text { background: linear-gradient(currentColor,currentColor) left 55% / 0% 2px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-size var(--dur-effects) var(--spring-effects); }
 .card.done .title-text { background-size: 100% 2px; }
 .cal-day { border-color: var(--outline); }
-
 
