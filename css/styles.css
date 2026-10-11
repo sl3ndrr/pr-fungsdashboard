@@ -181,8 +181,8 @@ body {
 /* Every dot shares the rail center (3px); only x positions resolve collisions. */
 .timeline-card { padding: var(--space-6); display: flex; flex-direction: column; justify-content: center; box-shadow: var(--shadow-1); min-width: 0; position: relative; }
 .timeline-title h2 { font: 700 var(--font-lg)/1.3 var(--font-display); }
-.timeline-scroll { position: relative; overflow-x: auto; padding-top: 7rem; padding-bottom: var(--space-8); width: 100%; scrollbar-width: thin; scrollbar-color: var(--border) transparent; overscroll-behavior-x: contain; }
-.timeline-track { position: relative; height: 64px; margin: var(--space-4) var(--space-2); }
+.timeline-scroll { position: relative; overflow-x: auto; padding-top: 46px; padding-bottom: 8px; width: 100%; scrollbar-width: thin; scrollbar-color: var(--border) transparent; overscroll-behavior-x: contain; }
+.timeline-track { position: relative; height: 48px; margin: var(--space-4) var(--space-2); }
 .timeline-track::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; border-radius: var(--radius-pill); }
 .timeline-progress { position: absolute; left: 0; top: 0; height: 6px; background: var(--rail-past); border-radius: var(--radius-pill); z-index: 1; }
 .timeline-period-span { position: absolute; top: -34px; height: 8px; background: rgb(var(--period-rgb)); border-radius: var(--radius-pill); pointer-events: none; }
@@ -196,12 +196,12 @@ body {
 .timeline-dot:focus-visible { z-index: 8; }
 .timeline-dot:hover { z-index: 8; }
 
-.timeline-tooltip { position: absolute; left: 50%; transform: translateX(calc(-50% + var(--tooltip-shift, 0px))); width: 220px; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--surface-2); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-2); font: 400 var(--font-xs)/1.4 var(--font-body); text-align: left; pointer-events: none; }
+.timeline-tooltip { position: fixed; z-index: 60; width: min(260px, calc(100vw - 24px)); max-height: calc(100dvh - 24px); overflow-y: auto; flex-direction: column; gap: var(--space-2); padding: var(--space-3); background: var(--surface-container-high); color: var(--text); border: 1px solid var(--border); border-radius: var(--radius-md); box-shadow: var(--shadow-2); font: 400 var(--font-xs)/1.4 var(--font-body); text-align: left; pointer-events: none; }
 .timeline-tooltip strong { overflow-wrap: anywhere; }
 .timeline-today { position: absolute; top: -13px; height: 42px; width: 2px; margin-left: -1px; background: var(--text); z-index: 3; pointer-events: none; }
-.timeline-today-label { position: absolute; top: 51px; transform: translateX(-50%); background: var(--text); color: var(--surface-1); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-2); font-size: var(--font-xs); font-weight: 600; }
+.timeline-today-label { position: absolute; top: 17px; transform: translateX(-50%); background: var(--text); color: var(--surface-1); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-2); font-size: var(--font-xs); font-weight: 600; }
 .timeline-today-label[style="left:0%"] { transform: none; } .timeline-today-label[style="left:100%"] { transform: translateX(-100%); }
-.timeline-month { position: absolute; bottom: -30px; transform: translateX(-50%); font-size: var(--font-xs); color: var(--text-muted); }
+.timeline-month { position: absolute; bottom: -8px; transform: translateX(-50%); font-size: var(--font-xs); color: var(--text-muted); }
 .timeline-month::before { content: ''; position: absolute; left: 50%; top: -8px; width: 1px; height: 5px; background: var(--border); }
 .timeline-legend { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); border-top: 1px solid var(--border); padding-top: var(--space-4); margin-top: var(--space-4); }
 .timeline-legend-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); max-width: 100%; }
@@ -540,17 +540,14 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .timeline-dot.cancelled { border: 3px solid transparent; background: transparent; }
 .timeline-dot::before { content: ''; position: absolute; height: 44px; left: 50%; top: 50%; margin-top: -22px; width: 44px; margin-left: -22px; }
 .timeline-point { position: absolute; inset: -3px; border: 3px solid var(--surface-container-low); border-radius: 50%; background: var(--type-color); box-shadow: 0 0 0 1px var(--type-color); transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), background-color var(--dur-effects) var(--spring-effects); pointer-events: none; }
-.timeline-dot.past .timeline-point { background: color-mix(in srgb,var(--type-color) 75%,var(--surface-container-low)); }
+.timeline-dot.past .timeline-point { background: color-mix(in srgb,var(--type-color) 85%,var(--surface-container-low)); }
 .timeline-dot.cancelled .timeline-point, .timeline-legend-cancelled { border: 2px solid var(--type-color); background: var(--surface-container-low); box-shadow: none; }
 .timeline-dot:is(:hover,:focus-visible) .timeline-point { scale: 1.3; }
 .ping-ring { position: absolute; inset: -3px; border: 2px solid var(--type-color); border-radius: 50%; pointer-events: none; }
-.timeline-tooltip { bottom: 100px; display: flex; visibility: hidden; opacity: 0; scale: .8; transform-origin: center bottom; transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), opacity var(--dur-effects-fast) var(--spring-effects), visibility 0s linear var(--dur-effects-fast); }
-.timeline-dot:not([data-tooltip-dismissed]):is(:hover,:focus,[data-tooltip-open='true']) .timeline-tooltip { visibility: visible; scale: 1; opacity: 1; transition-delay: 0s; }
-@media (max-width: 879px) {
-  .timeline-card { justify-content: flex-start; }
-  .timeline-tooltip { top: calc(100px + var(--space-2)); bottom: auto; transform-origin: center top; }
-}
-@starting-style { .timeline-dot:not([data-tooltip-dismissed]):is(:hover,:focus,[data-tooltip-open='true']) .timeline-tooltip { opacity: 0; scale: .8; } }
+.timeline-tooltip { display: flex; visibility: hidden; opacity: 0; scale: .8; transition: scale var(--dur-spatial-fast) var(--spring-spatial-fast), opacity var(--dur-effects-fast) var(--spring-effects), visibility 0s linear var(--dur-effects-fast); }
+.timeline-tooltip[data-open='true'] { visibility: visible; scale: 1; opacity: 1; pointer-events: auto; transition-delay: 0s; }
+@media (max-width: 879px) { .timeline-card { justify-content: flex-start; } }
+@starting-style { .timeline-tooltip[data-open='true'] { opacity: 0; scale: .8; } }
 /* Grid collapse keeps content during exits; inert removes closed controls from tab order. */
 .calendar-section { display: grid; grid-template-rows: 0fr; opacity: 0; margin-bottom: 0; transform-origin: top right; scale: .96; transition: grid-template-rows var(--dur-spatial) var(--spring-spatial), scale var(--dur-spatial) var(--spring-spatial), opacity var(--dur-effects-fast) var(--spring-effects), margin-bottom var(--dur-spatial) var(--spring-spatial); }
 .calendar-shell { min-height: 0; overflow: hidden; }
@@ -585,3 +582,4 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .title-text { background: linear-gradient(currentColor,currentColor) left 55% / 0% 2px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-size var(--dur-effects) var(--spring-effects); }
 .card.done .title-text { background-size: 100% 2px; }
 .cal-day { border-color: var(--outline); }
+

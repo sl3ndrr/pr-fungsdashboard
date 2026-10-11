@@ -1,15 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
+import {timelineGeometry} from '../js/layout.js';
 import {EVENTS,PERIODS} from '../js/data.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData} from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('const CAL_MIN_MONTH_INDEX'));
 const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
 const {events,periods}=validateData(EVENTS,PERIODS);
-const generate=new Function('events','periods','parseISOString','calendarDayDiff','cancelledStatus','escapeHtml','formatDate','typeClass','document','today','animate',dateFn+timelineFn+'\nreturn buildTimeline(today,animate);');
+const generate=new Function('timelineGeometry','events','periods','parseISOString','calendarDayDiff','cancelledStatus','escapeHtml','formatDate','typeClass','document','today','animate',dateFn+timelineFn+'\nreturn buildTimeline(today,animate);');
 const doc={getElementById:()=>({clientWidth:600})};
-const timeline=today=>generate(events,periods,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,doc,today,false);
+const timeline=today=>generate(timelineGeometry,events,periods,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,doc,today,false);
 test('axis stays 06.07.–26.10.; calendar-only events and periods never extend it',()=>{
   const result=timeline(parseISOString('2026-09-30'));
   assert.match(result.html,new RegExp(`data-axis-start="${parseISOString('2026-07-06').getTime()}"`));
@@ -32,9 +33,10 @@ test('today progress clamps at the axis boundaries and calendar day math handles
 test('cancelled tooltips and accessible names show neutral status or safely escaped reason',()=>{
   for(const [reason,expected] of [[undefined,'Abgebrochen'],['verschoben','Abgebrochen: verschoben'],['<b>entfällt</b>','Abgebrochen: &lt;b&gt;entfällt&lt;/b&gt;']]){
     const item={id:'cancel-fixture',type:'Prüfung',title:'Test',date:'2026-10-05',time:'10:00 Uhr',isCancelled:true,...(reason===undefined?{}:{cancelReason:reason})};
-    const result=generate([item],[],parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,doc,parseISOString('2026-10-01'),false);
+    const result=generate(timelineGeometry,[item],[],parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,doc,parseISOString('2026-10-01'),false);
     assert.ok(result.html.includes(expected));
     assert.match(result.html,/aria-label="Prüfung: Test, 05\.10\.2026, 10:00 Uhr, Abgebrochen/);
     assert.doesNotMatch(result.html,/<b>|Abgebrochen: Abgebrochen/);
   }
 });
+
