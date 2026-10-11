@@ -605,10 +605,10 @@ function layoutTimelineLabels() {
     rows[row] = right;
     label.dataset.row = String(row);
     label.style.left = `${center}px`;
-    label.style.top = `${-46 - row * 24}px`;
+    label.style.top = `${-58 - row * 24}px`;
   });
   // Reserve actual label rows only; the shared tooltip lives outside this scroller.
-  scroller.style.paddingTop = `${labels.length ? 46 + (rows.length - 1) * 24 : 22}px`;
+  scroller.style.paddingTop = `${labels.length ? 58 + (rows.length - 1) * 24 : 22}px`;
   scroller.style.paddingBottom = '8px';
   positionTimelineTooltip();
 }
@@ -831,7 +831,7 @@ function render(animate) {
       heading.className = 'group-row-heading';
       heading.dataset.key = `heading-${key}`;
       heading.setAttribute('role', 'listitem');
-      heading.innerHTML = `<h3 class="group-heading" style="view-transition-name:${transitionName(key, 'heading')}">${row.groups.map(group => {
+      heading.innerHTML = `<h3 id="${transitionName(key, 'row-heading')}" class="group-heading" style="view-transition-name:${transitionName(key, 'heading')}">${row.groups.map(group => {
         const id = transitionName(`${key}:${group}`, 'group');
         groupIds.set(group, id);
         return `<span id="${id}">${escapeHtml(group)}</span>`;
@@ -887,7 +887,7 @@ function render(animate) {
     card.innerHTML = `
       <div class="card-inner">
         <div class="card-left">
-          <div class="type-icon ${typeClass(item.type)}" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
+          <div class="type-icon ${typeClass(item.type)}" role="img" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
           <div class="info">
             ${mixedIds.has(item.id) ? `<span class="card-group">${escapeHtml(group)}</span>` : ''}
             <h4 id="title-${escapeHtml(item.id)}" class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
