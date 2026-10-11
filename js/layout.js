@@ -30,3 +30,18 @@ export function timelineGeometry(targets, availableWidth, gap = 32, edge = 22) {
   }
   return { width, xs };
 }
+
+/** Pack chronological cards across group boundaries, without visual/DOM reordering. */
+export function appointmentRows(items, groupFor, columns) {
+  const count = Math.max(1, Math.min(4, Math.floor(columns) || 1));
+  const rows = [];
+  let previousGroup;
+  for (let i = 0; i < items.length; i += count) {
+    const cards = items.slice(i, i + count);
+    const groups = [...new Set(cards.map(groupFor))];
+    const showHeading = groups.length > 1 || groups[0] !== previousGroup;
+    rows.push({ cards, groups, showHeading });
+    previousGroup = groups.at(-1);
+  }
+  return rows;
+}
