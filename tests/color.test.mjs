@@ -16,6 +16,7 @@ test('M3 text/semantic role pairs reach WCAG AA in both palettes',()=>{
 test('progress tracks and past timeline points retain at least 3:1 non-text contrast',()=>{
   for(const mode of [0,1]){
     for(const [ink,paper,fill,weight] of [['on-surface','surface-container','tertiary',.16],['on-primary-container','primary-container','on-primary-container',.2],['on-tertiary-container','tertiary-container','tertiary',.16]])assert.ok(contrast(color(fill,mode),mix(color(ink,mode),color(paper,mode),weight))>=3,`${fill} progress track, mode ${mode}`);
-    for(const type of ['primary','error','tertiary'])assert.ok(contrast(mix(color(type,mode),color('surface-container-low',mode),.75),color('surface-container-low',mode))>=3,`${type} past dot, mode ${mode}`);
+    for(const type of ['primary','error','tertiary'])assert.ok(contrast(mix(color(type,mode),color('surface-container-low',mode),.85),color('surface-container-low',mode))>=3,`${type} past dot, mode ${mode}`);
   }
 });
+

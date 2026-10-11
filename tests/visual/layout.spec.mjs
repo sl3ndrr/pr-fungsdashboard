@@ -1,0 +1,52 @@
+import {test,expect} from 'playwright/test';
+import {openDashboard,freeze} from './helpers.mjs';
+
+for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','system']) {
+  test(`packed layout and overlay ${width}px ${theme}`,async({page})=>{
+    await openDashboard(page,{width,theme});
+    const geometry=await page.evaluate(()=>({
+      overflow:document.documentElement.scrollWidth>innerWidth,
+      railOverflow:document.querySelector('.timeline-scroll').scrollWidth-document.querySelector('.timeline-scroll').clientWidth,
+      cards:[...document.querySelectorAll('#list .card')].map(card=>({
+        top:card.getBoundingClientRect().top,height:card.getBoundingClientRect().height,
+        labelled:card.getAttribute('aria-labelledby').split(' ').every(id=>document.getElementById(id)),
+        leftBorder:getComputedStyle(card).borderLeftWidth,
+      })),
+    }));
+    expect(geometry.overflow).toBe(false);
+    for(const card of geometry.cards){expect(card.labelled).toBe(true);expect(card.leftBorder).toBe('1px');}
+    if(width>=1280) {
+      expect(geometry.railOverflow).toBeLessThanOrEqual(1);
+      expect(geometry.cards.slice(0,Math.min(3,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
+    }
+    if(width>=1600) for(const card of geometry.cards)expect(card.height).toBeLessThanOrEqual(130);
+    if(width===1600) {
+      await page.setViewportSize({width,height:900});await freeze(page);
+      expect(await page.locator('#list .card').first().evaluate(el=>el.getBoundingClientRect().bottom)).toBeLessThanOrEqual(900);
+    }
+    const card=page.locator('.timeline-card');
+    const height=await card.evaluate(el=>el.offsetHeight);
+    for(const dot of [page.locator('.timeline-dot').first(),page.locator('.timeline-dot').last()]) {
+      await dot.focus();await freeze(page);
+      const tip=page.locator('#timeline-tooltip');
+      await expect(tip).toBeVisible();
+      const bounds=await tip.evaluate(el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,w:innerWidth,h:innerHeight};});
+      expect(bounds.left).toBeGreaterThanOrEqual(12);expect(bounds.right).toBeLessThanOrEqual(bounds.w-12);
+      expect(bounds.top).toBeGreaterThanOrEqual(12);expect(bounds.bottom).toBeLessThanOrEqual(bounds.h-12);
+      expect(await card.evaluate(el=>el.offsetHeight)).toBe(height);
+      await dot.press('Escape');await freeze(page);await expect(tip).toBeHidden();await expect(dot).toBeFocused();
+    }
+  });
+}
+
+test('keyed cards and checkbox focus survive group/filter changes without spatial reduced motion',async({page})=>{
+  await openDashboard(page,{width:1600,reduced:true});
+  await page.locator('#toggle-past-btn').click();await freeze(page);
+  await page.locator('#card-a1').evaluate(el=>window.cardBefore=el);
+  await page.locator('#card-a1 input').focus();await page.locator('#card-a1 input').press('Space');await freeze(page);
+  await expect(page.locator('#card-a1 input')).toBeFocused();
+  expect(await page.locator('#card-a1').evaluate(el=>el===window.cardBefore)).toBe(true);
+  await page.locator('[data-filter="Abgabe"]').click();await freeze(page);
+  expect(await page.locator('#card-a1').evaluate(el=>el===window.cardBefore)).toBe(true);
+  expect(await page.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running').every(a=>a.effect.getKeyframes().every(f=>!f.transform&&!f.scale&&!f.translate)))).toBe(true);
+});
