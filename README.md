@@ -7,14 +7,14 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Nächster offener Termin mit großem Countdown, zwei Folgeterminen und aktuellem Zeitraum-Fortschritt mit Resttagen
 - „Danach“-Buttons mit Wochentag, State-Layer und Fokus auf der Zielkarte
 - Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
-- Nach Heute, Kalenderwochen, Monaten und Vergangenheit gruppierte Terminkarten
+- Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
 - Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
 - Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
 - Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
-- Responsive Darstellung mit einer, zwei oder drei Kartenspalten; ab 1560 px volle Inhaltsbreite und zusätzliche Spalten je nach verfügbarem Platz
+- Responsive Darstellung mit einer bis vier Kartenspalten; ab 1560 px volle Inhaltsbreite und maximal vier Spalten
 - Tastaturbedienung, sichtbarer Fokus und Unterstützung für reduzierte Bewegung
 - Tageswechsel aktualisiert Datum, Countdown und Ansichten automatisch
 
@@ -84,9 +84,12 @@ verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`.
 Datumsstriche und Gruppendaten unter den Punkten entfallen; Monatsmarken bleiben.
 Datum und Status stehen im zugänglichen Namen und Tooltip jedes Punkts. Fokus
 öffnet den Tooltip, Escape schließt ihn; bei Touch zeigt die erste Berührung die
-Details und die zweite führt zur Karte. Auf Desktop erhalten Tooltips Platz
-oberhalb beider Zeitraum-Zeilen. Unter 880 px stehen sie bei Bedarf unter den
-Monatsmarken; geschlossene Tooltips vergrößern die Zeitstrahlkachel nicht.
+Details und die zweite führt zur Karte. Ein gemeinsames, fest positioniertes
+Overlay außerhalb des Scrollbereichs hält Tooltips innerhalb des Viewports.
+Es bevorzugt Platz über den Zeitraum-Labels und weicht nach unten aus.
+Nur tatsächliche Label-Zeilen reservieren Höhe; geschlossene Tooltips verändern
+die Zeitstrahlkachel nicht. Die Punktverteilung klemmt Kollisionsgruppen mit
+44-px-Hitflächen innerhalb der Schiene statt die gesamte Schiene zu vergrößern.
 Zeitraum-Labels wie „in Wiesbaden“ bleiben einzeilig und werden innerhalb der
 Schiene positioniert. Die Legende trennt Terminarten, Status und Zeiträume.
 Beim ersten Layout wird „Heute“ sofort innerhalb des Zeitstrahl-Containers
@@ -173,9 +176,9 @@ Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
 | 2. Theme | Thumb/Shape/Icon, Reveal vom Thumb, Farb-Fallback | Spatial-fast/slow / Effects | 350 / 570 / 210 ms |
 | 3. Buttons | Ripple, Press .97, Pill → lg, Selected-Farbe | Spatial-fast / Effects | 350 / 140–300 ms |
 | 4. Typfilter | Geteilter Indikator: Position, Breite, Gewicht | Spatial-fast / Effects | 350 / 210 ms |
-| 5. Liste | Shared-Element/FLIP, Scale/Fade für Ein-/Austritt, Gruppen | Spatial / Effects | 350–410 / 140–210 ms |
+| 5. Liste | Gemeinsames Grid, Shared-Element/FLIP, Scale/Fade für Karten und Zeilenüberschriften | Spatial / Effects | 350–410 / 140–210 ms |
 | 6. Karten | Tonaler Hover/Press, Scroll, Wash/Bounce | Spatial-fast/default / Effects-slow | 350–410 / 300 ms |
-| 7. Erledigt | SVG-Häkchen, Form/Farbe, Titellinie, Badge, Balken | Spatial-fast/slow / Effects | 350–570 / 140–210 ms |
+| 7. Erledigt | Trailing-Checkbox, SVG-Häkchen, Form/Farbe, Titellinie, Statistik-Feder, Balken | Spatial-fast/slow / Effects | 350–570 / 140–210 ms |
 | 8. Countdown | Maskierte Ziffernreels, initiales Hochzählen, imminent | Spatial-fast / Effects | 350 / 210 ms; Start 600 ms |
 | 9. Fortschritt | Clip-Path, gemeinsame Wavy-Phase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
 | 10. Zeitstrahl | Punktstaffelung, Rail, Heute, Tooltip, Ring, Bänder | Spatial-fast/default/slow / Effects | 350–570 / 140–300 ms |
@@ -287,3 +290,22 @@ Datum, Fixtures, Wellenzeiten und die Gegenprobe vor PR A sind in
 [`docs/visual-tests.md`](docs/visual-tests.md) dokumentiert. Ein CI-Workflow ist
 nur vorgeschlagen. Docker-/Browserläufe, eingecheckte Baselines und die
 Vor-A-Gegenprobe stehen noch aus; PR B bleibt ein Entwurf.
+
+
+### Layout-Optimierung – Phase 1
+
+Hero ohne Mindesthöhe oder automatische „Danach“-Lücke; Dringlichkeit erhält
+einen geschlossenen inset-Akzent. Karten ohne linken Farbrand, mit rechts
+stehendem Countdown und 44-px-Checkbox; Typ nur im Icon-Feld. Wochenwerte erst
+ab 14 Tagen. Statistik als 52-px-Segmente direkt unter der Semesterübersicht.
+Ein gemeinsames Grid füllt Zeilen auch über Zeitgruppen hinweg. Da einzelne
+vollbreite Gruppenüberschriften jeweils einen Umbruch erzwingen würden,
+nennt eine gemischte Zeilenüberschrift beide Gruppen; die Karten zeigen dann
+ihre Gruppe zusätzlich. `aria-labelledby` ordnet jede Karte eindeutig zu,
+DOM-Reihenfolge und keyed Karten bleiben chronologisch und stabil.
+
+20 Node-Tests bestanden; Termindaten unverändert. Browserfälle sind für
+360/768/1280/1600/2300 px erweitert, einschließlich Overlay-Klemmung und
+Knotenerhalt. **Nicht visuell verifiziert:** Browser-Binaries fehlen und der
+Playwright-Download wird mit HTTP 403 blockiert. Keine Vorher-/Nachher-Bilder,
+keine bestandene Browsermatrix oder Pixel-Höhenmessung behauptet.

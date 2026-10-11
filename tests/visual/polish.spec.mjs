@@ -1,7 +1,7 @@
 import {test,expect} from 'playwright/test';
 import {openDashboard,freeze} from './helpers.mjs';
 
-for(const width of [360,768,1280,1600])for(const theme of ['light','dark'])for(const reduced of [false,true]) {
+for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark'])for(const reduced of [false,true]) {
   test(`digit ink and compact timeline ${width}px ${theme} ${reduced?'reduced':'motion'}`,async({page})=>{
     const snapshot=`${width}-${theme}-${reduced?'reduced':'motion'}`;
     await openDashboard(page,{width,theme,reduced});
@@ -41,15 +41,18 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark'])for(c
     const railOffset=await scroller.evaluate(el=>el.querySelector('.timeline-track').getBoundingClientRect().top-el.getBoundingClientRect().top);
     const dot=page.locator('.timeline-dot[data-event-id="p4"]');
     await dot.focus();await freeze(page);
-    const tip=dot.locator('.timeline-tooltip');await expect(tip).toBeVisible();
+    const tip=page.locator('#timeline-tooltip');await expect(tip).toBeVisible();
     const details=await tip.evaluate(el=>{
-      const box=el.getBoundingClientRect(),scroller=el.closest('.timeline-scroll').getBoundingClientRect();
-      const track=el.closest('.timeline-track').getBoundingClientRect();
-      return {top:box.top,bottom:box.bottom,limit:scroller.bottom,railOffset:track.top-scroller.top,
-        monthBottom:Math.max(...[...document.querySelectorAll('.timeline-month')].map(month=>month.getBoundingClientRect().bottom))};
+      const box=el.getBoundingClientRect();
+      const scroller=document.querySelector('.timeline-scroll').getBoundingClientRect();
+      const track=document.querySelector('.timeline-track').getBoundingClientRect();
+      return {left:box.left,right:box.right,top:box.top,bottom:box.bottom,
+        height:innerHeight,width:innerWidth,railOffset:track.top-scroller.top};
     });
-    expect(details.top).toBeGreaterThan(details.monthBottom);
-    expect(details.bottom).toBeLessThanOrEqual(details.limit);
+    expect(details.top).toBeGreaterThanOrEqual(12);
+    expect(details.bottom).toBeLessThanOrEqual(details.height-12);
+    expect(details.left).toBeGreaterThanOrEqual(12);
+    expect(details.right).toBeLessThanOrEqual(details.width-12);
     expect(details.railOffset).toBeCloseTo(railOffset,0);
     await expect(card).toHaveScreenshot(`compact-timeline-tooltip-${snapshot}.png`);
     await dot.press('Escape');await freeze(page);
@@ -57,3 +60,4 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark'])for(c
     await expect.poll(()=>card.evaluate(el=>el.getBoundingClientRect().height)).toBeLessThanOrEqual(closedHeight+1);
   });
 }
+

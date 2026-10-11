@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tooltipPosition, timelineGeometry } from '../js/layout.js';
+import { tooltipPosition, timelineGeometry, appointmentRows } from '../js/layout.js';
 
 test('tooltip prefers above, falls below, and clamps all viewport edges', () => {
   const size = {width:260,height:100}, viewport = {width:360,height:640};
@@ -19,4 +19,18 @@ test('dense dates fit a desktop rail without growth; hit areas and order remain 
     for(let i=1;i<xs.length;i++) assert.ok(xs[i]-xs[i-1]>=32-1e-8);
   }
   assert.equal(timelineGeometry(dates,280).width,364);
+});
+
+test('one plus two appointments share a row with explicit group labels and stable order', () => {
+  const cards = [{id:'a',group:'Diese Woche'}, {id:'b',group:'Oktober'}, {id:'c',group:'Oktober'}];
+  const rows = appointmentRows(cards,item=>item.group,3);
+  assert.equal(rows.length,1);
+  assert.deepEqual(rows[0].groups,['Diese Woche','Oktober']);
+  assert.deepEqual(rows[0].cards,cards);
+  assert.equal(rows[0].showHeading,true);
+  for(const columns of [1,2,3,4]) {
+    const packed = appointmentRows([...cards,...cards],item=>item.group,columns);
+    assert.deepEqual(packed.flatMap(row=>row.cards),[...cards,...cards]);
+    assert.ok(packed.slice(0,-1).every(row=>row.cards.length===columns));
+  }
 });

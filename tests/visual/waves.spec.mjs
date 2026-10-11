@@ -1,7 +1,7 @@
 import {test,expect} from 'playwright/test';
 import {openDashboard,freeze} from './helpers.mjs';
 
-for(const width of [360,768,1280,1600])for(const theme of ['light','dark']) {
+for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark']) {
   test(`shared phase ${width}px ${theme}`,async({page})=>{
     await openDashboard(page,{theme,width});
     for(const percentage of [0,3,50,76,97,100])for(const time of [0,600,1300]) {
@@ -45,3 +45,4 @@ for(const width of [360,768,1280,1600])for(const theme of ['light','dark']) {
     }
   });
 }
+

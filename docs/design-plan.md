@@ -99,3 +99,24 @@ Die Browsermatrix ist vorbereitet, **nicht abgeschlossen**. Docker fehlt und
 Chromium startet mangels Binary nicht. Es wurde kein visueller Erfolg behauptet.
 Ausführung, Baseline-Update und Gegenprobe: [visual-tests.md](visual-tests.md).
 Ein CI-Workflow benötigt erst die Freigabe des Nutzers.
+
+
+## Layout-Optimierung 2026 – Phase 1
+
+- [x] Gemeinsames Tooltip-Overlay außerhalb des Scrollers; Escape, Hover/Fokus,
+  erster/zweiter Touch, Scale/Opacity und Viewport-Klemmung.
+- [x] Reservierung nur nach tatsächlichen Zeitraum-Label-Zeilen; Heute näher an
+  der Schiene, Past-Füllung 85 % Typfarbe (rechnerischer Kontrasttest).
+- [x] Begrenzte isotone Punktverteilung, 32 px Abstand, 22 px Hitflächen-Rand;
+  unveränderte Prüfungsachse und 4-%-Datumsspanne.
+- [x] Hero ohne Mindesthöhe/Stretch/Auto-Lücke, inset statt Sichel-Rand.
+- [x] Ein Grid mit maximal vier Spalten; gemischte Zeilenüberschriften lösen
+  den Konflikt zwischen vollbreiten Überschriften und Auffüllen ohne Lücken.
+- [x] Kompakte Karten, Trailing-Checkbox, Countdown rechts, Wochen ab 14 Tagen.
+- [x] Statistiksegmente mit Zählwert-Feder und kleinem Wellenbalken.
+- [x] 20 Node-Tests, Daten-Fingerprint, Syntax und Whitespace.
+- [ ] Visuelle Höhenziele, 360/768/1280/1600/2300 px in Hell/Dunkel/System,
+  Tastatur/Touch und Reduced Motion im Browser; Vorher-/Nachher-Screenshots.
+
+Nicht visuell verifiziert: fehlende Browser-Binaries, Download HTTP 403.
+Die Browser-Testfälle wurden angepasst, nicht ausgeführt.

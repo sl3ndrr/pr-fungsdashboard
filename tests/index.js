@@ -8,3 +8,4 @@ import './status.test.mjs';
 import './timeline.test.mjs';
 
 import './layout.test.mjs';
+import './data.test.mjs';

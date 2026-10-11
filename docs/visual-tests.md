@@ -101,3 +101,19 @@ in der beschriebenen Umgebung ausgeführt und die Bilder geprüft sind.
 
 Ein CI-Workflow wird ausschließlich im PR vorgeschlagen und erst nach Freigabe
 angelegt. Die zuvor vorhandene Workflow-Datei wird mit dieser Korrektur entfernt.
+
+
+## Layout-Optimierung – geänderte Erwartungen
+
+Die gemeinsame Timeline-Tooltip-Fläche ist `#timeline-tooltip` direkt im Body.
+Tests dürfen sie nicht mehr als Kind eines Punktes suchen. Sie muss innerhalb
+des Viewports liegen und darf die Kachelhöhe beim Öffnen nicht verändern.
+`layout.spec.mjs` prüft gemeinsame Kartenzeilen, ARIA-Zuordnung, 1600×900,
+rechts stehende Countdowns, Fokus-/Knotenerhalt und Reduced Motion.
+Die Matrix enthält zusätzlich 2300 px. Die Achsen- und Abstandserwartungen
+bleiben unverändert; neue Node-Tests prüfen die begrenzte Schienenverteilung.
+
+Aktueller Laufstatus: 20 Node-Tests bestanden. Lokale Playwright-Installation
+ist vorhanden, Browser-Binaries fehlen. Downloadversuch am 11.10.2026 endet
+mit HTTP 403. Browsermatrix und Screenshots **nicht visuell verifiziert**.
+Vorhandene visuelle Baselines wurden nicht erfunden oder automatisch ersetzt.

@@ -1,7 +1,7 @@
 import {test,expect} from 'playwright/test';
 import {openDashboard,freeze} from './helpers.mjs';
 
-for(const width of [360,768,1280,1600])for(const theme of ['light','dark','system'])for(const reduced of (width===360&&theme==='light'?[false,true]:[false])) {
+for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','system'])for(const reduced of (width===360&&theme==='light'?[false,true]:[false])) {
   test(`${width}px ${theme} ${reduced?'reduced':'motion'}`,async({page})=>{
     const errors=[];page.on('pageerror',error=>errors.push(error.message));
     await openDashboard(page,{width,theme,reduced});
@@ -34,7 +34,7 @@ const extraEvents=[
   {id:'fx-expired',type:'Termin',title:'Abgelaufen-Fixture',date:'2026-09-29',time:'12:00 Uhr'},
   {id:'fx-cancel',type:'Prüfung',title:'Grund-Fixture',date:'2026-10-04',time:'12:00 Uhr',isCancelled:true,cancelReason:'verschoben'},
 ];
-for(const width of [360,768,1280,1600])for(const theme of ['light','dark']) {
+for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark']) {
   test(`status cards ${width}px ${theme}`,async({page})=>{
     await openDashboard(page,{width,theme,extraEvents});
     await page.locator('#toggle-past-btn').click();await freeze(page);
@@ -73,8 +73,8 @@ test('keyboard, touch, tooltip collisions and preserved manual scroll',async({pa
   const dot=page.locator('.timeline-dot[data-event-id="p4"]');
   await dot.focus();await freeze(page);
   await expect(dot).toHaveAccessibleName(/05\.10\.2026.*Abgebrochen/);
-  await expect(dot.locator('.timeline-tooltip')).toBeVisible();
-  const noOverlap=await dot.locator('.timeline-tooltip').evaluate(tip=>{
+  await expect(page.locator('#timeline-tooltip')).toBeVisible();
+  const noOverlap=await page.locator('#timeline-tooltip').evaluate(tip=>{
     const a=tip.getBoundingClientRect();
     return [...document.querySelectorAll('.timeline-period-label')].every(label=>{
       const b=label.getBoundingClientRect();return a.bottom<=b.top||a.top>=b.bottom||a.right<=b.left||a.left>=b.right;
@@ -82,7 +82,7 @@ test('keyboard, touch, tooltip collisions and preserved manual scroll',async({pa
   });
   expect(noOverlap).toBe(true);
   await dot.press('Escape');await freeze(page);
-  await expect(dot).toBeFocused();await expect(dot.locator('.timeline-tooltip')).toBeHidden();
+  await expect(dot).toBeFocused();await expect(page.locator('#timeline-tooltip')).toBeHidden();
   await page.locator('#hero .hero-next').first().press('Enter');
   await expect(page.locator('#card-p5')).toBeFocused();
   await page.evaluate(()=>{
@@ -98,7 +98,7 @@ test('keyboard, touch, tooltip collisions and preserved manual scroll',async({pa
     dot.dispatchEvent(new PointerEvent('pointerdown',{pointerType:'touch',bubbles:true}));
     dot.dispatchEvent(new PointerEvent('click',{pointerType:'touch',detail:1,bubbles:true}));
   });
-  await freeze(page);await expect(dot.locator('.timeline-tooltip')).toBeVisible();
+  await freeze(page);await expect(page.locator('#timeline-tooltip')).toBeVisible();
   await expect(dot).toHaveAttribute('data-tooltip-open','true');
   await page.evaluate(()=>document.querySelector('.timeline-dot[data-event-id="p4"]').dispatchEvent(new PointerEvent('click',{pointerType:'touch',detail:1,bubbles:true})));
   await expect(page.locator('#card-p4')).toBeFocused();
@@ -111,4 +111,5 @@ test('system theme follows a dark OS preference',async({page})=>{
   await expect(page.locator('[data-theme-value="system"]')).toHaveAttribute('aria-checked','true');
   await expect(page).toHaveScreenshot('system-dark.png',{fullPage:true});
 });
+
 
