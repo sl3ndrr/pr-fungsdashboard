@@ -6,3 +6,5 @@ import './progress.test.mjs';
 import './remaining.test.mjs';
 import './status.test.mjs';
 import './timeline.test.mjs';
+
+import './layout.test.mjs';
