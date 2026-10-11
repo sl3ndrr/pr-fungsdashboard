@@ -110,6 +110,11 @@
         </section>
       </section>
 
+      <section class="stats-container" aria-label="Termin-Statistiken">
+        <div class="stats-grid" id="stats-line"></div>
+      </section>
+
+
       <section id="calendar-section" class="calendar-section" aria-labelledby="calendar-heading" data-open="false" aria-hidden="true" inert>
         <div class="calendar-shell">
         <h2 id="calendar-heading" class="visually-hidden">Kalender</h2>
@@ -134,9 +139,6 @@
         </div>
       </section>
 
-      <section class="stats-container" aria-label="Termin-Statistiken">
-        <div class="stats-grid" id="stats-line"></div>
-      </section>
 
       <section aria-labelledby="appointments-heading">
         <div class="list-heading">
@@ -151,7 +153,7 @@
             <button class="pill" id="toggle-past-btn" type="button" aria-pressed="false" aria-controls="list">Vergangene anzeigen</button>
           </div>
         </div>
-        <div class="dashboard-list" id="list" role="list"></div>
+        <div class="dashboard-list" id="list" role="list" aria-labelledby="appointments-heading"></div>
       </section>
     </main>
 

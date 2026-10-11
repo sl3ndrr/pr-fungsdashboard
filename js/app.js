@@ -1,4 +1,4 @@
-import { tooltipPosition, timelineGeometry } from './layout.js';
+import { tooltipPosition, timelineGeometry, appointmentRows } from './layout.js';
 import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
 import {
@@ -781,9 +781,11 @@ function render(animate) {
   }).length;
 
   syncHTML(document.getElementById('stats-line'),
-    `<div class="stat-tile"><span class="stat-label">Termine</span><strong class="stat-value">${mainEvents.filter(e => !e.isCancelled).length}</strong><span class="stat-note">ohne abgebrochene</span></div>
-     <div class="stat-tile"><span class="stat-label">Abgaben erledigt</span><strong class="stat-value">${abgabenDone}<span class="stat-total"> / ${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="clip-path:inset(0 ${100 - (abgaben.length ? abgabenDone / abgaben.length : 0) * 100}% 0 0)"></span></div></div>
-     <div class="stat-tile"><span class="stat-label">In den nächsten 7 Tagen</span><strong class="stat-value">${next7}</strong><span class="stat-note">heute eingeschlossen</span></div>`);
+    `<div class="stat-tile"><strong class="stat-value">${mainEvents.filter(e => !e.isCancelled).length}</strong><span class="stat-label">Termine</span></div>
+     <div class="stat-tile"><span class="stat-label">Abgaben</span><strong class="stat-value">${abgabenDone}<span class="stat-total">/${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="clip-path:inset(0 ${100 - (abgaben.length ? abgabenDone / abgaben.length : 0) * 100}% 0 0)"></span></div></div>
+     <div class="stat-tile"><strong class="stat-value">${next7}</strong><span class="stat-label">in 7 Tagen</span></div>`);
+
+  animateStatistics();
 
   const listTarget=document.getElementById('list');
   const listEl=document.createElement('div');
@@ -818,21 +820,35 @@ function render(animate) {
   // Future appointments lead; revealed history follows as its own group.
   const orderedEvents = [...visibleEvents.filter(e => parseISOString(e.date) >= todayMid),
     ...visibleEvents.filter(e => parseISOString(e.date) < todayMid)];
-  let currentGroup = null;
-  let groupList;
-  orderedEvents.forEach((item, idx) => {
-    const group = groupFor(item);
-    if (group !== currentGroup) {
-      currentGroup = group;
-      const section = document.createElement('div');
-      section.className = 'appointment-group';
-      section.dataset.key=group;
-      section.setAttribute('role', 'listitem');
-      const headingId=transitionName(group,'group');
-      section.innerHTML = `<h3 id="${headingId}" class="group-heading" style="view-transition-name:${transitionName(group, 'heading')}">${escapeHtml(group)}</h3><div class="group-list" role="list" aria-labelledby="${headingId}"></div>`;
-      groupList = section.querySelector('.group-list');
-      listEl.appendChild(section);
+  const columns = Number(getComputedStyle(listTarget).getPropertyValue('--list-columns')) || 1;
+  const itemGroups = new Map();
+  const groupIds = new Map();
+  const mixedIds = new Set();
+  appointmentRows(orderedEvents, groupFor, columns).forEach(row => {
+    if (row.showHeading) {
+      const key = row.cards[0].id;
+      const heading = document.createElement('div');
+      heading.className = 'group-row-heading';
+      heading.dataset.key = `heading-${key}`;
+      heading.setAttribute('role', 'listitem');
+      heading.innerHTML = `<h3 class="group-heading" style="view-transition-name:${transitionName(key, 'heading')}">${row.groups.map(group => {
+        const id = transitionName(`${key}:${group}`, 'group');
+        groupIds.set(group, id);
+        return `<span id="${id}">${escapeHtml(group)}</span>`;
+      }).join('<span aria-hidden="true"> · </span>')}</h3>`;
+      listEl.appendChild(heading);
     }
+    row.cards.forEach(item => {
+      const group = groupFor(item);
+      if (row.groups.length > 1) mixedIds.add(item.id);
+      // Metadata is assigned before the cards are appended to the same grid.
+      itemGroups.set(item.id, { group, labelId: groupIds.get(group) });
+    });
+    row.cards.forEach(item => listEl.appendChild(buildCard(item)));
+  });
+  function buildCard(item) {
+    const { group, labelId } = itemGroups.get(item.id);
+    const idx = orderedEvents.indexOf(item);
     const d        = parseISOString(item.date);
     const diffDays = calendarDayDiff(d, todayMid);
     const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
@@ -853,11 +869,11 @@ function render(animate) {
       countdownContent = `<span class="primary">Heute</span><span class="secondary">${escapeHtml(item.time)}</span>`;
     } else {
       if (diffDays <= 3) countdownClass = 'urgent';
-      countdownContent = `<span class="primary countdown-number">${diffDays}</span><span class="countdown-unit">Tag${diffDays !== 1 ? 'e' : ''}</span><span class="secondary">${diffWeeks} Wochen</span>`;
+      countdownContent = `<span class="primary countdown-number">${diffDays}</span><span class="countdown-unit">Tag${diffDays !== 1 ? 'e' : ''}</span>${diffDays >= 14 ? `<span class="secondary">${diffWeeks} Wochen</span>` : ''}`;
     }
 
     const checkElement = isAbgabe
-      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span>${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
+      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden">${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
       : '';
 
     const card = document.createElement('div');
@@ -866,24 +882,24 @@ function render(animate) {
     card.tabIndex = -1;
     card.style.viewTransitionName=transitionName(item.id);
     card.setAttribute('role', 'listitem');
+    card.setAttribute('aria-labelledby', `title-${item.id} ${labelId}`);
     if (animate) card.style.setProperty('--delay', Math.min(idx * 0.025, 0.15) + 's');
     card.innerHTML = `
       <div class="card-inner">
         <div class="card-left">
-          <div class="type-icon ${typeClass(item.type)}">${ICONS[item.type]}</div>
+          <div class="type-icon ${typeClass(item.type)}" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
           <div class="info">
-            <span class="badge ${typeClass(item.type)}">${escapeHtml(item.type)}</span>
-            <h4 class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
+            ${mixedIds.has(item.id) ? `<span class="card-group">${escapeHtml(group)}</span>` : ''}
+            <h4 id="title-${escapeHtml(item.id)}" class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
             <div class="meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span>${item.isCancelled ? `<span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span>` : ''}</div>
           </div>
         </div>
-        ${item.isCancelled ? '' : `<div class="countdown ${countdownClass}">${countdownContent}</div>`}
+        <div class="card-trailing">${checkElement}${item.isCancelled ? '' : `<div class="countdown ${countdownClass}">${countdownContent}</div>`}</div>
       </div>
-      ${checkElement}
     `;
 
-    groupList.appendChild(card);
-  });
+    return card;
+  }
 
   syncChildren(listTarget,listEl);
   listTarget.querySelectorAll('.done-toggle input').forEach(input=>listenOnce(input,'change',()=>toggleDone(input.closest('.card').id.slice(5))));
@@ -1004,3 +1020,15 @@ function enterTimeline() {
   document.querySelectorAll('.timeline-period-span').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:index*25}));
 }
 
+
+const statisticValues = new WeakMap();
+function animateStatistics() {
+  document.querySelectorAll('.stat-value').forEach(value => {
+    const text = value.textContent;
+    if (statisticValues.has(value) && statisticValues.get(value) !== text) {
+      motion(value, [{scale:'1.15'}, {scale:'1'}], {speed:'fast'});
+      motion(value, [{opacity:.6}, {opacity:1}], {kind:'effects',speed:'fast'});
+    }
+    statisticValues.set(value, text);
+  });
+}
