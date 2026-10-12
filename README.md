@@ -180,18 +180,19 @@ Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
 | 6. Karten | Tonaler Hover/Press, Scroll, Wash/Bounce | Spatial-fast/default / Effects-slow | 350–410 / 300 ms |
 | 7. Erledigt | Trailing-Checkbox, SVG-Häkchen, Form/Farbe, Titellinie, Statistik-Feder, Balken | Spatial-fast/slow / Effects | 350–570 / 140–210 ms |
 | 8. Countdown | Maskierte Ziffernreels, initiales Hochzählen, imminent | Spatial-fast / Effects | 350 / 210 ms; Start 600 ms |
-| 9. Fortschritt | Clip-Path, gemeinsame Wavy-Phase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
+| 9. Fortschritt | Clip-Path, gemeinsame Transform-Wellenphase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
 | 10. Zeitstrahl | Punktstaffelung, Rail, Heute, Tooltip, Ring, Bänder | Spatial-fast/default/slow / Effects | 350–570 / 140–300 ms |
 | 11. Kalender | Sticky Spalte ab 1280 px, Spalten-/Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
 | 12. Hero/Leerzustand | Container-Transform und Fade-Through / Shared Element | Spatial / Effects | 350–410 / 140–210 ms |
 
 Wellen werden mit einer kleinen SVG-Mask dargestellt. Die Amplitude nimmt nahe
 0 % und 100 % ab und überblendet in eine gerade Linie. Die langsame Phase läuft
-nur im normalen Bewegungsmodus; volle/leere Balken sind statisch. Die registrierte,
-vererbte Property `--wave-shift` am Balken treibt Track und Füllung gemeinsam an.
+nur im normalen Bewegungsmodus; volle/leere Balken sind statisch. Track und Füllung animieren ihre Pseudo-Elemente mit derselben linearen
+`transform: translateX(...)`-Phase. Die vererbte registrierte Wellen-Property
+entfällt. Volle/leere Balken und Reduced Motion pausieren beide Pseudo-Elemente.
 Der Füllwert animiert über Clip-Path mit Spatial-slow; die Zeitstrahl-Pille ändert
-ihre Breite ohne skalierte Endkappen. Ohne Property-Registrierung bleibt die
-Phase zwischen beiden Layern gleich, kann aber nur diskret interpolieren.
+ihre Breite ohne skalierte Endkappen. Ein Compositor-/Performance-Nachweis
+bleibt bis zum echten Browser-Trace offen.
 Der SVG-Pfad läuft über beide Kachelränder hinaus, damit keine Stroke-Enden
 an den Wiederholungsnähten liegen. Eine kleine senkrechte Markierung am
 Zeitraum-Balken zeigt die Füllgrenze auch unabhängig von der Farbe. Sie folgt
@@ -326,3 +327,27 @@ Separate 44-px-Tags pro Termin würden in den schmalen Zellen die Zielhöhe spre
 Kalender und Popover erhalten beim Schließen einen sinnvollen Fokus-Rücksprung.
 20 Node-Tests bestanden; ergänzte Browserfälle **nicht visuell verifiziert**.
 Phase 2 bleibt als abhängiger Entwurf bis zur Phase-1-Browserprüfung offen.
+
+### Layout-Optimierung – Phase 3
+
+Ein kleines Inline-Script setzt gespeichertes Hell/Dunkel vor dem CSS; System,
+ungültige Werte und gesperrter Speicher bleiben sicher. Theme-Farbe hat helle
+und dunkle Media-Metadaten. Nicht gewählte Theme-Icons stehen ohne Ruhe-Rotation;
+Rotation/Scale beim Wechsel bleiben im Feder-System. Die Wellenphase animiert
+Transform auf beiden Pseudo-Elementen statt eine vererbte registrierte Property.
+Die CSS-Layer trennen Basis, Komponenten, variable Typografie und Motion;
+26 unbedingte Komponentenselektoren sind konsolidiert, tote Tokens und die
+überschriebene Checkbox-Pseudo-Grafik entfernt. Der generierte CSS-Bericht wird
+bei Bedarf erzeugt und nicht mehr eingecheckt.
+
+22 Node-Tests und 3 Scanner-Tests bestanden. **Nicht visuell verifiziert:**
+Browser- und Performance-Checks bleiben offen. Die optionale große Aufteilung
+von `app.js` und die Gitarrentermin-Erzeugung wurden bewusst nicht vorgenommen;
+`data.js` bleibt identisch.
+
+**Offen: Roboto Flex lokal als variable WOFF2 mit OFL selbst hosten.** Direkte
+Font-Downloads sind mit HTTP 403 blockiert; der GitHub-Connector liefert die
+große TTF-Datei ohne Inhalt und lehnt Binär-Blob-Lesen als Nicht-UTF-8 ab.
+Gemäß Auftrag bleibt die bestehende Google-Fonts-Einbindung samt System-Fallback
+bestehen. Externe Schrift-Anfragen sind daher weiterhin vorhanden; das Ziel
+„keine externen Requests“ ist noch nicht erfüllt.

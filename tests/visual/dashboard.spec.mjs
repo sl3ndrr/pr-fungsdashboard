@@ -16,7 +16,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
         const box=label.getBoundingClientRect(),track=label.parentElement.getBoundingClientRect();
         return {transparent:getComputedStyle(label).backgroundColor==='rgba(0, 0, 0, 0)',inside:box.left>=track.left-1&&box.right<=track.right+1};
       }),
-      reducedWave:getComputedStyle(document.querySelector('.mini-progress')).animationPlayState,
+      reducedWave:getComputedStyle(document.querySelector('.mini-progress'),'::before').animationPlayState,
     }));
     expect(geometry.overflow).toBe(false);
     for(const label of geometry.labels){expect(label.transparent).toBe(true);expect(label.inside).toBe(true);}

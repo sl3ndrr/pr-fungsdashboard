@@ -80,3 +80,27 @@ for(const width of [768,1280,1600,2300]) {
     expect(await page.locator('#card-p6').evaluate(el=>el===window.sidebarCardBefore)).toBe(true);
   });
 }
+
+for(const theme of ['light','dark']) {
+  test(`saved ${theme} theme is present while the application module is delayed`,async({page})=>{
+    await page.clock.setFixedTime(new Date('2026-10-01T12:00:00+02:00'));
+    await page.emulateMedia({colorScheme:theme==='dark'?'light':'dark'});
+    await page.addInitScript(value=>localStorage.setItem('theme_pref',value),theme);
+    await page.route('https://fonts.googleapis.com/**',route=>route.abort());
+    await page.route('https://fonts.gstatic.com/**',route=>route.abort());
+    let release;
+    const held=new Promise(resolve=>release=resolve);
+    await page.route('**/js/app.js',async route=>{await held;await route.continue();});
+    try {
+      await page.goto('/',{waitUntil:'commit'});
+      await expect(page.locator('html')).toHaveAttribute('data-theme',theme);
+      await page.waitForFunction(()=>[...document.styleSheets].some(sheet=>sheet.href?.endsWith('/css/styles.css')));
+      expect(await page.locator('html').evaluate(el=>getComputedStyle(el).colorScheme)).toBe(theme);
+    } finally {release();}
+    await expect(page.locator('#card-p6')).toBeVisible();
+    await freeze(page);
+    for(const icon of await page.locator('.theme-option[aria-checked="false"] svg').all()) {
+      expect(await icon.evaluate(el=>getComputedStyle(el).rotate)).toBe('0deg');
+    }
+  });
+}

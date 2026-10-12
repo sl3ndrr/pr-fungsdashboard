@@ -135,3 +135,22 @@ Die Browser-Testfälle wurden angepasst, nicht ausgeführt.
 
 Vorbereitet auf dem getesteten Phase-1-Stand, nicht zur Integration freigegeben.
 Nicht visuell verifiziert; keine Pixel-/Browser-Stabilität behauptet.
+
+## Layout-Optimierung – Phase 3
+
+- [x] Theme vor CSS mit try/catch, unveränderter `theme_pref`-Schlüssel,
+  Media-Metadaten für helle/dunkle Theme-Farbe.
+- [x] Keine Ruhe-Rotation nicht gewählter Icons; Wechsel mit Spatial-Feder.
+- [x] Transform-Wellenphase auf Track-/Fill-Pseudo-Elementen,
+  gemeinsame Phase und statische 0/100 % / Reduced Motion.
+- [x] Vier CSS-Layer, 26 unbedingte Komponentenselektoren konsolidiert,
+  unbenutzte Tokens nach Quellensuche und tote Checkbox-Pseudo-Regeln entfernt.
+- [x] Generiertes CSS-Inventar entfernt/ignoriert, dynamischer Bericht bleibt.
+- [x] 22 Node-Tests, 3 Scanner-Tests, Syntax und Whitespace.
+- [ ] Roboto Flex als variable WOFF2 + OFL lokal einbinden; Google-Fonts-Links
+  bleiben bis zum erfolgreichen Download erhalten (HTTP 403 / Binär-Lesegrenze).
+- [ ] Visuelle Kaskaden-/Wellen-/Theme-Prüfung, Vorher-/Nachher-Screenshots,
+  Browsermatrix und Performance-Trace.
+
+Kein Selbsthosting- oder Compositor-Nachweis behauptet. Optionaler Modul-Umbau
+und generierte Gitarrentermine ausgelassen; fachliche Daten bleiben unverändert.
