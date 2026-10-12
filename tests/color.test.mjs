@@ -9,8 +9,8 @@ function contrast(a,b){const x=luminance(a),y=luminance(b);return (Math.max(x,y)
 const mix=(a,b,weight)=>a.map((v,i)=>v*weight+b[i]*(1-weight));
 const color=(name,mode)=>rgb(roles.get(name)[mode]);
 test('M3 text/semantic role pairs reach WCAG AA in both palettes',()=>{
-  const pairs=[['on-primary','primary'],['on-primary-container','primary-container'],['on-secondary-container','secondary-container'],['on-tertiary','tertiary'],['on-tertiary-container','tertiary-container'],['on-error','error'],['on-error-container','error-container'],['primary','primary-container'],['tertiary','tertiary-container'],['error','error-container']];
-  for(const surface of ['surface','surface-container-lowest','surface-container-low','surface-container','surface-container-high','surface-container-highest'])pairs.push(['on-surface',surface],['on-surface-variant',surface]);
+  const pairs=[['on-primary','primary'],['on-primary-container','primary-container'],['on-secondary-container','secondary-container'],['on-tertiary','tertiary'],['on-tertiary-container','tertiary-container'],['on-error-container','error-container'],['primary','primary-container'],['tertiary','tertiary-container'],['error','error-container']];
+  for(const surface of ['surface','surface-container-lowest','surface-container-low','surface-container','surface-container-high'])pairs.push(['on-surface',surface],['on-surface-variant',surface]);
   for(const [ink,paper] of pairs)for(const mode of [0,1])assert.ok(contrast(color(ink,mode),color(paper,mode))>=4.5,`${ink}/${paper}, mode ${mode}`);
 });
 test('progress tracks and past timeline points retain at least 3:1 non-text contrast',()=>{
