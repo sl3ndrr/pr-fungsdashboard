@@ -117,3 +117,10 @@ Aktueller Laufstatus: 20 Node-Tests bestanden. Lokale Playwright-Installation
 ist vorhanden, Browser-Binaries fehlen. Downloadversuch am 11.10.2026 endet
 mit HTTP 403. Browsermatrix und Screenshots **nicht visuell verifiziert**.
 Vorhandene visuelle Baselines wurden nicht erfunden oder automatisch ersetzt.
+
+Phase 2 ergänzt Seitenspalten-Prüfungen bei 768/1280/1600/2300 px: Standard,
+380–440-px-Breite, sticky, Toggle, Tagesdetails/Popover und Kartenidentität.
+In der Seitenspalte führt der Tages-Button zum Termin-Popover über Tagesdetails;
+die Vollbreitenansicht behält separate Event-Tags. `tests/regression.html`
+berücksichtigt den standardmäßig offenen Desktop-Kalender und 2300 px.
+Diese Fälle sind vorbereitet, nicht im Browser ausgeführt.

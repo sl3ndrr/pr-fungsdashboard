@@ -120,3 +120,18 @@ Ein CI-Workflow benötigt erst die Freigabe des Nutzers.
 
 Nicht visuell verifiziert: fehlende Browser-Binaries, Download HTTP 403.
 Die Browser-Testfälle wurden angepasst, nicht ausgeführt.
+
+## Layout-Optimierung – Phase 2
+
+- [x] Ab 1280 px: standardmäßig offene sticky Kalender-Seitenspalte 380–440 px.
+- [x] Button, Breakpoint-Standard und explizite Sitzungswahl; Vollbreite darunter.
+- [x] Kompakte 80-px-Zellen mit Terminlabel im 44-px-Tages-Button;
+  alle Termine über Tagesdetails und vorhandenes Popover erreichbar.
+- [x] Container Queries und Spalten-Observer statt überbreiter Desktop-Grids.
+- [x] Fokus bei Schließen/Breitenwechsel schützen; Karten behalten ihre IDs/Knoten.
+- [x] 20 Node-Regressionen, ES-Modul-Syntax und Whitespace.
+- [ ] Browserfälle für Seitenspalte, sticky, Toggle, Fokus/Knotenerhalt,
+  Tagesdetails und Popover ausführen; zuerst Phase 1 visuell stabilisieren.
+
+Vorbereitet auf dem getesteten Phase-1-Stand, nicht zur Integration freigegeben.
+Nicht visuell verifiziert; keine Pixel-/Browser-Stabilität behauptet.

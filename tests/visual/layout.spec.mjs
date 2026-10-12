@@ -7,6 +7,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     const geometry=await page.evaluate(()=>({
       overflow:document.documentElement.scrollWidth>innerWidth,
       railOverflow:document.querySelector('.timeline-scroll').scrollWidth-document.querySelector('.timeline-scroll').clientWidth,
+      columns:Number(getComputedStyle(document.querySelector('#list')).getPropertyValue('--list-columns')),
       cards:[...document.querySelectorAll('#list .card')].map(card=>({
         top:card.getBoundingClientRect().top,height:card.getBoundingClientRect().height,
         labelled:card.getAttribute('aria-labelledby').split(' ').every(id=>document.getElementById(id)),
@@ -17,7 +18,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     for(const card of geometry.cards){expect(card.labelled).toBe(true);expect(card.leftBorder).toBe('1px');}
     if(width>=1280) {
       expect(geometry.railOverflow).toBeLessThanOrEqual(1);
-      expect(geometry.cards.slice(0,Math.min(3,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
+      expect(geometry.cards.slice(0,Math.min(geometry.columns,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
     }
     if(width>=1600) for(const card of geometry.cards)expect(card.height).toBeLessThanOrEqual(130);
     if(width===1600) {
@@ -50,3 +51,32 @@ test('keyed cards and checkbox focus survive group/filter changes without spatia
   expect(await page.locator('#card-a1').evaluate(el=>el===window.cardBefore)).toBe(true);
   expect(await page.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running').every(a=>a.effect.getKeyframes().every(f=>!f.transform&&!f.scale&&!f.translate)))).toBe(true);
 });
+
+for(const width of [768,1280,1600,2300]) {
+  test(`calendar sidebar, details and focus ${width}px`,async({page})=>{
+    await openDashboard(page,{width});
+    const calendar=page.locator('#calendar-section'),toggle=page.locator('#cal-toggle-btn');
+    await expect(toggle).toHaveAttribute('aria-expanded',String(width>=1280));
+    if(width<1280)await toggle.click();
+    await freeze(page);await expect(calendar).toBeVisible();
+    const rects=await page.evaluate(()=>{
+      const list=document.querySelector('.appointments').getBoundingClientRect(),cal=document.querySelector('#calendar-section').getBoundingClientRect();
+      return {listLeft:list.left,listRight:list.right,listTop:list.top,calLeft:cal.left,calTop:cal.top,calWidth:cal.width,sticky:getComputedStyle(document.querySelector('#calendar-section')).position};
+    });
+    if(width>=1280){expect(rects.calLeft).toBeGreaterThan(rects.listRight);expect(rects.calWidth).toBeGreaterThanOrEqual(380);expect(rects.calWidth).toBeLessThanOrEqual(440);expect(rects.sticky).toBe('sticky');}
+    else expect(rects.calTop).toBeLessThan(rects.listTop);
+    const day=page.locator('.cal-day-select[data-date="2026-10-07"]');
+    await day.click();await freeze(page);
+    await page.locator('#cal-day-details .cal-day-event').click();await freeze(page);
+    await expect(page.locator('#cal-popover')).toBeVisible();
+    await page.locator('.cal-popover-close').press('Escape');await freeze(page);
+    await expect(page.locator('#cal-day-details .cal-day-event')).toBeFocused();
+    await page.locator('#card-p6').evaluate(el=>window.sidebarCardBefore=el);
+    await toggle.click();await freeze(page);
+    await expect(toggle).toHaveAttribute('aria-expanded','false');
+    expect(await calendar.evaluate(el=>el.inert)).toBe(true);
+    expect(await page.locator('#card-p6').evaluate(el=>el===window.sidebarCardBefore)).toBe(true);
+    await toggle.click();await freeze(page);
+    expect(await page.locator('#card-p6').evaluate(el=>el===window.sidebarCardBefore)).toBe(true);
+  });
+}

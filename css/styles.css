@@ -228,12 +228,13 @@ body {
 .group-row-heading { margin-top: var(--space-2); }
 .group-heading { font: 600 var(--font-sm) var(--font-body); color: var(--text-muted); }
 .card-group { font-size: .6875rem; color: var(--text-muted); line-height: 1.2; }
-@media (min-width: 720px) { .dashboard-list { --list-columns: 2; } }
-@media (min-width: 1200px) { .dashboard-list { --list-columns: 3; } }
+.appointments { min-width: 0; container-type: inline-size; }
+@container (min-width: 660px) { .dashboard-list { --list-columns: 2; } }
+@container (min-width: 1000px) { .dashboard-list { --list-columns: 3; } }
+@container (min-width: 1300px) { .dashboard-list { --list-columns: 4; grid-template-columns: repeat(4, minmax(300px, 1fr)); } }
 @media (min-width: 1560px) {
   .container { max-width: none; }
   .top-grid { grid-template-columns: minmax(0, 560px) minmax(0, 1fr); }
-  .dashboard-list { --list-columns: 4; grid-template-columns: repeat(4, minmax(300px, 1fr)); }
 }
 
 .card.pruefung { --type-color: var(--pruefung); } .card.abgabe { --type-color: var(--abgabe); } .card.termin { --type-color: var(--termin); }
@@ -272,6 +273,33 @@ body {
 .done-toggle input:checked::before { transform: scale(1); }
 .empty-state { padding: var(--space-12) var(--space-4); border: 1px dashed var(--border); border-radius: var(--radius-lg); text-align: center; font-size: var(--font-sm); color: var(--text-muted); }
 @media (max-width: 480px) { .card { padding: var(--space-4); } }
+
+.main-grid { display: grid; grid-template-columns: minmax(0,1fr); }
+.cal-compact-event { display: none; }
+@supports not (container-type: inline-size) {
+  @media (min-width: 720px) { .dashboard-list { --list-columns: 2; } }
+  @media (min-width: 1280px) { .main-grid[data-calendar-open='true'] .dashboard-list { --list-columns: 2; } }
+}
+@media (min-width: 1280px) {
+  .main-grid { grid-template-columns: minmax(0,1fr) minmax(0,0px); column-gap: 0; align-items: start; transition: grid-template-columns var(--dur-spatial) var(--spring-spatial), column-gap var(--dur-spatial) var(--spring-spatial); }
+  .main-grid[data-calendar-open='true'] { grid-template-columns: minmax(0,1fr) minmax(0,clamp(380px,28vw,440px)); column-gap: var(--space-6); }
+  .main-grid .appointments { grid-column: 1; grid-row: 1; }
+  .main-grid .calendar-section { grid-column: 2; grid-row: 1; position: sticky; top: var(--space-6); min-width: 0; margin-bottom: 0; }
+  .main-grid .calendar-card { padding: var(--space-4); }
+  .main-grid .cal-header { gap: var(--space-2); margin-bottom: var(--space-3); }
+  .main-grid .cal-month-label { font-size: var(--font-md); }
+  .main-grid .cal-day { min-height: 80px; padding-inline: 0; gap: 0; }
+  .main-grid .cal-day-select { flex-direction: column; align-items: stretch; padding: var(--space-1); min-height: 44px; }
+  .main-grid .cal-day-num-inner { width: 24px; height: 24px; }
+  .main-grid .cal-compact-event { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .6875rem; line-height: 16px; text-align: left; }
+  .cal-compact-event.pruefung { color: var(--pruefung); }
+  .cal-compact-event.abgabe { color: var(--abgabe); }
+  .cal-compact-event.termin { color: var(--termin); }
+  .main-grid .cal-event-tag, .main-grid .cal-more { display: none; }
+  .main-grid .cal-legend { gap: var(--space-2); margin-top: var(--space-3); }
+  .main-grid .cal-day-event { flex-direction: column; gap: var(--space-2); }
+  .main-grid .cal-day-event-meta { text-align: left; }
+}
 
 /* Calendar: a week contains seven cells and continuous period overlays. */
 .calendar-card { padding: var(--space-6); box-shadow: var(--shadow-1); }
