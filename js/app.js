@@ -119,7 +119,9 @@ let showPast = false;
 let typeFilter = 'all';
 
 let doneItems  = [];
-let calVisible = false;
+const desktopCalendar = matchMedia('(min-width: 1280px)');
+let calVisible = desktopCalendar.matches;
+let calendarUserChoice = null;
 let selectedCalDate = null;
 
 // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
@@ -370,15 +372,33 @@ const MONTH_NAMES = ['Januar','Februar','März','April','Mai','Juni',
 function setExpanded(el,open) {
   el.dataset.open=String(open);el.inert=!open;el.setAttribute('aria-hidden',String(!open));
 }
-function toggleCalendar() {
-  withTransition(()=>{
-    calVisible=!calVisible;
-    if(calVisible)renderCalendar(true);else closeCalMenu();
-    setExpanded(document.getElementById('calendar-section'),calVisible);
-    const button=document.getElementById('cal-toggle-btn');
-    button.classList.toggle('active',calVisible);button.setAttribute('aria-expanded',String(calVisible));
-  },{type:'calendar'});
+function updateCalendarVisibility() {
+  const section = document.getElementById('calendar-section');
+  const popover = document.getElementById('cal-popover');
+  const hadFocus = section.contains(document.activeElement) || popover.contains(document.activeElement);
+  if (calVisible) renderCalendar(true);
+  else closeCalMenu();
+  setExpanded(section, calVisible);
+  document.getElementById('main-grid').dataset.calendarOpen = String(calVisible);
+  const button = document.getElementById('cal-toggle-btn');
+  button.classList.toggle('active',calVisible);
+  button.setAttribute('aria-expanded',String(calVisible));
+  if (!calVisible && hadFocus) button.focus({preventScroll:true});
 }
+function toggleCalendar() {
+  withTransition(() => {
+    calVisible = !calVisible;
+    calendarUserChoice = calVisible;
+    updateCalendarVisibility();
+  }, {type:'calendar'});
+}
+desktopCalendar.addEventListener('change', () => {
+  if (calendarUserChoice !== null) return;
+  withTransition(() => {
+    calVisible = desktopCalendar.matches;
+    updateCalendarVisibility();
+  }, {type:'calendar'});
+});
 
 function calNav(delta) {
   withTransition(()=>{
@@ -501,7 +521,9 @@ function renderCalendar(animate = false) {
       const countLabel = `${count} ${count === 1 ? 'Termin' : 'Termine'}`;
       const numHtml = `<span class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></span>`;
       const mobileDots = dayEvts.slice(0,3).map(e => `<span class="cal-mobile-dot ${e.calOnly ? 'cal-only' : typeClass(e.type)}" aria-hidden="true"></span>`).join('');
-      const dayButton = `<button class="cal-day-select" type="button" data-date="${iso}" aria-label="${escapeHtml(formatDate(cur))}: ${countLabel} anzeigen" aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">${numHtml}<span class="cal-day-dots" aria-hidden="true">${mobileDots}</span></button>`;
+      const firstEvent = dayEvts[0];
+      const compactEvent = firstEvent ? `<span class="cal-compact-event ${firstEvent.calOnly ? 'cal-only' : typeClass(firstEvent.type)}" aria-hidden="true">${escapeHtml(firstEvent.title)}${count > 1 ? ` +${count - 1}` : ''}</span>` : '';
+      const dayButton = `<button class="cal-day-select" type="button" data-date="${iso}" aria-label="${escapeHtml(formatDate(cur))}: ${countLabel} anzeigen" aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">${numHtml}${compactEvent}<span class="cal-day-dots" aria-hidden="true">${mobileDots}</span></button>`;
       const tagsHtml = dayEvts.slice(0,3).map(e => {
         tagEvents.push(e);
         return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
@@ -556,6 +578,8 @@ function focusAfterRender() {
   if (card && active.matches('input[type="checkbox"]')) {
     return () => document.getElementById(card.id)?.querySelector('input[type="checkbox"]');
   }
+
+  if (card) return () => document.getElementById(card.id);
 
   const heroNext = active.closest('.hero-next');
   if (heroNext) {
@@ -955,6 +979,7 @@ document.querySelectorAll('#type-filter button').forEach(button => {
 (async function init() {
   buildLegendPeriods();
   await initialiseDoneItems();
+  updateCalendarVisibility();
   render(true);
   updateFilterIndicator();
   document.addEventListener('visibilitychange', () => {
@@ -971,6 +996,15 @@ document.querySelectorAll('#type-filter button').forEach(button => {
       scheduleTimelineLayout();
     }
   }).observe(timelineScroller);
+  const list = document.getElementById('list');
+  let columns = getComputedStyle(list).getPropertyValue('--list-columns');
+  new ResizeObserver(() => {
+    const next = getComputedStyle(list).getPropertyValue('--list-columns');
+    if (next !== columns) {
+      columns = next;
+      renderPreservingState();
+    }
+  }).observe(list);
   refreshCurrentDay();
 })();
 

@@ -10,7 +10,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
 - Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
 - Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
-- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover
+- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; ab 1280 px standardmäßig als sticky Seitenspalte
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
@@ -182,7 +182,7 @@ Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
 | 8. Countdown | Maskierte Ziffernreels, initiales Hochzählen, imminent | Spatial-fast / Effects | 350 / 210 ms; Start 600 ms |
 | 9. Fortschritt | Clip-Path, gemeinsame Wavy-Phase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
 | 10. Zeitstrahl | Punktstaffelung, Rail, Heute, Tooltip, Ring, Bänder | Spatial-fast/default/slow / Effects | 350–570 / 140–300 ms |
-| 11. Kalender | Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
+| 11. Kalender | Sticky Spalte ab 1280 px, Spalten-/Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
 | 12. Hero/Leerzustand | Container-Transform und Fade-Through / Shared Element | Spatial / Effects | 350–410 / 140–210 ms |
 
 Wellen werden mit einer kleinen SVG-Mask dargestellt. Die Amplitude nimmt nahe
@@ -309,3 +309,20 @@ DOM-Reihenfolge und keyed Karten bleiben chronologisch und stabil.
 Knotenerhalt. **Nicht visuell verifiziert:** Browser-Binaries fehlen und der
 Playwright-Download wird mit HTTP 403 blockiert. Keine Vorher-/Nachher-Bilder,
 keine bestandene Browsermatrix oder Pixel-Höhenmessung behauptet.
+
+### Layout-Optimierung – Phase 2
+
+Ab 1280 px steht der Kalender in einer 380–440 px breiten sticky Seitenspalte.
+Der Kalender-Button blendet sie ein/aus. Ohne manuelle Wahl folgt die Sichtbarkeit
+dem Breakpoint; eine explizite Wahl gilt für die laufende Sitzung. Unter 1280 px
+bleibt der Vollbreiten-Grid-Kollaps. Container Queries passen die Kartenanzahl
+an die tatsächliche Listenbreite an; ein ResizeObserver rendert nur bei geänderter
+Spaltenzahl nach, mit Fokus-/Scrollschutz und denselben Kartenknoten.
+
+Die kompakten 80-px-Kalenderzellen zeigen den ersten Termin als gekürztes Label
+im Tages-Button und bei mehreren Terminen eine Anzahl. Der 44-px-Tages-Button
+öffnet alle Tagesdetails; deren Termin-Buttons öffnen weiterhin das Popover.
+Separate 44-px-Tags pro Termin würden in den schmalen Zellen die Zielhöhe sprengen.
+Kalender und Popover erhalten beim Schließen einen sinnvollen Fokus-Rücksprung.
+20 Node-Tests bestanden; ergänzte Browserfälle **nicht visuell verifiziert**.
+Phase 2 bleibt als abhängiger Entwurf bis zur Phase-1-Browserprüfung offen.
