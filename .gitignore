@@ -24,3 +24,7 @@ pnpm-debug.log*
 # Visuelle Lauf-Artefakte; __snapshots__ wird eingecheckt
 playwright-report/
 test-results/
+
+
+# Reproduzierbares CSS-Inventar
+docs/css-duplicate-inventory.md
