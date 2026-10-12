@@ -7,6 +7,15 @@
       name="description"
       content="Persönliches Dashboard für Prüfungen, Abgaben und wichtige Termine."
     >
+    <meta name="theme-color" content="#f7f9ff" media="(prefers-color-scheme: light)">
+    <meta name="theme-color" content="#10141b" media="(prefers-color-scheme: dark)">
+    <script>
+      // Apply the saved preference before loading CSS; storage can be unavailable.
+      try {
+        const theme = localStorage.getItem('theme_pref');
+        if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+      } catch {}
+    </script>
     <title>Semester-Roadmap</title>
     <link
       rel="icon"

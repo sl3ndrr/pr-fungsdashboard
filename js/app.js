@@ -102,7 +102,11 @@ themeSwitch.addEventListener('keydown', (event) => {
 function changeTheme(theme, options = {}) {
   const thumb = themeSwitch.querySelector('.theme-switch-thumb');
   const rect = thumb.getBoundingClientRect();
-  withTransition(() => applyTheme(theme, options), {type:'theme', origin:{x:rect.left+rect.width/2,y:rect.top+rect.height/2}});
+  withTransition(() => {
+    applyTheme(theme, options);
+    const icon = themeOptions.find(option => option.dataset.themeValue === theme)?.querySelector('svg');
+    motion(icon, [{rotate:'-15deg',scale:'.8'}, {rotate:'0deg',scale:'1'}], {speed:'fast'});
+  }, {type:'theme', origin:{x:rect.left+rect.width/2,y:rect.top+rect.height/2}});
   requestedTheme=theme;
   motion(thumb,[{scale:'1 1',borderRadius:'50%'},{scale:'1.28 .85',borderRadius:'16px',offset:.35},{scale:'1 1',borderRadius:'50%'}],{speed:'fast'});
 }
