@@ -124,3 +124,10 @@ In der Seitenspalte führt der Tages-Button zum Termin-Popover über Tagesdetail
 die Vollbreitenansicht behält separate Event-Tags. `tests/regression.html`
 berücksichtigt den standardmäßig offenen Desktop-Kalender und 2300 px.
 Diese Fälle sind vorbereitet, nicht im Browser ausgeführt.
+
+Phase 3: 22 Node-Regressionen und 3 Scanner-Checks bestanden. Die Wellen-
+Pause wird jetzt am `::before`-Pseudo-Element geprüft, die gemeinsame Transform-
+Phase weiterhin an Track/Füllung. Alte Property-Registrierungs-Erwartungen sind
+bewusst ersetzt, weil genau diese Main-Thread-Vererbung entfernt werden sollte.
+Browser-/Kaskaden-/Performance-Verifikation bleibt offen. Selbsthosting der
+Schrift ist blockiert; externe Font-Routen bleiben im Test-Harness abgefangen.
