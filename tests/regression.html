@@ -35,9 +35,9 @@ async function fixture(width,fallback){
 async function check(width,fallback){
   const {doc,win}=await fixture(width,fallback),q=selector=>doc.querySelector(selector);
   assert(q('.hero-title').textContent==='ExPhy 2','Nächster Termin');
-  assert(q('#cal-toggle-btn').getAttribute('aria-expanded')==='false' && q('#calendar-section').inert,'Kalender standardmäßig geschlossen');
   const rail=q('.timeline-track'),dots=[...doc.querySelectorAll('.timeline-dot')];
-  assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getMonth()===10 && new win.Date(Number(rail.dataset.axisEnd)).getDate()===10,'Achsenende');
+  assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getDate()===10 && new win.Date(Number(rail.dataset.axisEnd)).getMonth()===10,'Achsenende 10.11.');
+  assert(q('#calendar-section').dataset.open==='false'&&q('#calendar-section').inert,'Kalender startet geschlossen');
   const railY=rail.getBoundingClientRect().top+3;
   dots.forEach(dot=>{
     assert(win.getComputedStyle(dot).position==='absolute','Punkt absolut positioniert');

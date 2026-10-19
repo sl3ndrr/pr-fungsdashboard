@@ -31,6 +31,27 @@ export function timelineGeometry(targets, availableWidth, gap = 32, edge = 22) {
   return { width, xs };
 }
 
+/** Map dates onto the fitted points, keeping intervening dates between their neighbours.
+ * Equal-date groups use their centre; dates outside a group interpolate from its edges.
+ */
+export function timelineDatePosition(day, days, xs, minDay, maxDay, width) {
+  if (day <= minDay) return 0;
+  if (day >= maxDay) return width;
+  let previousDay = minDay, previousX = 0;
+  for (let i = 0; i < days.length; i++) {
+    let last = i;
+    while (last + 1 < days.length && days[last + 1] === days[i]) last++;
+    if (day === days[i]) return (xs[i] + xs[last]) / 2;
+    if (day < days[i]) {
+      return previousX + (xs[i] - previousX) * (day - previousDay) / (days[i] - previousDay);
+    }
+    previousDay = days[i];
+    previousX = xs[last];
+    i = last;
+  }
+  return previousX + (width - previousX) * (day - previousDay) / (maxDay - previousDay);
+}
+
 /** Pack chronological cards across group boundaries, without visual/DOM reordering. */
 export function appointmentRows(items, groupFor, columns) {
   const count = Math.max(1, Math.min(4, Math.floor(columns) || 1));

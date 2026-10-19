@@ -82,6 +82,21 @@ for(const width of [768,1280,1600,2300]) {
   });
 }
 
+test('calendar visibility stays user-controlled across breakpoints',async({page})=>{
+  await openDashboard(page,{width:768});
+  const toggle=page.locator('#cal-toggle-btn');
+  for(const width of [1600,360,1280]) {
+    await page.setViewportSize({width,height:1000});await freeze(page);
+    await expect(toggle).toHaveAttribute('aria-expanded','false');
+  }
+  await toggle.click();await freeze(page);
+  await page.setViewportSize({width:768,height:1000});await freeze(page);
+  await expect(toggle).toHaveAttribute('aria-expanded','true');
+  await toggle.click();await freeze(page);
+  await page.setViewportSize({width:1600,height:1000});await freeze(page);
+  await expect(toggle).toHaveAttribute('aria-expanded','false');
+});
+
 for(const theme of ['light','dark']) {
   test(`saved ${theme} theme is present while the application module is delayed`,async({page})=>{
     await page.clock.setFixedTime(new Date('2026-10-01T12:00:00+02:00'));

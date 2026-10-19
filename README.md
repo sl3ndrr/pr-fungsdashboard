@@ -10,7 +10,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
 - Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
 - Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
-- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; standardmäßig ausgeblendet, ab 1280 px nach dem Öffnen als sticky Seitenspalte
+- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; zunächst ausgeblendet, ab 1280 px beim Öffnen als sticky Seitenspalte
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
@@ -79,7 +79,12 @@ Prüfungen zählen als Achsengrenze). Der optische Rand beträgt an beiden Enden
 Datumsspanne. Liegt ein regulärer Termin außerhalb dieser Grenzen, erweitert sich die
 Achse mit einer Konsolenwarnung. `calOnly`-Termine und Zeiträume verändern die Achse
 nicht. Kollisionsgruppen werden nur horizontal und mit mindestens 32 px Abstand
-verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`.
+verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`. „Heute“, Monatsmarken
+und Zeitraum-Bänder verwenden dieselbe entzerrte Datumsskala. Zwischen zwei
+Termin-Gruppen liegen sie zwischen dem letzten Punkt der früheren und dem ersten
+Punkt der späteren Gruppe. Gleichdatierte Gruppen erhalten eine gemeinsame
+Datumsmitte. Die Berechnung nutzt Kalendertage, sodass der Wechsel zwischen
+Sommer- und Winterzeit keine Tagesabstände verzerrt.
 
 Datumsstriche und Gruppendaten unter den Punkten entfallen; Monatsmarken bleiben.
 Datum und Status stehen im zugänglichen Namen und Tooltip jedes Punkts. Fokus
@@ -315,8 +320,7 @@ keine bestandene Browsermatrix oder Pixel-Höhenmessung behauptet.
 
 Ab 1280 px steht der Kalender in einer 380–440 px breiten sticky Seitenspalte.
 Der Kalender startet auf allen Bildschirmgrößen geschlossen. Der Kalender-Button
-blendet ihn ein/aus; die Auswahl bleibt beim Wechsel des Breakpoints für die
-laufende Sitzung erhalten. Unter 1280 px
+blendet ihn ein/aus; Größenänderungen behalten diese Wahl bei. Unter 1280 px
 bleibt der Vollbreiten-Grid-Kollaps. Container Queries passen die Kartenanzahl
 an die tatsächliche Listenbreite an; ein ResizeObserver rendert nur bei geänderter
 Spaltenzahl nach, mit Fokus-/Scrollschutz und denselben Kartenknoten.

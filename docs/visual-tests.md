@@ -122,7 +122,8 @@ Phase 2 ergänzt Seitenspalten-Prüfungen bei 768/1280/1600/2300 px: Standard,
 380–440-px-Breite, sticky, Toggle, Tagesdetails/Popover und Kartenidentität.
 In der Seitenspalte führt der Tages-Button zum Termin-Popover über Tagesdetails;
 die Vollbreitenansicht behält separate Event-Tags. `tests/regression.html`
-berücksichtigt den standardmäßig geschlossenen Kalender auf allen Breiten und 2300 px.
+berücksichtigt den standardmäßig geschlossenen Kalender, das explizite Öffnen der
+Desktop-Seitenspalte und 2300 px.
 Diese Fälle sind vorbereitet, nicht im Browser ausgeführt.
 
 Phase 3: 22 Node-Regressionen und 3 Scanner-Checks bestanden. Die Wellen-
@@ -132,16 +133,15 @@ bewusst ersetzt, weil genau diese Main-Thread-Vererbung entfernt werden sollte.
 Browser-/Kaskaden-/Performance-Verifikation bleibt offen. Selbsthosting der
 Schrift ist blockiert; externe Font-Routen bleiben im Test-Harness abgefangen.
 
-## Kalenderstandard, Zeitstrahl und Terminänderungen – 19.10.2026
+## Zeitstrahlpunkte und Terminprüfung – 19.10.2026
 
-Der Kalender startet auf jeder Breite geschlossen und behält die manuelle Wahl
-beim Breakpoint-Wechsel. Der Motion-Layer setzt normale Buttons relativ, lässt
-die absolute Positionierung der Zeitstrahlpunkte aber erhalten. Dadurch addiert
-sich kein Inline-Fluss-Versatz mehr zu den berechneten Punktkoordinaten.
-Die Programmierpraktikumsprüfung liegt am 10.11.2026 um 10:00 Uhr; der
-Montagsunterricht am 26.10.2026 von 13:45–15:45 Uhr erscheint nur im Kalender.
+Der Motion-Layer setzt normale Buttons relativ, lässt die absolute Positionierung
+der Zeitstrahlpunkte aber erhalten. Dadurch addiert sich kein Inline-Fluss-Versatz
+mehr zu den berechneten Punktkoordinaten. Die gemeinsame entzerrte Datumsskala
+für „Heute“, Monate und Zeiträume bleibt erhalten, ebenso der geschlossene
+Kalenderstandard und die korrigierten Termine am 26.10. und 10.11.2026.
 
-24 Node-Regressionen und 3 CSS-Scanner-Checks bestanden. `schedule.spec.mjs`
+27 Node-Regressionen und 3 CSS-Scanner-Checks bestanden. `schedule.spec.mjs`
 ergänzt 39 Browserfälle für die drei Browser: Punktkoordinaten und Lage zu
 „Heute“ am 19.10., Kalenderstandard/Resize sowie beide korrigierten Termine.
 Alle Fälle wurden erfolgreich geladen. Der exemplarische Chromium-Lauf stoppt

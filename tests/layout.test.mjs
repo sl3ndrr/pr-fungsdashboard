@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tooltipPosition, timelineGeometry, appointmentRows } from '../js/layout.js';
+import { tooltipPosition, timelineGeometry, timelineDatePosition, appointmentRows } from '../js/layout.js';
 
 test('tooltip prefers above, falls below, and clamps all viewport edges', () => {
   const size = {width:260,height:100}, viewport = {width:360,height:640};
@@ -33,4 +33,14 @@ test('one plus two appointments share a row with explicit group labels and stabl
     assert.deepEqual(packed.flatMap(row=>row.cards),[...cards,...cards]);
     assert.ok(packed.slice(0,-1).every(row=>row.cards.length===columns));
   }
+});
+
+test('dates between crowded same-day groups stay outside both groups', () => {
+  const position=day=>timelineDatePosition(day,[0,0,10,10],[22,54,86,118],-1,11,140);
+  assert.equal(position(0),38);
+  assert.equal(position(10),102);
+  assert.ok(position(1)>54 && position(9)<86);
+  assert.equal(position(-1),0);
+  assert.equal(position(11),140);
+  assert.equal(timelineDatePosition(5,[],[],0,10,100),50);
 });
