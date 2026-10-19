@@ -56,8 +56,9 @@ for(const width of [768,1280,1600,2300]) {
   test(`calendar sidebar, details and focus ${width}px`,async({page})=>{
     await openDashboard(page,{width});
     const calendar=page.locator('#calendar-section'),toggle=page.locator('#cal-toggle-btn');
-    await expect(toggle).toHaveAttribute('aria-expanded',String(width>=1280));
-    if(width<1280)await toggle.click();
+    await expect(toggle).toHaveAttribute('aria-expanded','false');
+    expect(await calendar.evaluate(el=>el.inert)).toBe(true);
+    await toggle.click();
     await freeze(page);await expect(calendar).toBeVisible();
     const rects=await page.evaluate(()=>{
       const list=document.querySelector('.appointments').getBoundingClientRect(),cal=document.querySelector('#calendar-section').getBoundingClientRect();

@@ -123,9 +123,8 @@ let showPast = false;
 let typeFilter = 'all';
 
 let doneItems  = [];
-const desktopCalendar = matchMedia('(min-width: 1280px)');
-let calVisible = desktopCalendar.matches;
-let calendarUserChoice = null;
+// Start closed at every viewport size; only the calendar button changes this.
+let calVisible = false;
 let selectedCalDate = null;
 
 // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
@@ -392,17 +391,9 @@ function updateCalendarVisibility() {
 function toggleCalendar() {
   withTransition(() => {
     calVisible = !calVisible;
-    calendarUserChoice = calVisible;
     updateCalendarVisibility();
   }, {type:'calendar'});
 }
-desktopCalendar.addEventListener('change', () => {
-  if (calendarUserChoice !== null) return;
-  withTransition(() => {
-    calVisible = desktopCalendar.matches;
-    updateCalendarVisibility();
-  }, {type:'calendar'});
-});
 
 function calNav(delta) {
   withTransition(()=>{

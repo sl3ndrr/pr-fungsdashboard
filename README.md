@@ -10,7 +10,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
 - Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
 - Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
-- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; ab 1280 px standardmäßig als sticky Seitenspalte
+- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; standardmäßig ausgeblendet, ab 1280 px nach dem Öffnen als sticky Seitenspalte
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
@@ -314,8 +314,9 @@ keine bestandene Browsermatrix oder Pixel-Höhenmessung behauptet.
 ### Layout-Optimierung – Phase 2
 
 Ab 1280 px steht der Kalender in einer 380–440 px breiten sticky Seitenspalte.
-Der Kalender-Button blendet sie ein/aus. Ohne manuelle Wahl folgt die Sichtbarkeit
-dem Breakpoint; eine explizite Wahl gilt für die laufende Sitzung. Unter 1280 px
+Der Kalender startet auf allen Bildschirmgrößen geschlossen. Der Kalender-Button
+blendet ihn ein/aus; die Auswahl bleibt beim Wechsel des Breakpoints für die
+laufende Sitzung erhalten. Unter 1280 px
 bleibt der Vollbreiten-Grid-Kollaps. Container Queries passen die Kartenanzahl
 an die tatsächliche Listenbreite an; ein ResizeObserver rendert nur bei geänderter
 Spaltenzahl nach, mit Fokus-/Scrollschutz und denselben Kartenknoten.

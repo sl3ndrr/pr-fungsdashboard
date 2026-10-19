@@ -122,7 +122,7 @@ Phase 2 ergänzt Seitenspalten-Prüfungen bei 768/1280/1600/2300 px: Standard,
 380–440-px-Breite, sticky, Toggle, Tagesdetails/Popover und Kartenidentität.
 In der Seitenspalte führt der Tages-Button zum Termin-Popover über Tagesdetails;
 die Vollbreitenansicht behält separate Event-Tags. `tests/regression.html`
-berücksichtigt den standardmäßig offenen Desktop-Kalender und 2300 px.
+berücksichtigt den standardmäßig geschlossenen Kalender auf allen Breiten und 2300 px.
 Diese Fälle sind vorbereitet, nicht im Browser ausgeführt.
 
 Phase 3: 22 Node-Regressionen und 3 Scanner-Checks bestanden. Die Wellen-
@@ -131,3 +131,19 @@ Phase weiterhin an Track/Füllung. Alte Property-Registrierungs-Erwartungen sind
 bewusst ersetzt, weil genau diese Main-Thread-Vererbung entfernt werden sollte.
 Browser-/Kaskaden-/Performance-Verifikation bleibt offen. Selbsthosting der
 Schrift ist blockiert; externe Font-Routen bleiben im Test-Harness abgefangen.
+
+## Kalenderstandard, Zeitstrahl und Terminänderungen – 19.10.2026
+
+Der Kalender startet auf jeder Breite geschlossen und behält die manuelle Wahl
+beim Breakpoint-Wechsel. Der Motion-Layer setzt normale Buttons relativ, lässt
+die absolute Positionierung der Zeitstrahlpunkte aber erhalten. Dadurch addiert
+sich kein Inline-Fluss-Versatz mehr zu den berechneten Punktkoordinaten.
+Die Programmierpraktikumsprüfung liegt am 10.11.2026 um 10:00 Uhr; der
+Montagsunterricht am 26.10.2026 von 13:45–15:45 Uhr erscheint nur im Kalender.
+
+24 Node-Regressionen und 3 CSS-Scanner-Checks bestanden. `schedule.spec.mjs`
+ergänzt 39 Browserfälle für die drei Browser: Punktkoordinaten und Lage zu
+„Heute“ am 19.10., Kalenderstandard/Resize sowie beide korrigierten Termine.
+Alle Fälle wurden erfolgreich geladen. Der exemplarische Chromium-Lauf stoppt
+vor dem Seitenaufruf wegen fehlender Browser-Binaries; der Download wird mit
+HTTP 403 blockiert. Die neue Browsermatrix und visuelle Prüfung bleiben offen.
