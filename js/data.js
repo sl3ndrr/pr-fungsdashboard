@@ -14,7 +14,7 @@ export const EVENTS = [
   { id: 'p4', type: 'Prüfung', title: 'Theorie 2',                          date: '2026-10-05', time: '10:00 Uhr', isCancelled: true },
   { id: 'p6', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-10-07', time: '09:00 Uhr' },
   { id: 'p5', type: 'Prüfung', title: 'Info II',                            date: '2026-10-14', time: '10:00 Uhr' },
-  { id: 'p7', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-10-26', time: 'KW 44 (26.–30.10.)' },
+  { id: 'p7', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-11-10', time: '10:00 Uhr' },
   { id: 't2', type: 'Termin',  title: 'Beginn Wintersemester 2026/27',      date: '2026-10-26', time: 'Ganztägig'  },
   { id: 'g1', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-06-29', time: '13:45-15:45 Uhr', calOnly: true },
   { id: 'g2', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-08-17', time: '13:45-15:45 Uhr', calOnly: true },
@@ -32,7 +32,8 @@ export const EVENTS = [
   { id: 'g14', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-09-22', time: '15:30-16:30 Uhr', calOnly: true },
   { id: 'g15', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-09-29', time: '15:30-16:30 Uhr', calOnly: true },
   { id: 'g16', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-10-06', time: '15:30-16:30 Uhr', calOnly: true },
-  { id: 'g17', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-10-27', time: '15:30-16:30 Uhr', calOnly: true }
+  { id: 'g17', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-10-27', time: '15:30-16:30 Uhr', calOnly: true },
+  { id: 'g18', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-10-26', time: '13:45-15:45 Uhr', calOnly: true }
 ];
 
 /** Zeiträume, die im Kalender und Zeitstrahl dargestellt werden.. */

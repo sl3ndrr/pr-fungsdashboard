@@ -4,6 +4,14 @@ import {readFileSync} from 'node:fs';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const fn=source.slice(source.indexOf('function updateCalendarVisibility()'),source.indexOf('\nfunction toggleCalendar()'));
 
+test('calendar starts closed for both mobile and desktop media matches',()=>{
+  const initialState=source.slice(source.indexOf('let doneItems  = []'),source.indexOf('// Kalendergrenzen'));
+  for(const matches of [false,true]) {
+    const visible=new Function('matchMedia',initialState+';return calVisible;')(()=>({matches,addEventListener:()=>{}}));
+    assert.equal(visible,false);
+  }
+});
+
 test('closing the calendar removes controls and returns internal focus to the toggle',()=>{
   for(const focusInCalendar of [false,true])for(const open of [false,true]) {
     const calls=[];
