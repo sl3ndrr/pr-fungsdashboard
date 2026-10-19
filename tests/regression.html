@@ -36,7 +36,8 @@ async function check(width,fallback){
   const {doc,win}=await fixture(width,fallback),q=selector=>doc.querySelector(selector);
   assert(q('.hero-title').textContent==='ExPhy 2','Nächster Termin');
   const rail=q('.timeline-track'),dots=[...doc.querySelectorAll('.timeline-dot')];
-  assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getDate()===26,'Achsenende');
+  assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getDate()===10 && new win.Date(Number(rail.dataset.axisEnd)).getMonth()===10,'Achsenende 10.11.');
+  assert(q('#calendar-section').dataset.open==='false'&&q('#calendar-section').inert,'Kalender startet geschlossen');
   const railY=rail.getBoundingClientRect().top+3;
   dots.forEach(dot=>assert(Math.abs(dot.getBoundingClientRect().top+10-railY)<.1,'Punkt auf Schiene'));
   for(let i=1;i<dots.length;i++)assert(dots[i].getBoundingClientRect().left-dots[i-1].getBoundingClientRect().left>=31.9,'32-px-Kollision');

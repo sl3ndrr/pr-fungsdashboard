@@ -122,7 +122,8 @@ Phase 2 ergänzt Seitenspalten-Prüfungen bei 768/1280/1600/2300 px: Standard,
 380–440-px-Breite, sticky, Toggle, Tagesdetails/Popover und Kartenidentität.
 In der Seitenspalte führt der Tages-Button zum Termin-Popover über Tagesdetails;
 die Vollbreitenansicht behält separate Event-Tags. `tests/regression.html`
-berücksichtigt den standardmäßig offenen Desktop-Kalender und 2300 px.
+berücksichtigt den standardmäßig geschlossenen Kalender, das explizite Öffnen der
+Desktop-Seitenspalte und 2300 px.
 Diese Fälle sind vorbereitet, nicht im Browser ausgeführt.
 
 Phase 3: 22 Node-Regressionen und 3 Scanner-Checks bestanden. Die Wellen-

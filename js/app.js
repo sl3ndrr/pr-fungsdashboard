@@ -1,4 +1,4 @@
-import { tooltipPosition, timelineGeometry, appointmentRows } from './layout.js';
+import { tooltipPosition, timelineGeometry, timelineDatePosition, appointmentRows } from './layout.js';
 import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
 import {
@@ -123,9 +123,7 @@ let showPast = false;
 let typeFilter = 'all';
 
 let doneItems  = [];
-const desktopCalendar = matchMedia('(min-width: 1280px)');
-let calVisible = desktopCalendar.matches;
-let calendarUserChoice = null;
+let calVisible = false;
 let selectedCalDate = null;
 
 // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
@@ -273,14 +271,17 @@ function buildTimeline(todayMid, animate) {
     axisStart = Math.min(axisStart, ...times);
     axisEnd = Math.max(axisEnd, ...times);
   }
-  const range = axisEnd - axisStart || 86400000;
-  const minT = axisStart - range * 0.04;
-  const maxT = axisEnd + range * 0.04;
-  const posOf = t => (t - minT) / (maxT - minT) * 100;
+  const dayOf = t => calendarDayDiff(new Date(t), new Date(axisStart));
+  const range = dayOf(axisEnd) || 1;
+  const minDay = -range * 0.04;
+  const maxDay = range * 1.04;
+  const days = times.map(dayOf);
 
   // Account for both 8px rail margins and the 44px hit areas at its ends.
   const availableWidth = document.getElementById('timeline-container').clientWidth - 16;
-  const { width: trackWidth, xs: dotXs } = timelineGeometry(times.map(t => posOf(t) / 100), availableWidth);
+  const { width: trackWidth, xs: dotXs } = timelineGeometry(days.map(day => (day - minDay) / (maxDay - minDay)), availableWidth);
+  // Today, month marks and period bands must follow the same collision-adjusted scale.
+  const posOf = t => timelineDatePosition(dayOf(t), days, dotXs, minDay, maxDay, trackWidth) / trackWidth * 100;
 
   let periodsHtml = '';
   const placedRanges = [];
@@ -306,11 +307,11 @@ function buildTimeline(todayMid, animate) {
   const todayPct = todayMid.getTime() < axisStart ? 0 : todayMid.getTime() > axisEnd ? 100 : posOf(todayMid.getTime());
   dots += `<div class="timeline-today" style="left:${todayPct}%" aria-hidden="true"></div><div class="timeline-today-label" style="left:${todayPct}%">Heute</div>`;
   let months = '';
-  let cursor = new Date(minT);
-  cursor = dateInMonth(cursor.getFullYear(), cursor.getMonth(), 1);
-  if (cursor.getTime() < minT) cursor.setMonth(cursor.getMonth() + 1);
+  const startDate = new Date(axisStart);
+  let cursor = dateInMonth(startDate.getFullYear(), startDate.getMonth(), 1);
+  while (dayOf(cursor.getTime()) < minDay) cursor.setMonth(cursor.getMonth() + 1);
   let guard = 0;
-  while (cursor.getTime() <= maxT && guard++ < 120) {
+  while (dayOf(cursor.getTime()) <= maxDay && guard++ < 120) {
     months += `<span class="timeline-month" style="left:${posOf(cursor.getTime())}%">${escapeHtml(cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }))}</span>`;
     cursor.setMonth(cursor.getMonth() + 1);
   }
@@ -392,17 +393,9 @@ function updateCalendarVisibility() {
 function toggleCalendar() {
   withTransition(() => {
     calVisible = !calVisible;
-    calendarUserChoice = calVisible;
     updateCalendarVisibility();
   }, {type:'calendar'});
 }
-desktopCalendar.addEventListener('change', () => {
-  if (calendarUserChoice !== null) return;
-  withTransition(() => {
-    calVisible = desktopCalendar.matches;
-    updateCalendarVisibility();
-  }, {type:'calendar'});
-});
 
 function calNav(delta) {
   withTransition(()=>{

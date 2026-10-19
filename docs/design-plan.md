@@ -123,8 +123,8 @@ Die Browser-Testfälle wurden angepasst, nicht ausgeführt.
 
 ## Layout-Optimierung – Phase 2
 
-- [x] Ab 1280 px: standardmäßig offene sticky Kalender-Seitenspalte 380–440 px.
-- [x] Button, Breakpoint-Standard und explizite Sitzungswahl; Vollbreite darunter.
+- [x] Kalender startet geschlossen; ab 1280 px beim Öffnen sticky Seitenspalte 380–440 px.
+- [x] Button und explizite Sitzungswahl über Breakpoints hinweg; Vollbreite darunter.
 - [x] Kompakte 80-px-Zellen mit Terminlabel im 44-px-Tages-Button;
   alle Termine über Tagesdetails und vorhandenes Popover erreichbar.
 - [x] Container Queries und Spalten-Observer statt überbreiter Desktop-Grids.
