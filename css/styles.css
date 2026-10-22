@@ -491,7 +491,7 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .digit-reel { display: block; transform: translateY(calc(var(--digit,0) * -1.12em)); transition: transform var(--dur-spatial-fast) var(--spring-spatial-fast); }
 .digit-cell { display: block; height: 1.12em; line-height: 1.12; }
 
-.timeline-progress { transition: width var(--dur-spatial-slow) var(--spring-spatial), background-color var(--dur-effects) var(--spring-effects); }
+.timeline-progress { transition: background-color var(--dur-effects) var(--spring-effects); }
 /* Only changing layout regions are snapshotted. Stable controls animate in their real DOM. */
 :root { view-transition-name: none; }
 :root[data-transition='theme'] { view-transition-name: root; }
@@ -572,3 +572,4 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .title-text { background: linear-gradient(currentColor,currentColor) left 55% / 0% 2px no-repeat; -webkit-box-decoration-break: clone; box-decoration-break: clone; transition: background-size var(--dur-effects) var(--spring-effects); }
 .card.done .title-text { background-size: 100% 2px; }
 }
+
