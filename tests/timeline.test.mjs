@@ -76,3 +76,46 @@ test('cancelled tooltips and accessible names show neutral status or safely esca
   }
 });
 
+
+
+test('every calendar day keeps its boundary at every integer width from 280 to 1000',()=>{
+  const axisStart=parseISOString('2026-07-06');
+  const days=[...events.filter(e=>!e.calOnly)].sort((a,b)=>a.date.localeCompare(b.date)).map(e=>calendarDayDiff(parseISOString(e.date),axisStart));
+  const range=days.at(-1), min=-range*.04,max=range*1.04;
+  const first=calendarDayDiff(parseISOString('2026-06-01'),axisStart);
+  const last=calendarDayDiff(parseISOString('2026-11-12'),axisStart);
+  for(let width=280;width<=1000;width++){
+    const fitted=timelineGeometry(days.map(day=>(day-min)/(max-min)),width);
+    for(let day=first;day<=last;day++){
+      const today=timelineDatePosition(day,days,fitted.xs,min,max,fitted.width);
+      fitted.xs.forEach((x,i)=>assert.equal(Math.sign(x-today),Math.sign(days[i]-day),`width=${width}, day=${day}, event=${i}`));
+    }
+    for(let i=1;i<fitted.xs.length;i++)assert.ok(fitted.xs[i]-fitted.xs[i-1]>=32-1e-8);
+  }
+});
+
+for(const clientWidth of [342,390])test(`22.10.2026 rendered boundary at ${clientWidth}px`,()=>{
+  const result=generate(timelineGeometry,events,periods,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,{getElementById:()=>({clientWidth})},parseISOString('2026-10-22'),false);
+  const width=Number(result.html.match(/style="width:([\d.]+)px"/)[1]);
+  const today=result.targetPct*width/100;
+  for(const [,x,id]of result.html.matchAll(/style="left:([\d.]+)px;--delay:[^"]+" data-event-id="([^"]+)"/g)){
+    const event=events.find(e=>e.id===id);
+    assert.equal(Math.sign(Number(x)-today),Math.sign(event.date.localeCompare('2026-10-22')));
+  }
+});
+
+test('same-day events share the today coordinate and use separate touch lanes',()=>{
+  const fitted=timelineGeometry([.2,.2,.8],342);
+  assert.equal(fitted.xs[0],fitted.xs[1]);
+  assert.ok(Math.abs(fitted.lanes[1]-fitted.lanes[0])*44>=32);
+  assert.equal(timelineDatePosition(2,[2,2,8],fitted.xs,0,10,fitted.width),fitted.xs[0]);
+});
+
+test('today on every actual event day sits exactly on the event point',()=>{
+  for(const e of events.filter(e=>!e.calOnly)){
+    const result=timeline(parseISOString(e.date));
+    const width=Number(result.html.match(/style="width:([\d.]+)px"/)[1]);
+    const x=Number(result.html.match(new RegExp(`style="left:([\\d.]+)px;--delay:[^"]+" data-event-id="${e.id}"`))[1]);
+    assert.ok(Math.abs(result.targetPct*width/100-x)<1e-8,e.id);
+  }
+});

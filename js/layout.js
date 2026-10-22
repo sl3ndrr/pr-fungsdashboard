@@ -28,7 +28,17 @@ export function timelineGeometry(targets, availableWidth, gap = 32, edge = 22) {
     const base = Math.max(edge, Math.min(max, block.sum / block.count));
     for (let i = block.start; i <= block.end; i++) xs[i] = base + i * gap;
   }
-  return { width, xs };
+  // A date has exactly one x coordinate, including when several events share it.
+  // Separate hit areas vertically instead of moving events across today's boundary.
+  const lanes = [];
+  for (let i = 0; i < targets.length; i++) {
+    let last = i;
+    while (last + 1 < targets.length && targets[last + 1] === targets[i]) last++;
+    const center = (xs[i] + xs[last]) / 2;
+    for (let j = i; j <= last; j++) { xs[j] = center; lanes[j] = j - i; }
+    i = last;
+  }
+  return { width, xs, lanes };
 }
 
 /** Map dates onto the fitted points, keeping intervening dates between their neighbours.
@@ -83,3 +93,4 @@ export function appointmentRows(items, groupFor, columns) {
   }
   return rows;
 }
+

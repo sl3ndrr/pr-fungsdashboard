@@ -16,7 +16,10 @@ test('dense dates fit a desktop rail without growth; hit areas and order remain 
     const {width,xs} = timelineGeometry(dates,available);
     assert.equal(width,available);
     assert.ok(xs[0]>=22 && xs.at(-1)<=width-22);
-    for(let i=1;i<xs.length;i++) assert.ok(xs[i]-xs[i-1]>=32-1e-8);
+    for(let i=1;i<xs.length;i++) {
+      if(dates[i]===dates[i-1]) assert.equal(xs[i],xs[i-1]);
+      else assert.ok(xs[i]-xs[i-1]>=32-1e-8);
+    }
   }
   assert.equal(timelineGeometry(dates,280).width,364);
 });
@@ -67,3 +70,4 @@ test('period labels follow the visible band and disappear completely after scrol
   assert.equal(timelineLabelLayout(labels,45,165).labels[0].visible,false);
   assert.equal(timelineLabelLayout(labels,150,270).rows,0);
 });
+

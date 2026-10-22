@@ -132,3 +132,30 @@ Phase weiterhin an Track/Füllung. Alte Property-Registrierungs-Erwartungen sind
 bewusst ersetzt, weil genau diese Main-Thread-Vererbung entfernt werden sollte.
 Browser-/Kaskaden-/Performance-Verifikation bleibt offen. Selbsthosting der
 Schrift ist blockiert; externe Font-Routen bleiben im Test-Harness abgefangen.
+
+
+### Zeitstrahl: Reproduktion am 22.10.2026
+
+Ausgangsbasis: `main` bei `9e64033431ce0f5a7754e8292b60f4bf9980bc22`.
+Die GitHub-Actions-Historie weist erfolgreiche Pages-Deployments von `main` aus,
+zuletzt Run `39849930396` für genau diesen Commit. Die ausgelieferten Bytes sind
+hier nicht überprüfbar: sowohl HTTP als auch der Cloud-Browser erhalten für
+GitHub Pages die Netzwerkantwort `Forbidden. Calls to this URL are not allowed.`
+Playwright ist installiert, Browser-Binaries fehlen. Der Installationsversuch
+wird für `cdn.playwright.dev` mit derselben HTTP-403-Antwort gesperrt.
+**Eine Browser-Reproduktion des gemeldeten Screenshots und dessen Ursache sind
+somit nicht belegt.** Es werden keine synthetischen Screenshots als Nachweis ausgegeben.
+
+Die Node-Reproduktion bestätigt die korrekte Grenze am 22.10. bei 342/390 px.
+Ein ergänzter Regressionstest scheiterte auf der Ausgangsbasis: zwei identische
+Daten erhielten x=52,4 und x=84,4, Heute aber deren Mittelpunkt. Phase 1 legt
+gleiche Daten auf denselben x-Wert und trennt Touch-Ziele vertikal um 44 px.
+Die Eingabereihenfolge gleicher Daten bleibt stabil. Der Fortschritt erhält
+keine Breitenanimation mehr, damit seine Grenze auch beim Einstieg mit Heute
+übereinstimmt.
+
+`timeline.test.mjs` prüft jeden Tag vom 01.06. bis 12.11.2026 für jede ganzzahlige
+Breite 280–1000 px; dazu Eventtage, DST, leere Semester und konkrete Renderwerte
+bei 342/390 px. `semester-timeline.spec.mjs` ergänzt Bounding-Box-Prüfungen nach
+Laden, Rotation, verstecktem Layout und `pageshow`, inklusive Reduced Motion.
+Diese Browserfälle müssen bei verfügbaren Binaries noch ausgeführt werden.

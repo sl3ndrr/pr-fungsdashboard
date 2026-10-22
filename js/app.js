@@ -272,7 +272,8 @@ function buildTimeline(todayMid, animate) {
 
   // Account for both 8px rail margins and the 44px hit areas at its ends.
   const availableWidth = document.getElementById('timeline-container').clientWidth - 16;
-  const { width: trackWidth, xs: dotXs } = timelineGeometry(days.map(day => (day - minDay) / (maxDay - minDay)), availableWidth);
+  const { width: trackWidth, xs: dotXs, lanes } = timelineGeometry(days.map(day => (day - minDay) / (maxDay - minDay)), availableWidth);
+  const laneHeight = Math.max(...lanes) * 44;
   // Today, month marks and period bands must follow the same collision-adjusted scale.
   const posOf = t => timelineDatePosition(dayOf(t), days, dotXs, minDay, maxDay, trackWidth) / trackWidth * 100;
 
@@ -285,7 +286,7 @@ function buildTimeline(todayMid, animate) {
     const mid = (left + right) / 2;
     const row = placedRanges.some(r => mid > r.l - 6 && mid < r.r + 6) ? 1 : 0;
     placedRanges.push({ l: left, r: right });
-    periodsHtml += `<div class="timeline-period-span" style="left:${left}%;width:${right - left}%;--period-rgb:${p.rgb}"></div>
+    periodsHtml += `<div class="timeline-period-span" style="left:${left}%;width:${right - left}%;top:${-34 - laneHeight}px;--period-rgb:${p.rgb}"></div>
       <div class="timeline-period-label" data-center="${mid}" data-start="${left}" data-end="${right}" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
   });
   let dots = '';
@@ -293,7 +294,7 @@ function buildTimeline(todayMid, animate) {
     const past = times[i] < todayMid.getTime();
     const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}`;
     dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} "
-      style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}">
+      style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s${lanes[i] ? `;top:${-7 - lanes[i] * 44}px` : ''}" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(description)}">
       <span class="timeline-point" aria-hidden="true"></span>
     </button>`;
   });
@@ -310,7 +311,7 @@ function buildTimeline(todayMid, animate) {
     cursor.setMonth(cursor.getMonth() + 1);
   }
   return {
-    html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="width:${trackWidth}px">
+    html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" data-lane-height="${laneHeight}" style="width:${trackWidth}px">
       <div class="timeline-progress" id="timeline-progress-bar" style="width:${todayPct}%"></div>${periodsHtml}${months}${dots}</div>`,
     targetPct: todayPct, dotEvents: mainEvents
   };
@@ -625,7 +626,7 @@ function layoutTimelineLabels() {
     if (!placed.visible) return;
     label.dataset.row = String(placed.row);
     label.style.left = `${placed.center}px`;
-    label.style.top = `${-58 - placed.row * 24}px`;
+    label.style.top = `${-58 - Number(track.dataset.laneHeight) - placed.row * 24}px`;
   });
   const months = [...track.querySelectorAll('.timeline-month')];
   months.forEach(month => { month.hidden = false; });
@@ -643,7 +644,7 @@ function layoutTimelineLabels() {
   });
   // Monatsstriche bleiben auf ihrem Datum; nur die Texte werden entzerrt.
   track.style.height = `${66 + Math.max(0, monthLayout.rows - 1) * 22}px`;
-  scroller.style.paddingTop = `${layout.rows ? 58 + (layout.rows - 1) * 24 : 22}px`;
+  scroller.style.paddingTop = `${Number(track.dataset.laneHeight) + (layout.rows ? 58 + (layout.rows - 1) * 24 : 22)}px`;
   scroller.style.paddingBottom = '8px';
   positionTimelineTooltip();
 }
@@ -1081,7 +1082,7 @@ function enterTimeline() {
   document.querySelectorAll('.timeline-dot').forEach((dot,index)=>{
     const delay=Math.min(index*20,400);motion(dot,[{scale:'0'},{scale:'1'}],{speed:'fast',delay});motion(dot,[{opacity:0},{opacity:1}],{kind:'effects',delay});
   });
-  const bar=document.querySelector('.timeline-progress');if(bar)motion(bar,[{width:'0%'},{width:bar.style.width}],{speed:'slow'});
+  // Progress always ends at today's coordinate, also while the points enter.
   motion(document.querySelector('.timeline-today'),[{translate:'0 -16px',scale:'.8'},{translate:'0 0',scale:'1'}]);
   document.querySelectorAll('.timeline-period-span').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:index*25}));
 }
@@ -1098,3 +1099,4 @@ function animateStatistics() {
     statisticValues.set(value, text);
   });
 }
+
