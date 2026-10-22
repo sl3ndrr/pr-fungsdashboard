@@ -5,7 +5,7 @@ import {timelineGeometry,timelineDatePosition} from '../js/layout.js';
 import {EVENTS,PERIODS} from '../js/data.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData} from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
-const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('const CAL_MIN_MONTH_INDEX'));
+const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('let { min: CAL_MIN_MONTH_INDEX'));
 const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
 const {events,periods}=validateData(EVENTS,PERIODS);
 const build=new Function('timelineGeometry','timelineDatePosition','events','periods','parseISOString','calendarDayDiff','cancelledStatus','escapeHtml','formatDate','typeClass','document','today','animate',dateFn+timelineFn+'\nreturn buildTimeline(today,animate);');
@@ -44,10 +44,19 @@ test('today stays between past and future points on narrow rails through the fin
       if(event.date>iso)assert.ok(Number(x)>today,`${id} must follow ${iso} at ${clientWidth}px`);
     }
     if(iso==='2026-11-01') {
-      const month=Number(result.html.match(/class="timeline-month" style="left:([\d.]+)%">Nov/)[1]);
+      const month=Number(result.html.match(/class="timeline-month" data-center="([\d.]+)"[^>]*><span class="timeline-month-label">Nov/)[1]);
       assert.equal(result.targetPct,month);
     }
   }
+});
+
+test('an empty semester has no fabricated axis, today marker or event points',()=>{
+  const result=generate(timelineGeometry,[],[],parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,doc,parseISOString('2026-12-01'),false);
+  assert.match(result.html,/Noch keine Termine für dieses Semester/);
+  assert.doesNotMatch(result.html,/timeline-track|timeline-today|timeline-dot/);
+  assert.deepEqual(result.dotEvents,[]);
+  const enterFn=source.slice(source.indexOf('function enterTimeline()'),source.indexOf('\nconst statisticValues'));
+  assert.doesNotThrow(()=>new Function('document','motion',enterFn+';enterTimeline();')({querySelectorAll:()=>[],querySelector:()=>null},()=>{}));
 });
 
 test('calendar-day coordinates keep equal spacing across the autumn clock change',()=>{

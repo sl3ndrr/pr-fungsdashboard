@@ -15,7 +15,8 @@ export const EVENTS = [
   { id: 'p6', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-10-07', time: '09:00 Uhr' },
   { id: 'p5', type: 'Prüfung', title: 'Info II',                            date: '2026-10-14', time: '10:00 Uhr' },
   { id: 'p7', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-11-10', time: '10:00 Uhr' },
-  { id: 't2', type: 'Termin',  title: 'Beginn Wintersemester 2026/27',      date: '2026-10-26', time: 'Ganztägig'  },
+  // Semestergrenze bleibt in Liste, Kalender und Zeitstrahl, aber nicht in der Next-Card.
+  { id: 't2', type: 'Termin',  title: 'Beginn Wintersemester 2026/27',      date: '2026-10-26', time: 'Ganztägig', hideFromNext: true },
   { id: 'g1', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-06-29', time: '13:45-15:45 Uhr', calOnly: true },
   { id: 'g2', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-08-17', time: '13:45-15:45 Uhr', calOnly: true },
   { id: 'g3', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-08-24', time: '13:45-15:45 Uhr', calOnly: true },
@@ -41,6 +42,17 @@ export const PERIODS = [
   { id: 'asp',        label: 'ASP',        start: '2026-09-07', end: '2026-10-09', rgb: '249, 115, 22' },
   { id: 'wiesbaden-1', label: 'in Wiesbaden', start: '2026-07-25', end: '2026-08-09', rgb: '139, 92, 246' },
   { id: 'wiesbaden-2', label: 'in Wiesbaden', start: '2026-10-15', end: '2026-10-25', rgb: '139, 92, 246' }
+];
+
+/** Anzeigezeiträume des Dashboards; unabhängig von einzelnen Semestergrenz-Terminen. */
+export const SEMESTERS = [
+  { id: 'ss-2026', label: 'Sommersemester 2026', activeFrom: null, events: EVENTS, periods: PERIODS },
+  {
+    id: 'ws-2026-2027', label: 'Wintersemester 2026/2027', activeFrom: '2026-12-01',
+    // Wintertermine und Zeiträume hier ergänzen; IDs semesterübergreifend eindeutig halten.
+    events: [],
+    periods: [],
+  },
 ];
 
 export { ICONS } from './icons.js';

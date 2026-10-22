@@ -152,6 +152,8 @@ body {
 /* Every dot shares the rail center (3px); only x positions resolve collisions. */
 .timeline-card { padding: var(--space-6); display: flex; flex-direction: column; justify-content: center; box-shadow: var(--shadow-1); min-width: 0; position: relative; }
 .timeline-title h2 { font: 700 var(--font-lg)/1.3 var(--font-display); }
+.header-semester { color: var(--text-muted); font-size: var(--font-sm); }
+.timeline-empty { padding-block: var(--space-6); color: var(--text-muted); }
 .timeline-scroll { position: relative; overflow-x: auto; padding-top: 58px; padding-bottom: 8px; width: 100%; scrollbar-width: thin; scrollbar-color: var(--border) transparent; overscroll-behavior-x: contain; }
 .timeline-track { position: relative; height: 56px; margin: var(--space-4) var(--space-2); }
 .timeline-track::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 6px; border-radius: var(--radius-pill); }
@@ -172,8 +174,10 @@ body {
 .timeline-today { position: absolute; top: -13px; height: 42px; width: 2px; margin-left: -1px; background: var(--text); z-index: 3; pointer-events: none; }
 .timeline-today-label { position: absolute; top: 17px; transform: translateX(-50%); background: var(--text); color: var(--surface-1); border-radius: var(--radius-pill); padding: var(--space-1) var(--space-2); font-size: var(--font-xs); font-weight: 600; }
 .timeline-today-label[style="left:0%"] { transform: none; } .timeline-today-label[style="left:100%"] { transform: translateX(-100%); }
-.timeline-month { position: absolute; bottom: -8px; transform: translateX(-50%); font-size: var(--font-xs); color: var(--text-muted); }
-.timeline-month::before { content: ''; position: absolute; left: 50%; top: -8px; width: 1px; height: 5px; background: var(--border); }
+.timeline-month { position: absolute; top: 44px; width: 0; font-size: var(--font-xs); color: var(--text-muted); }
+.timeline-month-label { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+.timeline-month::before { content: ''; position: absolute; left: 0; top: -8px; width: 1px; height: 5px; background: var(--border); }
+.timeline-legend[hidden], .scroll-hint[hidden] { display: none; }
 .timeline-legend { display: flex; flex-wrap: wrap; gap: var(--space-3) var(--space-4); border-top: 1px solid var(--border); padding-top: var(--space-4); margin-top: var(--space-4); }
 .timeline-legend-group { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-3) var(--space-4); max-width: 100%; }
 .timeline-legend-cancelled { --type-color: var(--error); width: 20px; height: 20px; flex-shrink: 0; border-radius: 50%; }

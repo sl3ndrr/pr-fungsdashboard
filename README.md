@@ -59,14 +59,29 @@ npx serve .
 
 Alle fachlichen Daten liegen zentral in [`js/data.js`](js/data.js):
 
-- `EVENTS`: Prüfungen, Abgaben und Termine
-- `PERIODS`: mehrtägige Zeiträume für Kalender und Zeitstrahl
+- `EVENTS` und `PERIODS`: bestehende Termine und Zeiträume des Sommersemesters 2026
+- `SEMESTERS`: Semester mit eigener Bezeichnung, Umschaltdatum, `events` und `periods`
 - `isDone: true`: markiert eine Abgabe beim ersten Laden als erledigt
 - `isCancelled: true`: markiert einen Termin als abgebrochen
 - `cancelReason`: optionaler kurzer String für den Status-Chip, z. B. „verschoben“;
   ohne Angabe steht dort neutral „Abgebrochen“. Der Zeitstrahl nennt zusätzlich
   den Status und gegebenenfalls den Grund. Bestehende Daten erhalten keine erfundenen Gründe.
 - `calOnly: true`: zeigt einen Termin nur im Kalender
+- `hideFromNext: true`: lässt einen Termin in „Als Nächstes“ und „Danach“ weg;
+  Liste, Kalender, Zeitstrahl und Kennzahlen behalten ihn. Die bestehende
+  Semestergrenze (`t2`) verwendet dieses Flag.
+
+Bis einschließlich **30.11.2026** bleibt das **Sommersemester 2026** aktiv.
+Am **01.12.2026 um 00:00 Uhr lokaler Gerätezeit** wechselt das Dashboard zum
+**Wintersemester 2026/2027**, auch in einem bereits geöffneten Tab.
+Der Termin „Beginn Wintersemester 2026/27“ am 26.10. löst keinen Ansichtswechsel aus.
+Die aktive Semesterbezeichnung steht im Kopfbereich.
+
+Wintertermine im Eintrag `id: 'ws-2026-2027'` unter `events: []`, Zeiträume unter
+`periods: []` ergänzen. Beide Listen sind bewusst leer; ohne Termine zeigt das
+Dashboard einen Leerzustand und der Kalender den aktuellen Monat. Die Sommerdaten
+bleiben im Code erhalten. IDs müssen semesterübergreifend eindeutig sein, damit
+gespeicherte Abgabe-Häkchen nicht auf neue Termine übertragen werden.
 
 Die Darstellung und Interaktionen müssen für neue Termine nicht angepasst werden.
 
@@ -95,8 +110,12 @@ Es bevorzugt Platz über den Zeitraum-Labels und weicht nach unten aus.
 Nur tatsächliche Label-Zeilen reservieren Höhe; geschlossene Tooltips verändern
 die Zeitstrahlkachel nicht. Die Punktverteilung klemmt Kollisionsgruppen mit
 44-px-Hitflächen innerhalb der Schiene statt die gesamte Schiene zu vergrößern.
-Zeitraum-Labels wie „in Wiesbaden“ bleiben einzeilig und werden innerhalb der
-Schiene positioniert. Die Legende trennt Terminarten, Status und Zeiträume.
+Zeitraum-Labels wie „in Wiesbaden“ bleiben einzeilig und werden innerhalb des
+sichtbaren Schienenabschnitts positioniert. Außerhalb liegende Beschriftungen
+werden vollständig ausgeblendet. Monatsnamen werden bei Kollisionen in getrennte
+Zeilen gesetzt; ihre Datumsstriche bleiben an der korrekten Achsenposition.
+Scrollen und Größenänderungen berechnen die Positionen neu.
+Die Legende trennt Terminarten, Status und Zeiträume.
 Beim ersten Layout wird „Heute“ sofort innerhalb des Zeitstrahl-Containers
 zentriert und an dessen Scrollgrenzen begrenzt. Fonts und Containerbreiten können
 die Startposition korrigieren, bis die Person den Zeitstrahl selbst bedient;

@@ -1,8 +1,9 @@
-import { tooltipPosition, timelineGeometry, timelineDatePosition, appointmentRows } from './layout.js';
+import { tooltipPosition, timelineGeometry, timelineDatePosition, timelineLabelLayout, appointmentRows } from './layout.js';
 import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
-import { EVENTS, ICONS, PERIODS, STORAGE_KEY } from "./data.js";
+import { SEMESTERS, ICONS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
+  calendarRange,
   cancelledStatus,
   escapeHtml,
   formatDate,
@@ -11,12 +12,15 @@ import {
   parseISOString,
   periodsOnDay,
   remainingDaysText,
+  semesterForDate,
   typeClass,
   validateData,
+  upcomingEvents,
 } from "./utils.js";
 import { loadDoneItems, saveDoneItems } from "./storage.js";
 
-const { events, periods } = validateData(EVENTS, PERIODS);
+let semester = semesterForDate(SEMESTERS, new Date());
+let { events, periods } = validateData(semester.events, semester.periods);
 
 async function initialiseDoneItems() {
   const savedItems = await loadDoneItems(STORAGE_KEY);
@@ -127,20 +131,6 @@ let calVisible = false;
 let selectedCalDate = null;
 
 // Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
-const calendarDateValues = [
-  ...events.map(e => e.date),
-  ...periods.flatMap(p => [p.start, p.end])
-];
-if (!calendarDateValues.length) {
-  const today = new Date();
-  calendarDateValues.push(
-    `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-01`
-  );
-}
-const calMinIso = calendarDateValues.reduce((a, b) => a < b ? a : b);
-const calMaxIso = calendarDateValues.reduce((a, b) => a > b ? a : b);
-const [calMinYear, calMinMonth1] = calMinIso.split('-').map(Number);
-const [calMaxYear, calMaxMonth1] = calMaxIso.split('-').map(Number);
 const monthIndex = (year, month) => year * 12 + month;
 const dateInMonth = (year, month, day) => {
   const date = new Date(0);
@@ -148,8 +138,7 @@ const dateInMonth = (year, month, day) => {
   date.setHours(0, 0, 0, 0);
   return date;
 };
-const CAL_MIN_MONTH_INDEX = monthIndex(calMinYear, calMinMonth1 - 1);
-const CAL_MAX_MONTH_INDEX = monthIndex(calMaxYear, calMaxMonth1 - 1);
+let { min: CAL_MIN_MONTH_INDEX, max: CAL_MAX_MONTH_INDEX } = calendarRange(events, periods, new Date());
 
 const currentDate = new Date();
 const initialCalMonthIndex = Math.min(
@@ -262,6 +251,10 @@ document.addEventListener('keydown',event=>{if(event.key==='Escape' && document.
 function buildTimeline(todayMid, animate) {
   const mainEvents = events.filter(e => !e.calOnly)
     .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
+  if (!mainEvents.length) return {
+    html: '<p class="timeline-empty">Noch keine Termine für dieses Semester</p>',
+    targetPct: 0, dotEvents: [],
+  };
   const times = mainEvents.map(e => parseISOString(e.date).getTime());
   const examTimes = mainEvents.filter(e => e.type === 'Prüfung').map(e => parseISOString(e.date).getTime());
   let axisStart = examTimes.length ? Math.min(...examTimes) : times.length ? Math.min(...times) : todayMid.getTime();
@@ -293,7 +286,7 @@ function buildTimeline(todayMid, animate) {
     const row = placedRanges.some(r => mid > r.l - 6 && mid < r.r + 6) ? 1 : 0;
     placedRanges.push({ l: left, r: right });
     periodsHtml += `<div class="timeline-period-span" style="left:${left}%;width:${right - left}%;--period-rgb:${p.rgb}"></div>
-      <div class="timeline-period-label" data-center="${mid}" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
+      <div class="timeline-period-label" data-center="${mid}" data-start="${left}" data-end="${right}" data-row="${row}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
   });
   let dots = '';
   mainEvents.forEach((e, i) => {
@@ -312,7 +305,8 @@ function buildTimeline(todayMid, animate) {
   while (dayOf(cursor.getTime()) < minDay) cursor.setMonth(cursor.getMonth() + 1);
   let guard = 0;
   while (dayOf(cursor.getTime()) <= maxDay && guard++ < 120) {
-    months += `<span class="timeline-month" style="left:${posOf(cursor.getTime())}%">${escapeHtml(cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }))}</span>`;
+    const position = posOf(cursor.getTime());
+    months += `<span class="timeline-month" data-center="${position}" style="left:${position}%"><span class="timeline-month-label">${escapeHtml(cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }))}</span></span>`;
     cursor.setMonth(cursor.getMonth() + 1);
   }
   return {
@@ -557,6 +551,7 @@ function renderCalendar(animate = false) {
 
 function buildLegendPeriods() {
   const legend = document.getElementById('cal-legend');
+  legend.replaceChildren();
   const timelineLegend = document.getElementById('timeline-legend');
   timelineLegend.innerHTML = `<span class="timeline-legend-group" aria-label="Terminarten">${['Prüfung', 'Abgabe', 'Termin'].map(type => `<span class="cal-legend-item"><span class="cal-legend-dot ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('')}</span>
     <span class="timeline-legend-group" aria-label="Status"><span class="cal-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span><span class="cal-legend-item"><span class="timeline-legend-today" aria-hidden="true"></span>Heute</span></span>
@@ -611,25 +606,44 @@ function focusAfterRender() {
 function layoutTimelineLabels() {
   const scroller = document.querySelector('.timeline-scroll');
   const track = scroller.querySelector('.timeline-track');
-  if (!track) return;
+  const hasTrack = !!track;
+  document.querySelector('.scroll-hint').hidden = !hasTrack || scroller.scrollWidth <= scroller.clientWidth + 1;
+  document.getElementById('timeline-legend').hidden = !hasTrack;
+  if (!track) { scroller.style.paddingTop = '0px'; return; }
   const width = track.clientWidth;
-  const rows = [];
+  const min = Math.max(0, scroller.scrollLeft - track.offsetLeft);
+  const max = Math.min(width, scroller.scrollLeft + scroller.clientWidth - track.offsetLeft);
   const labels = [...track.querySelectorAll('.timeline-period-label')];
-  labels.sort((a, b) => Number(a.dataset.center) - Number(b.dataset.center));
-  labels.forEach(label => {
-    const half = label.offsetWidth / 2;
-    const target = Number(label.dataset.center) * width / 100;
-    const center = Math.max(half, Math.min(width - half, target));
-    const left = center - half, right = center + half;
-    let row = rows.findIndex(end => left >= end + 12);
-    if (row < 0) row = rows.length;
-    rows[row] = right;
-    label.dataset.row = String(row);
-    label.style.left = `${center}px`;
-    label.style.top = `${-58 - row * 24}px`;
+  labels.forEach(label => { label.hidden = false; });
+  const layout = timelineLabelLayout(labels.map(label => ({
+    anchor: Number(label.dataset.center) * width / 100, width: label.offsetWidth,
+    start: Number(label.dataset.start) * width / 100, end: Number(label.dataset.end) * width / 100,
+  })), min, max);
+  labels.forEach((label, i) => {
+    const placed = layout.labels[i];
+    label.hidden = !placed.visible;
+    if (!placed.visible) return;
+    label.dataset.row = String(placed.row);
+    label.style.left = `${placed.center}px`;
+    label.style.top = `${-58 - placed.row * 24}px`;
   });
-  // Reserve actual label rows only; the shared tooltip lives outside this scroller.
-  scroller.style.paddingTop = `${labels.length ? 58 + (rows.length - 1) * 24 : 22}px`;
+  const months = [...track.querySelectorAll('.timeline-month')];
+  months.forEach(month => { month.hidden = false; });
+  const monthLayout = timelineLabelLayout(months.map(month => ({
+    anchor: Number(month.dataset.center) * width / 100,
+    width: month.querySelector('.timeline-month-label').offsetWidth,
+  })), min, max);
+  months.forEach((month, i) => {
+    const placed = monthLayout.labels[i];
+    month.hidden = !placed.visible;
+    if (!placed.visible) return;
+    const label = month.querySelector('.timeline-month-label');
+    label.style.left = `${placed.center - Number(month.dataset.center) * width / 100}px`;
+    label.style.top = `${placed.row * 22}px`;
+  });
+  // Monatsstriche bleiben auf ihrem Datum; nur die Texte werden entzerrt.
+  track.style.height = `${66 + Math.max(0, monthLayout.rows - 1) * 22}px`;
+  scroller.style.paddingTop = `${layout.rows ? 58 + (layout.rows - 1) * 24 : 22}px`;
   scroller.style.paddingBottom = '8px';
   positionTimelineTooltip();
 }
@@ -641,8 +655,8 @@ function positionTimelineTooltip() {
   if (!tooltipAnchor?.isConnected || timelineTooltip.dataset.open !== 'true') return;
   const rect = tooltipAnchor.getBoundingClientRect();
   const track = tooltipAnchor.closest('.timeline-track');
-  const labels = [...track.querySelectorAll('.timeline-period-label')].map(el => el.getBoundingClientRect());
-  const months = [...track.querySelectorAll('.timeline-month')].map(el => el.getBoundingClientRect());
+  const labels = [...track.querySelectorAll('.timeline-period-label:not([hidden])')].map(el => el.getBoundingClientRect());
+  const months = [...track.querySelectorAll('.timeline-month:not([hidden]) .timeline-month-label')].map(el => el.getBoundingClientRect());
   const bounds = { left: rect.left, width: rect.width,
     top: Math.min(rect.top, ...labels.map(r => r.top)),
     bottom: Math.max(rect.bottom, ...months.map(r => r.bottom)) };
@@ -699,11 +713,13 @@ timelineScroller.addEventListener('keydown', event => {
 });
 timelineScroller.addEventListener('scroll', () => {
   if (timelineProgrammaticLeft === null || Math.abs(timelineScroller.scrollLeft - timelineProgrammaticLeft) > 1) timelineManuallyScrolled = true;
+  layoutTimelineLabels();
 }, {passive:true});
 function scheduleTimelineLayout() {
   requestAnimationFrame(() => {
     layoutTimelineLabels();
     centerTimelineToday();
+    layoutTimelineLabels();
   });
 }
 function centerTimelineToday() {
@@ -748,6 +764,28 @@ let dayTimer;
 function render(animate) {
   const today    = new Date();
   const todayMid = midnight(today);
+  const nextSemester = semesterForDate(SEMESTERS, todayMid);
+  if (nextSemester.id !== semester.id) {
+    semester = nextSemester;
+    ({ events, periods } = validateData(semester.events, semester.periods));
+    ({ min: CAL_MIN_MONTH_INDEX, max: CAL_MAX_MONTH_INDEX } = calendarRange(events, periods, todayMid));
+    const index = Math.min(CAL_MAX_MONTH_INDEX, Math.max(CAL_MIN_MONTH_INDEX, monthIndex(today.getFullYear(), today.getMonth())));
+    calYear = Math.floor(index / 12); calMonth = index % 12;
+    selectedCalDate = null;
+    showPast = false;
+    updatePastToggle();
+    typeFilter = 'all';
+    updateTypeFilter();
+    closeCalMenu(); closeTimelineTooltip();
+    timelineCentered = false; timelineManuallyScrolled = false; timelineProgrammaticLeft = null;
+    buildLegendPeriods();
+  }
+  if (!events.length && !periods.length) {
+    // Ein noch ungepflegtes Semester zeigt auch nach einem Monatswechsel den aktuellen Monat.
+    CAL_MIN_MONTH_INDEX = CAL_MAX_MONTH_INDEX = monthIndex(today.getFullYear(), today.getMonth());
+    calYear = today.getFullYear(); calMonth = today.getMonth();
+  }
+  document.getElementById('semester-label').textContent = semester.label;
   const tl=buildTimeline(todayMid,animate);
   renderedDay = localDayKey(today);
   document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
@@ -757,10 +795,7 @@ function render(animate) {
   const mainEvents = events.filter(e => !e.calOnly);
   const sorted   = [...mainEvents].sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
 
-  const upcoming = sorted.filter(e => {
-    const diff = calendarDayDiff(parseISOString(e.date), todayMid);
-    return diff >= 0 && !e.isCancelled && !(e.type === 'Abgabe' && doneItems.includes(e.id));
-  });
+  const upcoming = upcomingEvents(mainEvents, todayMid, doneItems);
   renderHero(upcoming, todayMid, animate);
 
   const timelineContainer = document.getElementById('timeline-container');
@@ -1046,7 +1081,7 @@ function enterTimeline() {
   document.querySelectorAll('.timeline-dot').forEach((dot,index)=>{
     const delay=Math.min(index*20,400);motion(dot,[{scale:'0'},{scale:'1'}],{speed:'fast',delay});motion(dot,[{opacity:0},{opacity:1}],{kind:'effects',delay});
   });
-  const bar=document.querySelector('.timeline-progress');motion(bar,[{width:'0%'},{width:bar.style.width}],{speed:'slow'});
+  const bar=document.querySelector('.timeline-progress');if(bar)motion(bar,[{width:'0%'},{width:bar.style.width}],{speed:'slow'});
   motion(document.querySelector('.timeline-today'),[{translate:'0 -16px',scale:'.8'},{translate:'0 0',scale:'1'}]);
   document.querySelectorAll('.timeline-period-span').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:index*25}));
 }

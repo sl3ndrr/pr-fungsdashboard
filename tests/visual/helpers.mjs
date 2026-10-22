@@ -16,7 +16,7 @@ export async function openDashboard(page,{width=1280,theme='light',reduced=false
     await route.fulfill({response,body:await response.text()+`\nEVENTS.push(...${JSON.stringify(extraEvents)});`});
   });
   await page.goto('/');
-  await expect(page.locator('#card-p6')).toBeVisible();
+  await expect(page.locator('#hero')).toHaveAttribute('data-event-id',/.+/);
   await page.evaluate(()=>document.fonts.ready);
   await page.waitForFunction(()=>{
     const number=document.querySelector('.hero-number');

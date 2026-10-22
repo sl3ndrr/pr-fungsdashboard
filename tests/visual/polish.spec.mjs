@@ -27,7 +27,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark'])
       const rail=document.querySelector('.timeline-track').getBoundingClientRect();
       const title=document.querySelector('.timeline-title').getBoundingClientRect();
       return {gap:rail.top-title.bottom,overflow:document.documentElement.scrollWidth>innerWidth,
-        labels:[...document.querySelectorAll('.timeline-period-label')].map(label=>{
+        labels:[...document.querySelectorAll('.timeline-period-label:not([hidden])')].map(label=>{
           const range=document.createRange();range.selectNodeContents(label);
           const box=label.getBoundingClientRect();
           return {lines:range.getClientRects().length,left:box.left-rail.left,right:box.right-rail.right};
