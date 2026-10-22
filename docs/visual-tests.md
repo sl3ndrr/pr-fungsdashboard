@@ -239,3 +239,28 @@ erschweren), eine zweite Kalender-/Listenauswahl für die Timeline (bestehende
 Navigation wird wiederverwendet), produktive Datenänderungen und neue
 Abhängigkeiten. Die Ursache des ursprünglichen Handy-Screenshots bleibt offen;
 der reproduzierte Gleichdatumsfehler ist ein separater, belegter Fehler.
+
+### Ergänzung: höchstens vier sichtbare Breiten
+
+Die zuvor unbeschränkte Skalierung der aufgeklappten Vergangenheit erzeugte
+wegen des Ein-Tages-Abstands 23./24.09. eine Achse von rund 6.820 px. Die neue
+Obergrenze ist **viermal die nutzbare sichtbare Achsenbreite** (Containerbreite
+minus 16 px Rand), sowohl auf Mobilgeräten als auch auf Desktop. Die gesamten
+Scrollinhalte einschließlich Rand bleiben damit unter vier Containerbreiten.
+Kürzere Ansichten werden nicht künstlich auf vier Breiten verlängert.
+
+Die Achse bleibt zeitproportional. Nahe Termine erhalten verschiedene vertikale
+44-px-Zeilen und eine Verbindungslinie zur unveränderten Datumsposition. Dadurch
+können sich ihre horizontalen Positionen um weniger als 32 px unterscheiden;
+die 44×44-px-Touch-Ziele überlappen trotzdem nicht. Dies ersetzt den bisherigen
+rein horizontalen Mindestabstand. Punkte, Heute, Monatsmarken und Zeiträume
+behalten dieselbe Positionsfunktion und dieselbe Datumsgrenze. Bei sehr langen
+Semestern wächst die zeitliche Randzone so weit, dass Heute an beiden Enden
+weiterhin zentriert werden kann, ohne die vierfache Breite zu überschreiten.
+
+Regressionen prüfen die Längengrenze und getrennte Touch-Ziele bei jeder Breite
+280–1000 px sowie die aufgeklappte Ansicht täglich vom 01.06. bis 12.11.2026.
+Zusätzliche Browserfälle prüfen die aufgeklappte Ansicht in Hell/Dunkel nach
+Resize bei 280/390/432/768 px. **44 Node-Tests und 3 Scanner-Tests bestanden.**
+Browser-Binaries fehlen in dieser Umgebung weiterhin; die Browserprüfung und
+Screenshots bleiben offen.

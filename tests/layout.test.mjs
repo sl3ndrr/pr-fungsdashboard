@@ -10,15 +10,14 @@ test('tooltip prefers above, falls below, and clamps all viewport edges', () => 
   assert.equal(tooltipPosition({left:0,width:20,top:2,bottom:1000},size,viewport).top,528);
 });
 
-test('dense dates grow a linear rail instead of distorting time or hit spacing', () => {
+test('dense dates stay linear within four visible widths and use disjoint touch lanes', () => {
   const dates = [.04,.05,.1,.8,.9,.95,.96,.96,.97,.97,1];
   for (const available of [400,600,1000,1800]) {
-    const {width,xs} = timelineGeometry(dates,available);
-    assert.ok(width>=available);
+    const {width,xs,lanes} = timelineGeometry(dates,available);
+    assert.ok(width>=available && width<=available*4);
     xs.forEach((x,i)=>assert.equal(x,dates[i]*width));
-    for(let i=1;i<xs.length;i++) {
-      if(dates[i]===dates[i-1]) assert.equal(xs[i],xs[i-1]);
-      else assert.ok(xs[i]-xs[i-1]>=32-1e-8);
+    for(let i=0;i<xs.length;i++)for(let j=0;j<i;j++) {
+      assert.ok(Math.abs(xs[i]-xs[j])>=44-1e-8 || Math.abs(lanes[i]-lanes[j])*44>=44);
     }
   }
   assert.ok(timelineGeometry(dates,280).width>280);

@@ -199,3 +199,25 @@ test('a real midnight timer updates today, past states and hero without losing s
   expect(after.left).toBeCloseTo(before.left,0);expect(after.y).toBe(before.y);expect(after.today).not.toBe(before.today);
   await assertTimelineBoundary(page,'2026-10-15');
 });
+
+for(const theme of ['dark','light'])test(`expanded history is at most four visible widths with separated touch areas (${theme})`,async({page})=>{
+  await openDashboard(page,{width:390,height:844,theme,date:'2026-10-22'});
+  await page.locator('#timeline-past-toggle').click();await freeze(page);
+  for(const width of [390,280,432,768]){
+    await page.setViewportSize({width,height:844});await freeze(page);
+    const geometry=await page.evaluate(()=>{
+      const scroller=document.querySelector('.timeline-scroll');
+      return {width:scroller.clientWidth,scrollWidth:scroller.scrollWidth,points:[...scroller.querySelectorAll('.timeline-dot')].map(dot=>{
+        const r=dot.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2};
+      })};
+    });
+    expect(geometry.scrollWidth).toBeLessThanOrEqual(geometry.width*4);
+    for(let i=0;i<geometry.points.length;i++)for(let j=0;j<i;j++){
+      const a=geometry.points[i],b=geometry.points[j];
+      expect(a.x).toBeGreaterThanOrEqual(b.x);
+      expect(Math.abs(a.x-b.x)>=43.9 || Math.abs(a.y-b.y)>=43.9).toBe(true);
+    }
+    await assertTimelineBoundary(page);
+    await expect(page.locator('#timeline-past-toggle')).toHaveAttribute('aria-expanded','true');
+  }
+});

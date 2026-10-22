@@ -10,19 +10,23 @@ export function tooltipPosition(anchor, size, viewport, margin = 12, gap = 8) {
   return { left, top, placement };
 }
 
-/** One linear scale. Grow the rail to retain touch spacing; never move individual dates. */
-export function timelineGeometry(targets, availableWidth, gap = 44, edge = 22) {
+/** A linear scale capped at four visible widths; nearby dates use separate touch lanes. */
+export function timelineGeometry(targets, availableWidth, gap = 44, edge = 22, preferredWidth = availableWidth) {
   const unique = [...new Set(targets)];
   const distances = unique.slice(1).map((value, i) => value - unique[i]).filter(value => value > 0);
-  const width = Math.max(44, Math.ceil(availableWidth),
+  const width = Math.min(availableWidth * 4, Math.max(44, availableWidth, Math.ceil(preferredWidth),
     distances.length ? gap / Math.min(...distances) : 0,
     unique[0] > 0 ? edge / unique[0] : 0,
-    unique.at(-1) < 1 ? edge / (1 - unique.at(-1)) : 0);
+    unique.at(-1) < 1 ? edge / (1 - unique.at(-1)) : 0));
   const xs = targets.map(fraction => fraction * width);
   const lanes = [];
-  // Stable input order within a date, with disjoint 44px touch lanes.
-  let first = 0;
-  targets.forEach((value, i) => { if (!i || value !== targets[i - 1]) first = i; lanes[i] = i - first; });
+  const rowEnds = [];
+  xs.forEach((x, i) => {
+    let lane = rowEnds.findIndex(end => x - end >= gap - 1e-8);
+    if (lane < 0) lane = rowEnds.length;
+    rowEnds[lane] = x;
+    lanes[i] = lane;
+  });
   return { width, xs, lanes };
 }
 
