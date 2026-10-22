@@ -278,14 +278,17 @@ function buildTimeline(todayMid, animate, { expanded = true } = {}) {
   const todayDay = dayOf(todayMid.getTime());
   const visibleEvents = expanded ? mainEvents : mainEvents.filter(e => parseISOString(e.date) >= todayMid);
   const visibleTimes = visibleEvents.map(e => parseISOString(e.date).getTime());
-  // Fourteen days of context and padding on either end allow exact centering of today.
-  const minDay = Math.min(todayDay, ...visibleTimes.map(dayOf)) - 14;
-  const maxDay = Math.max(todayDay, ...visibleTimes.map(dayOf)) + 14;
+  const firstDay = Math.min(todayDay, ...visibleTimes.map(dayOf));
+  const lastDay = Math.max(todayDay, ...visibleTimes.map(dayOf));
+  // At the four-width cap, reserve half a viewport at either end for centering.
+  const paddingDays = Math.max(14, Math.ceil((lastDay - firstDay) / 6));
+  const minDay = firstDay - paddingDays;
+  const maxDay = lastDay + paddingDays;
   const days = visibleTimes.map(dayOf);
 
   // Account for both 8px rail margins and the 44px hit areas at its ends.
   const availableWidth = Math.max(44, document.getElementById('timeline-container').clientWidth - 16);
-  const { width: trackWidth, xs: dotXs, lanes } = timelineGeometry(days.map(day => (day - minDay) / (maxDay - minDay)), availableWidth * (maxDay - minDay) / 28);
+  const { width: trackWidth, xs: dotXs, lanes } = timelineGeometry(days.map(day => (day - minDay) / (maxDay - minDay)), availableWidth, 44, 22, availableWidth * (maxDay - minDay) / 28);
   const laneHeight = Math.max(0, ...lanes) * 44;
   // Points, today, month marks and periods all use this exact calendar-day scale.
   const posOf = t => timelineDatePosition(dayOf(t), days, dotXs, minDay, maxDay, trackWidth) / trackWidth * 100;
@@ -305,7 +308,7 @@ function buildTimeline(todayMid, animate, { expanded = true } = {}) {
     const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}`;
     dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} "
       style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s${lanes[i] ? `;top:${-7 - lanes[i] * 44}px` : ''}" data-event-id="${escapeHtml(e.id)}" data-date="${e.date}" aria-label="${escapeHtml(description)}">
-      <span class="timeline-point" aria-hidden="true"></span>
+      ${lanes[i] ? `<span class="timeline-stem" style="height:${lanes[i] * 44}px" aria-hidden="true"></span>` : ''}<span class="timeline-point" aria-hidden="true"></span>
     </button>`;
   });
   const todayPct = posOf(todayMid.getTime());

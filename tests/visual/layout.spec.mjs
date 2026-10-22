@@ -6,7 +6,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     await openDashboard(page,{width,theme});
     const geometry=await page.evaluate(()=>({
       overflow:document.documentElement.scrollWidth>innerWidth,
-      points:[...document.querySelectorAll('.timeline-dot')].map(dot=>{const r=dot.getBoundingClientRect();return {x:r.left+r.width/2,date:dot.dataset.date};}),
+      points:[...document.querySelectorAll('.timeline-dot')].map(dot=>{const r=dot.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,date:dot.dataset.date};}),
       columns:Number(getComputedStyle(document.querySelector('#list')).getPropertyValue('--list-columns')),
       cards:[...document.querySelectorAll('#list .card')].map(card=>({
         top:card.getBoundingClientRect().top,height:card.getBoundingClientRect().height,
@@ -21,7 +21,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
       const previous=geometry.points[i-1],point=geometry.points[i];
       const days=(Date.parse(point.date)-Date.parse(previous.date))/86400000;
       expect(days).toBeGreaterThan(0);
-      expect(point.x-previous.x).toBeGreaterThanOrEqual(43.9);
+      for(const other of geometry.points.slice(0,i))expect(Math.abs(point.x-other.x)>=43.9 || Math.abs(point.y-other.y)>=43.9).toBe(true);
       const scale=(point.x-previous.x)/days;
       if(dayScale!==undefined)expect(Math.abs(scale-dayScale)).toBeLessThan(.02);
       dayScale=scale;

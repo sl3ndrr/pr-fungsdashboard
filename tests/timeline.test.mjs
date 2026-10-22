@@ -20,10 +20,14 @@ test('axis ends at the corrected 10.11. exam; calendar-only events and periods n
   assert.equal(extended.html,result.html);
   assert.equal(result.dotEvents.length,11);assert.ok(result.dotEvents.every(event=>!event.calOnly));
 });
-test('all event points keep horizontal ordering and >=32px collision spacing',()=>{
+test('event points keep chronological x positions and disjoint 44px touch areas',()=>{
   const {html,dotEvents}=timeline(parseISOString('2026-09-30'));
-  const xs=[...html.matchAll(/style="left:([\d.]+)px;--delay:[^"]+" data-event-id/g)].map(match=>Number(match[1]));
-  assert.equal(xs.length,dotEvents.length);for(let i=1;i<xs.length;i++)assert.ok(xs[i]-xs[i-1]>=32-1e-8);
+  const points=[...html.matchAll(/style="left:([\d.]+)px;--delay:([^"]+)" data-event-id/g)].map(([,x,style])=>({x:Number(x),y:Number(style.match(/top:([\d.-]+)px/)?.[1]??-7)}));
+  assert.equal(points.length,dotEvents.length);
+  for(let i=0;i<points.length;i++)for(let j=0;j<i;j++) {
+    assert.ok(points[i].x>=points[j].x);
+    assert.ok(Math.abs(points[i].x-points[j].x)>=44-1e-8 || Math.abs(points[i].y-points[j].y)>=44);
+  }
   assert.deepEqual(dotEvents.filter(event=>event.date==='2026-10-26').map(event=>event.id),['t2']);
   const css=readFileSync(new URL('../css/styles.css',import.meta.url),'utf8');assert.match(css,/\.timeline-dot \{ position: absolute; top: -7px; width: 20px; height: 20px;/);
 });
@@ -92,7 +96,11 @@ test('every calendar day keeps its boundary at every integer width from 280 to 1
       const today=timelineDatePosition(day,days,fitted.xs,min,max,fitted.width);
       fitted.xs.forEach((x,i)=>assert.equal(Math.sign(x-today),Math.sign(days[i]-day),`width=${width}, day=${day}, event=${i}`));
     }
-    for(let i=1;i<fitted.xs.length;i++)assert.ok(fitted.xs[i]-fitted.xs[i-1]>=32-1e-8);
+    assert.ok(fitted.width<=width*4);
+    for(let i=0;i<fitted.xs.length;i++)for(let j=0;j<i;j++) {
+      assert.ok(fitted.xs[i]>=fitted.xs[j]);
+      assert.ok(Math.abs(fitted.xs[i]-fitted.xs[j])>=44-1e-8 || Math.abs(fitted.lanes[i]-fitted.lanes[j])*44>=44);
+    }
   }
 });
 
@@ -187,4 +195,22 @@ test('midnight scheduler uses local calendar days, refreshes on wake, and handle
   api.refreshCurrentDay();assert.equal(renders,1);
   document.hidden=true;now=parseISOString('2026-10-27').getTime();callback();assert.equal(renders,1);
   document.hidden=false;api.refreshCurrentDay();assert.equal(renders,2);
+});
+
+
+test('expanded semester stays within four usable widths on every day, with room to center today',()=>{
+  for(const clientWidth of [280,342,390,600,1000])for(let day=parseISOString('2026-06-01');day<=parseISOString('2026-11-12');day.setDate(day.getDate()+1)){
+    const result=generate(timelineGeometry,events,periods,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,{getElementById:()=>({clientWidth})},day,false,true);
+    const width=Number(result.html.match(/style="width:([\d.]+)px"/)[1]),today=result.targetPct*width/100;
+    assert.ok(width<=4*(clientWidth-16));
+    assert.ok(today>=(clientWidth-16)/2-1e-8);
+    assert.ok(width-today>=(clientWidth-16)/2-1e-8);
+    const points=[...result.html.matchAll(/style="left:([\d.]+)px;--delay:([^"]+)" data-event-id="([^"]+)"/g)];
+    for(const [,x,,id]of points){
+      const event=events.find(e=>e.id===id);
+      const offset=calendarDayDiff(parseISOString(event.date),day);
+      if(!offset)assert.ok(Math.abs(Number(x)-today)<1e-8);
+      else assert.equal(Math.sign(Number(x)-today),Math.sign(offset));
+    }
+  }
 });
