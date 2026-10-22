@@ -63,7 +63,7 @@ export function validateData(rawEvents, rawPeriods) {
     else if (!present(event.title)) reason = 'Titel fehlt';
     else if (!present(event.time)) reason = 'Zeitangabe fehlt';
     else if (!parseISOString(event.date)) reason = 'Datum ungültig';
-    else if (!boolean(event.isCancelled) || !boolean(event.calOnly) || !boolean(event.isDone))
+    else if (!boolean(event.isCancelled) || !boolean(event.calOnly) || !boolean(event.isDone) || !boolean(event.hideFromNext))
       reason = 'Statusfeld muss Boolean sein';
 
     if (reason) report('EVENTS', index, reason);
@@ -120,4 +120,31 @@ const followupDateFormatter = new Intl.DateTimeFormat('de-DE', {
 });
 export function formatFollowupDate(date) {
   return followupDateFormatter.format(date);
+}
+
+/** Am lokalen Tagesbeginn umschalten, auch wenn das Dashboard geöffnet bleibt. */
+export function semesterForDate(semesters, date) {
+  return semesters.reduce((active, semester) => {
+    const start = parseISOString(semester.activeFrom);
+    return start && start <= midnight(date) && (!active.activeFrom || start > parseISOString(active.activeFrom))
+      ? semester : active;
+  }, semesters[0]);
+}
+
+export function upcomingEvents(events, todayMid, doneItems) {
+  return events.filter(event => !event.calOnly && !event.hideFromNext && !event.isCancelled &&
+    calendarDayDiff(parseISOString(event.date), todayMid) >= 0 &&
+    !(event.type === 'Abgabe' && doneItems.includes(event.id)))
+    .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
+}
+
+/** Ohne Termine bleibt der aktuelle Monat im Kalender erreichbar. */
+export function calendarRange(events, periods, today) {
+  const dates = [...events.map(e => e.date), ...periods.flatMap(p => [p.start, p.end])];
+  const indices = dates.map(iso => {
+    const date = parseISOString(iso);
+    return date.getFullYear() * 12 + date.getMonth();
+  });
+  const current = today.getFullYear() * 12 + today.getMonth();
+  return { min: indices.length ? Math.min(...indices) : current, max: indices.length ? Math.max(...indices) : current };
 }

@@ -52,6 +52,23 @@ export function timelineDatePosition(day, days, xs, minDay, maxDay, width) {
   return previousX + (width - previousX) * (day - previousDay) / (maxDay - previousDay);
 }
 
+/** Keep complete labels in the visible rail; pack collisions into separate rows. */
+export function timelineLabelLayout(labels, min, max, gap = 12) {
+  const rows = [];
+  const placed = new Map();
+  [...labels].sort((a, b) => a.anchor - b.anchor).forEach(label => {
+    const visible = (label.end ?? label.anchor) >= min && (label.start ?? label.anchor) <= max;
+    if (!visible) { placed.set(label, { visible: false }); return; }
+    const half = Math.min(label.width, max - min) / 2;
+    const center = Math.max(min + half, Math.min(max - half, label.anchor));
+    let row = rows.findIndex(end => center - half >= end + gap);
+    if (row < 0) row = rows.length;
+    rows[row] = center + half;
+    placed.set(label, { visible: true, center, row });
+  });
+  return { labels: labels.map(label => placed.get(label)), rows: rows.length };
+}
+
 /** Pack chronological cards across group boundaries, without visual/DOM reordering. */
 export function appointmentRows(items, groupFor, columns) {
   const count = Math.max(1, Math.min(4, Math.floor(columns) || 1));

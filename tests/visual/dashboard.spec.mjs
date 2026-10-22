@@ -12,7 +12,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     await expect(page.locator('.timeline-date-label,.timeline-date-tick')).toHaveCount(0);
     const geometry=await page.evaluate(()=>({
       overflow:document.documentElement.scrollWidth>innerWidth,
-      labels:[...document.querySelectorAll('.timeline-period-label')].map(label=>{
+      labels:[...document.querySelectorAll('.timeline-period-label:not([hidden])')].map(label=>{
         const box=label.getBoundingClientRect(),track=label.parentElement.getBoundingClientRect();
         return {transparent:getComputedStyle(label).backgroundColor==='rgba(0, 0, 0, 0)',inside:box.left>=track.left-1&&box.right<=track.right+1};
       }),
