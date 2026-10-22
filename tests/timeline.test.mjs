@@ -8,7 +8,7 @@ const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('let { min: CAL_MIN_MONTH_INDEX'));
 const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
 const {events,periods}=validateData(EVENTS,PERIODS);
-const build=new Function('timelineGeometry','timelineDatePosition','events','periods','parseISOString','calendarDayDiff','cancelledStatus','escapeHtml','formatDate','typeClass','document','today','animate',dateFn+timelineFn+'\nreturn buildTimeline(today,animate);');
+const build=new Function('timelineGeometry','timelineDatePosition','events','periods','parseISOString','calendarDayDiff','cancelledStatus','escapeHtml','formatDate','typeClass','document','today','animate','expanded',dateFn+timelineFn+'\nreturn buildTimeline(today,animate,{expanded:expanded ?? true});');
 const generate=(...args)=>build(args[0],timelineDatePosition,...args.slice(1));
 const doc={getElementById:()=>({clientWidth:600})};
 const timeline=today=>generate(timelineGeometry,events,periods,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,doc,today,false);
@@ -27,8 +27,10 @@ test('all event points keep horizontal ordering and >=32px collision spacing',()
   assert.deepEqual(dotEvents.filter(event=>event.date==='2026-10-26').map(event=>event.id),['t2']);
   const css=readFileSync(new URL('../css/styles.css',import.meta.url),'utf8');assert.match(css,/\.timeline-dot \{ position: absolute; top: -7px; width: 20px; height: 20px;/);
 });
-test('today progress clamps at the axis boundaries and calendar day math handles DST',()=>{
-  assert.equal(timeline(parseISOString('2026-06-01')).targetPct,0);assert.equal(timeline(parseISOString('2026-11-11')).targetPct,100);
+test('today remains inside the padded axis before and after the events; day math handles DST',()=>{
+  for(const iso of ['2026-06-01','2026-11-11']){
+    const pct=timeline(parseISOString(iso)).targetPct;assert.ok(pct>0&&pct<100);
+  }
   assert.equal(calendarDayDiff(parseISOString('2026-10-26'),parseISOString('2026-10-24')),2);
 });
 
@@ -118,4 +120,71 @@ test('today on every actual event day sits exactly on the event point',()=>{
     const x=Number(result.html.match(new RegExp(`style="left:([\\d.]+)px;--delay:[^"]+" data-event-id="${e.id}"`))[1]);
     assert.ok(Math.abs(result.targetPct*width/100-x)<1e-8,e.id);
   }
+});
+
+
+test('the focused view hides only past events and keeps a linear scale with centered padding',()=>{
+  for(const clientWidth of [280,342,390,600,1000])for(const iso of ['2026-06-01','2026-07-06','2026-10-22','2026-10-26','2026-11-10','2026-11-12']){
+    const result=generate(timelineGeometry,events,periods,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,{getElementById:()=>({clientWidth})},parseISOString(iso),false,false);
+    assert.deepEqual(result.dotEvents.map(e=>e.id),events.filter(e=>!e.calOnly&&e.date>=iso).sort((a,b)=>a.date.localeCompare(b.date)).map(e=>e.id));
+    const width=Number(result.html.match(/style="width:([\d.]+)px"/)[1]),today=result.targetPct*width/100;
+    assert.ok(today>=(clientWidth-16)/2-1e-8);
+    assert.ok(width-today>=(clientWidth-16)/2-1e-8);
+    const points=[...result.html.matchAll(/style="left:([\d.]+)px;--delay:[^"]+" data-event-id="([^"]+)"/g)];
+    let scale;
+    for(const [,x,id]of points){
+      const event=events.find(e=>e.id===id),days=calendarDayDiff(parseISOString(event.date),parseISOString(iso));
+      if(!days)assert.ok(Math.abs(Number(x)-today)<1e-8);
+      else {
+        assert.ok(Number(x)>today);
+        const nextScale=(Number(x)-today)/days;
+        if(scale!==undefined)assert.ok(Math.abs(nextScale-scale)<1e-8);
+        scale=nextScale;
+      }
+    }
+  }
+});
+
+test('November mark and Wiesbaden endpoints use the same proportional date coordinates',()=>{
+  const result=timeline(parseISOString('2026-10-22'));
+  const width=Number(result.html.match(/style="width:([\d.]+)px"/)[1]);
+  const point=id=>Number(result.html.match(new RegExp(`style="left:([\\d.]+)px;--delay:[^"]+" data-event-id="${id}"`))[1]);
+  const month=Number(result.html.match(/class="timeline-month" data-center="([\d.]+)"[^>]*><span class="timeline-month-label">Nov/)[1])*width/100;
+  const start=point('t2'),end=point('p7');
+  assert.ok(month>start&&month<end);
+  assert.ok(Math.abs((month-start)/(end-start)-6/15)<1e-8);
+  const wiesbaden=[...result.html.matchAll(/timeline-period-label" data-center="[^"]+" data-start="([\d.]+)" data-end="([\d.]+)"[^>]*>in Wiesbaden/g)].at(-1);
+  const today=result.targetPct*width/100,scale=(end-start)/15;
+  assert.ok(Math.abs(Number(wiesbaden[1])*width/100-(today-7*scale))<1e-8);
+  assert.ok(Math.abs(Number(wiesbaden[2])*width/100-(today+3*scale))<1e-8);
+});
+
+test('the seven-day statistic includes the event noun with correct singular and plural',()=>{
+  const stats=source.slice(source.indexOf('  const abgaben     ='),source.indexOf('\n  animateStatistics();'));
+  for(const count of [0,1,2]){
+    let html;
+    const fixture=Array.from({length:count},(_,i)=>({id:`stat${i}`,type:'Termin',date:'2026-10-26'}));
+    new Function('mainEvents','sorted','doneItems','todayMid','calendarDayDiff','parseISOString','document','syncHTML',stats)(fixture,fixture,[],parseISOString('2026-10-22'),calendarDayDiff,parseISOString,doc,(_,value)=>{html=value});
+    assert.match(html,new RegExp(`>${count}</strong><span class="stat-label">${count===1?'Termin':'Termine'} in 7 Tagen`));
+  }
+});
+
+test('midnight scheduler uses local calendar days, refreshes on wake, and handles the 25-hour DST day',()=>{
+  const scheduler=source.slice(source.indexOf('function scheduleNextDay()'),source.indexOf("document.getElementById('cal-toggle-btn').innerHTML"));
+  let now=parseISOString('2026-10-25').getTime(),callback,delay,renders=0;
+  class ClockDate extends Date{constructor(...args){super(...(args.length?args:[now]));}}
+  const document={hidden:false};
+  const create=new Function('Date','document','midnight','setTimeout','clearTimeout','onRender',`
+    const localDayKey=date=>date.toLocaleDateString('de-DE');
+    let dayTimer;
+    let renderedDay=localDayKey(new Date());
+    function renderPreservingState(){renderedDay=localDayKey(new Date());onRender();}
+    ${scheduler}; return {refreshCurrentDay,scheduleNextDay};`);
+  const api=create(ClockDate,document,d=>new ClockDate(d.getFullYear(),d.getMonth(),d.getDate()),(fn,ms)=>{callback=fn;delay=ms;return 1},()=>{},()=>renders++);
+  api.scheduleNextDay();
+  assert.equal(delay,25*60*60*1000+25);
+  now=parseISOString('2026-10-26').getTime()+25;callback();assert.equal(renders,1);
+  api.refreshCurrentDay();assert.equal(renders,1);
+  document.hidden=true;now=parseISOString('2026-10-27').getTime();callback();assert.equal(renders,1);
+  document.hidden=false;api.refreshCurrentDay();assert.equal(renders,2);
 });

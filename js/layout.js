@@ -10,34 +10,19 @@ export function tooltipPosition(anchor, size, viewport, margin = 12, gap = 8) {
   return { left, top, placement };
 }
 
-/** Bounded isotonic regression: date order and 32px spacing, without growing a fitting rail. */
-export function timelineGeometry(targets, availableWidth, gap = 32, edge = 22) {
-  const width = Math.max(Math.floor(availableWidth), (targets.length - 1) * gap + edge * 2);
-  const blocks = [];
-  targets.forEach((fraction, i) => {
-    blocks.push({ start: i, end: i, sum: fraction * width - i * gap, count: 1 });
-    while (blocks.length > 1) {
-      const a = blocks.at(-2), b = blocks.at(-1);
-      if (a.sum / a.count <= b.sum / b.count) break;
-      blocks.splice(-2, 2, { start: a.start, end: b.end, sum: a.sum + b.sum, count: a.count + b.count });
-    }
-  });
-  const xs = [];
-  const max = width - edge - Math.max(0, targets.length - 1) * gap;
-  for (const block of blocks) {
-    const base = Math.max(edge, Math.min(max, block.sum / block.count));
-    for (let i = block.start; i <= block.end; i++) xs[i] = base + i * gap;
-  }
-  // A date has exactly one x coordinate, including when several events share it.
-  // Separate hit areas vertically instead of moving events across today's boundary.
+/** One linear scale. Grow the rail to retain touch spacing; never move individual dates. */
+export function timelineGeometry(targets, availableWidth, gap = 44, edge = 22) {
+  const unique = [...new Set(targets)];
+  const distances = unique.slice(1).map((value, i) => value - unique[i]).filter(value => value > 0);
+  const width = Math.max(44, Math.ceil(availableWidth),
+    distances.length ? gap / Math.min(...distances) : 0,
+    unique[0] > 0 ? edge / unique[0] : 0,
+    unique.at(-1) < 1 ? edge / (1 - unique.at(-1)) : 0);
+  const xs = targets.map(fraction => fraction * width);
   const lanes = [];
-  for (let i = 0; i < targets.length; i++) {
-    let last = i;
-    while (last + 1 < targets.length && targets[last + 1] === targets[i]) last++;
-    const center = (xs[i] + xs[last]) / 2;
-    for (let j = i; j <= last; j++) { xs[j] = center; lanes[j] = j - i; }
-    i = last;
-  }
+  // Stable input order within a date, with disjoint 44px touch lanes.
+  let first = 0;
+  targets.forEach((value, i) => { if (!i || value !== targets[i - 1]) first = i; lanes[i] = i - first; });
   return { width, xs, lanes };
 }
 

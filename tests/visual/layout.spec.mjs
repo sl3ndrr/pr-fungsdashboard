@@ -6,7 +6,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     await openDashboard(page,{width,theme});
     const geometry=await page.evaluate(()=>({
       overflow:document.documentElement.scrollWidth>innerWidth,
-      railOverflow:document.querySelector('.timeline-scroll').scrollWidth-document.querySelector('.timeline-scroll').clientWidth,
+      points:[...document.querySelectorAll('.timeline-dot')].map(dot=>{const r=dot.getBoundingClientRect();return {x:r.left+r.width/2,date:dot.dataset.date};}),
       columns:Number(getComputedStyle(document.querySelector('#list')).getPropertyValue('--list-columns')),
       cards:[...document.querySelectorAll('#list .card')].map(card=>({
         top:card.getBoundingClientRect().top,height:card.getBoundingClientRect().height,
@@ -16,8 +16,17 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     }));
     expect(geometry.overflow).toBe(false);
     for(const card of geometry.cards){expect(card.labelled).toBe(true);expect(card.leftBorder).toBe('1px');}
+    let dayScale;
+    for(let i=1;i<geometry.points.length;i++){
+      const previous=geometry.points[i-1],point=geometry.points[i];
+      const days=(Date.parse(point.date)-Date.parse(previous.date))/86400000;
+      expect(days).toBeGreaterThan(0);
+      expect(point.x-previous.x).toBeGreaterThanOrEqual(43.9);
+      const scale=(point.x-previous.x)/days;
+      if(dayScale!==undefined)expect(Math.abs(scale-dayScale)).toBeLessThan(.02);
+      dayScale=scale;
+    }
     if(width>=1280) {
-      expect(geometry.railOverflow).toBeLessThanOrEqual(1);
       expect(geometry.cards.slice(0,Math.min(geometry.columns,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
     }
     if(width>=1600) for(const card of geometry.cards)expect(card.height).toBeLessThanOrEqual(130);
@@ -120,3 +129,4 @@ for(const theme of ['light','dark']) {
     }
   });
 }
+
