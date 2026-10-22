@@ -10,18 +10,18 @@ test('tooltip prefers above, falls below, and clamps all viewport edges', () => 
   assert.equal(tooltipPosition({left:0,width:20,top:2,bottom:1000},size,viewport).top,528);
 });
 
-test('dense dates fit a desktop rail without growth; hit areas and order remain inside', () => {
+test('dense dates grow a linear rail instead of distorting time or hit spacing', () => {
   const dates = [.04,.05,.1,.8,.9,.95,.96,.96,.97,.97,1];
   for (const available of [400,600,1000,1800]) {
     const {width,xs} = timelineGeometry(dates,available);
-    assert.equal(width,available);
-    assert.ok(xs[0]>=22 && xs.at(-1)<=width-22);
+    assert.ok(width>=available);
+    xs.forEach((x,i)=>assert.equal(x,dates[i]*width));
     for(let i=1;i<xs.length;i++) {
       if(dates[i]===dates[i-1]) assert.equal(xs[i],xs[i-1]);
       else assert.ok(xs[i]-xs[i-1]>=32-1e-8);
     }
   }
-  assert.equal(timelineGeometry(dates,280).width,364);
+  assert.ok(timelineGeometry(dates,280).width>280);
 });
 
 test('one plus two appointments share a row with explicit group labels and stable order', () => {

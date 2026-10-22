@@ -92,7 +92,11 @@ test('keyboard, touch, tooltip collisions and preserved manual scroll',async({pa
   await page.locator('[data-filter="Prüfung"]').click();await freeze(page);
   await expect.poll(()=>scroller.evaluate(el=>el.scrollLeft)).toBe(0);
   await page.setViewportSize({width:768,height:1000});await freeze(page);
-  await expect.poll(()=>scroller.evaluate(el=>el.scrollLeft)).toBe(0);
+  const centered=await page.evaluate(()=>{
+    const scroller=document.querySelector('.timeline-scroll').getBoundingClientRect(),marker=document.querySelector('.timeline-today').getBoundingClientRect();
+    return Math.abs(marker.left+marker.width/2-(scroller.left+scroller.width/2));
+  });
+  expect(centered).toBeLessThan(1);
   await page.evaluate(()=>{
     const dot=document.querySelector('.timeline-dot[data-event-id="p4"]');
     dot.dispatchEvent(new PointerEvent('pointerdown',{pointerType:'touch',bubbles:true}));
@@ -111,5 +115,6 @@ test('system theme follows a dark OS preference',async({page})=>{
   await expect(page.locator('[data-theme-value="system"]')).toHaveAttribute('aria-checked','true');
   await expect(page).toHaveScreenshot('system-dark.png',{fullPage:true});
 });
+
 
 

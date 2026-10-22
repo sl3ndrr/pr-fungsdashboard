@@ -20,3 +20,15 @@ test('progress tracks and past timeline points retain at least 3:1 non-text cont
   }
 });
 
+
+
+test('period labels and neutral past points keep contrast in both timeline themes',()=>{
+  for(const mode of [0,1]){
+    const surface=color('surface-container-low',mode);
+    for(const period of [[249,115,22],[139,92,246]]){
+      const background=mix(period.map(v=>v/255),surface,.1);
+      assert.ok(contrast(color('on-surface',mode),background)>=4.5);
+    }
+    assert.ok(contrast(color('outline',mode),surface)>=3);
+  }
+});

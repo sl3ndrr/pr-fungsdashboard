@@ -159,3 +159,83 @@ Breite 280–1000 px; dazu Eventtage, DST, leere Semester und konkrete Renderwer
 bei 342/390 px. `semester-timeline.spec.mjs` ergänzt Bounding-Box-Prüfungen nach
 Laden, Rotation, verstecktem Layout und `pageshow`, inklusive Reduced Motion.
 Diese Browserfälle müssen bei verfügbaren Binaries noch ausgeführt werden.
+
+### Phase 2: lineare Achse und mobile Bedienung
+
+Die Achse ist jetzt linear in **Kalendertagen**, mit mindestens 44 px Abstand
+zwischen verschiedenen Termintagen. Dichte Termine vergrößern die gesamte
+Achse; keine Kollisionskorrektur verschiebt mehr einzelne Daten. Gleiche Daten
+haben denselben x-Wert und verschiedene vertikale Touch-Ziele. Die standardmäßig
+eingeklappte Vergangenheit wird als „N vergangen“ gezählt (nicht als „erledigt“,
+da vergangene und abgebrochene Prüfungen keine erledigten Abgaben sind).
+Das Fokusfenster beginnt 14 Tage vor Heute und reicht über den letzten Termin;
+14 Tage Rand erlauben eine zentrierte Heute-Markierung auch an den Enden.
+
+Der nächste nicht abgebrochene Termin hat eine dauerhafte Kurzbeschriftung mit
+Datum. Kreise, Quadrate und Rauten unterscheiden die Terminarten; ein Querstrich
+markiert Abbrüche. Neutrale vergangene Punkte unterscheiden sich von aktiven
+Typfarben. Zeitraum-Balken und zugehörige Texte folgen unter Heute-Pill und
+Monatsmarken. Im sichtbaren Ausschnitt wird ein identischer Zeitraumtext nur
+einmal ausgegeben. Die aufklappbare Zeichenerklärung enthält nur sichtbare
+Typen und Abbruchstatus. Der nächste Termintext bleibt auch beim Scrollen im
+sichtbaren Ausschnitt lesbar.
+
+Initiales Layout und Resize zentrieren Heute. Manuelles Scrollen blendet den
+Text-Hinweis aus; Randverläufe zeigen weiterhin verfügbaren Inhalt. Gewöhnliche
+Re-Renders und der Datumswechsel erhalten Scrolloffset und Aufklappzustand.
+Der vorhandene Timer bis zur lokalen Mitternacht sowie `visibilitychange` und
+`pageshow` bleiben erhalten; beim Tageswechsel wird keine Einstiegsanimation
+wiederholt. Der erste Touch zeigt Details, öffnet nötige Listenfilter und
+markiert die zugehörige Karte. Der zweite Touch sowie Enter navigieren weiter
+wie zuvor. Die 7-Tage-Statistik nennt „Termin“ beziehungsweise „Termine“.
+
+**Bewusste Testanpassungen:** Eine lineare Achse darf auch auf dem Desktop
+horizontal scrollen, wenn andernfalls der Mindestabstand unterschritten würde.
+Der frühere Test „Desktop niemals scrollbar“ widersprach diesem Ziel und prüft
+weiterhin, dass die Seite selbst keinen Überlauf hat. Nach Resize wird nun
+explizit die Zentrierung statt des alten manuellen Scrolloffsets erwartet.
+Außerhalb der Termindaten liegt Heute in der datumsgenauen Randzone, statt am
+Ende der Achse auf 0/100 % zu springen. Das Ende der Termindaten bleibt 10.11.;
+Randzonen ändern diese Daten nicht.
+
+Aktueller Stand: **43 Node-Tests und 3 CSS-Scanner-Tests bestanden**. Der Scanner
+`css-duplicates.mjs` läuft weiterhin. Textkontraste wurden für beide Paletten
+rechnerisch gegen WCAG AA geprüft, einschließlich der getönten Zeitraumflächen;
+vergangene Punkte erreichen mindestens 3:1. Browser-Layout, tatsächliche
+Schriftmetriken, CLS und die drei Browser-Engines sind wegen fehlender Binaries
+weiterhin **nicht visuell verifiziert**. 297 Playwright-Fälle werden geladen.
+
+Die neuen Browserfälle prüfen 390×844, Bounding-Box-Grenzen, nächste Beschriftung,
+Heute im Zentrum nach Rotation, ein verstecktes erstes Layout, gleich datierte
+Events, Chip-Zustand bei Re-Renders, gefilterte Touch-Navigation und einen echten
+Timerlauf über Mitternacht (`clock.install` / `pauseAt` / `runFor`, ohne ein
+künstlich ausgelöstes `pageshow`). Der vorhandene Semesterwechsel-Test prüft
+den Wake-up-Pfad weiterhin separat.
+
+#### Vorher-/Nachher-Bilder bei 390×844 erzeugen
+
+Nach Installation der vorhandenen Dev-Abhängigkeiten und Browser:
+
+```bash
+# Repo-Root: unveränderte Ausgangsbasis für den Vorher-Lauf bereitstellen
+git worktree add --detach /tmp/timeline-before 9e64033431ce0f5a7754e8292b60f4bf9980bc22
+cd tests/visual
+DASHBOARD_ROOT=/tmp/timeline-before npx playwright test semester-timeline.spec.mjs \
+  --project chromium --grep '390px review screenshots' --output test-results/before
+npx playwright test semester-timeline.spec.mjs \
+  --project chromium --grep '390px review screenshots' --output test-results/after
+npm test
+```
+
+Die beiden Review-Fälle schreiben je ein Viewport-PNG und ein Detail-PNG der
+Timeline für Dark und Light in die jeweiligen Ergebnis-Unterordner. Diese
+Capture-Fälle verwenden auch im Vorher-Lauf ausschließlich bereits vorhandene
+Selektoren. Die PNGs anschließend prüfen; Snapshot-Baselines nur bewusst im
+oben beschriebenen gepinnten Docker-Image aktualisieren. In dieser Umgebung
+wurden keine Vorher-/Nachher-PNGs erstellt.
+
+Bewusst weggelassen: Scroll-Snap (würde das freie Erkunden der Tagesachse
+erschweren), eine zweite Kalender-/Listenauswahl für die Timeline (bestehende
+Navigation wird wiederverwendet), produktive Datenänderungen und neue
+Abhängigkeiten. Die Ursache des ursprünglichen Handy-Screenshots bleibt offen;
+der reproduzierte Gleichdatumsfehler ist ein separater, belegter Fehler.

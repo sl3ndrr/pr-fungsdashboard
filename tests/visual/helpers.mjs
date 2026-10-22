@@ -1,7 +1,7 @@
 import {expect} from 'playwright/test';
 
-export async function openDashboard(page,{width=1280,theme='light',reduced=false,date='2026-10-01',extraEvents=[]}={}) {
-  await page.setViewportSize({width,height:1000});
+export async function openDashboard(page,{width=1280,height=1000,theme='light',reduced=false,date='2026-10-01',extraEvents=[]}={}) {
+  await page.setViewportSize({width,height});
   await page.emulateMedia({colorScheme:theme==='dark'?'dark':'light',reducedMotion:reduced?'reduce':'no-preference'});
   // Use the same system font in base/head; external font availability is not deterministic.
   await page.route('https://fonts.googleapis.com/**',route=>route.abort());
@@ -35,4 +35,5 @@ export async function freeze(page,waveTime=0) {
     }
   },waveTime);
 }
+
 
