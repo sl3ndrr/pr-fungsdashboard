@@ -8,7 +8,7 @@ async function geometry(page) {
     const rail=document.querySelector('#timeline-container');
     return {client:rail.clientWidth,scroll:rail.scrollWidth,bounds:box(rail),
       card:box(document.querySelector('.timeline-card')),hero:box(document.querySelector('#hero')),
-      points:[...rail.querySelectorAll('.timeline-dot')].map(el=>({id:el.dataset.eventId,hit:box(el),point:box(el.querySelector('.timeline-point')),label:box(el.querySelector('.timeline-event-label')),text:el.querySelector('.timeline-event-label').innerText})),
+      points:[...rail.querySelectorAll('.timeline-dot')].map(el=>({id:el.dataset.eventId,position:getComputedStyle(el).position,stem:box(rail.querySelector(`[data-key="stem-${el.dataset.eventId}"]`)),hit:box(el),point:box(el.querySelector('.timeline-point')),label:box(el.querySelector('.timeline-event-label')),text:el.querySelector('.timeline-event-label').innerText})),
       labels:[...rail.querySelectorAll('.timeline-event-label,.timeline-period-label,.timeline-month,.timeline-today-label')].map(box),
       pill:box(rail.querySelector('.timeline-today-label')),line:box(rail.querySelector('.timeline-today')),
       layers:{pill:Number(getComputedStyle(rail.querySelector('.timeline-today-label')).zIndex),line:Number(getComputedStyle(rail.querySelector('.timeline-today')).zIndex)},
@@ -18,6 +18,8 @@ async function geometry(page) {
 function assertFit(g) {
   expect(g.overflow).toBe(false);expect(g.scroll).toBeLessThanOrEqual(g.client);
   for(const point of g.points) {
+    expect(point.position).toBe('absolute');
+    expect(Math.abs((point.point.left+point.point.right)/2-point.stem.left)).toBeLessThanOrEqual(.5);
     expect(point.hit.width).toBeGreaterThanOrEqual(44);expect(point.hit.height).toBeGreaterThanOrEqual(44);
     expect(point.text.length).toBeGreaterThan(0);
     expect(point.hit.left).toBeGreaterThanOrEqual(g.bounds.left-.5);
@@ -45,6 +47,9 @@ for(const width of widths)for(const theme of ['light','dark']) {
     let g=await geometry(page);assertFit(g);expect(g.points.map(p=>p.id)).toEqual(['t2','p7']);
     await testInfo.attach('measurements.json',{body:JSON.stringify({width,theme,...g},null,2),contentType:'application/json'});
     if([360,820,1280,2300].includes(width))await page.screenshot({path:testInfo.outputPath(`after-${width}-${theme}.png`),fullPage:true});
+    // Reproduce both windows from the mobile overflow report on 24 October.
+    await page.locator('[data-window="semester"]').click();await freeze(page);
+    g=await geometry(page);assertFit(g);expect(g.points).toHaveLength(11);
     await openDashboard(page,{width,theme,date:'2026-10-02'});
     await page.locator('[data-window="semester"]').click();await freeze(page);
     g=await geometry(page);assertFit(g);expect(g.points).toHaveLength(11);
