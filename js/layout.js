@@ -1,3 +1,5 @@
+import {calendarDayDiff, parseISOString} from './utils.js';
+
 /** Viewport-clamped overlay geometry; independent of the DOM for regression tests. */
 export function tooltipPosition(anchor, size, viewport, margin = 12, gap = 8) {
   const width = Math.min(size.width, Math.max(0, viewport.width - margin * 2));
@@ -10,45 +12,53 @@ export function tooltipPosition(anchor, size, viewport, margin = 12, gap = 8) {
   return { left, top, placement };
 }
 
-/** A linear scale capped at four visible widths; nearby dates use separate touch lanes. */
-export function timelineGeometry(targets, availableWidth, gap = 44, edge = 22, preferredWidth = availableWidth) {
-  const unique = [...new Set(targets)];
-  const distances = unique.slice(1).map((value, i) => value - unique[i]).filter(value => value > 0);
-  const width = Math.min(availableWidth * 4, Math.max(44, availableWidth, Math.ceil(preferredWidth),
-    distances.length ? gap / Math.min(...distances) : 0,
-    unique[0] > 0 ? edge / unique[0] : 0,
-    unique.at(-1) < 1 ? edge / (1 - unique.at(-1)) : 0));
-  const xs = targets.map(fraction => fraction * width);
-  const lanes = [];
-  const rowEnds = [];
-  xs.forEach((x, i) => {
-    let lane = rowEnds.findIndex(end => x - end >= gap - 1e-8);
-    if (lane < 0) lane = rowEnds.length;
-    rowEnds[lane] = x;
-    lanes[i] = lane;
-  });
-  return { width, xs, lanes };
+/** Calendar-day windows. calOnly/periods never determine the event domain. */
+export function timelineWindow(events, today, mode = 'upcoming') {
+  const main = events.filter(event => !event.calOnly)
+    .sort((a, b) => a.date.localeCompare(b.date)); // stable: equal dates retain EVENTS order
+  if (!main.length) return null;
+  const origin = parseISOString(main[0].date);
+  const day = event => calendarDayDiff(parseISOString(event.date), origin);
+  const todayDay = calendarDayDiff(today, origin);
+  const visible = mode === 'semester' ? main : main.filter(event => day(event) >= todayDay);
+  const first = mode === 'semester' ? 0 : todayDay;
+  const last = mode === 'semester' ? day(main.at(-1)) : Math.max(todayDay + 3, ...visible.map(day));
+  return { events: visible, origin, todayDay, minDay: first - 2, maxDay: last + 2,
+    axisStart: origin.getTime(), axisEnd: parseISOString(main.at(-1).date).getTime() };
 }
 
-/** Map dates onto the fitted points, keeping intervening dates between their neighbours.
- * Equal-date groups use their centre; dates outside a group interpolate from its edges.
+/** One strictly linear scale, with a 22px inset for complete 44px targets. */
+export function timelinePosition(day, minDay, maxDay, width, edge = 22) {
+  const inset = Math.min(edge, width / 2);
+  return inset + (day - minDay) / Math.max(1, maxDay - minDay) * (width - inset * 2);
+}
+
+/** Fit every point; collisions alternate above/below the axis, never widen it. */
+export function timelineGeometry(targets, availableWidth, gap = 44) {
+  const width = Math.max(44, availableWidth);
+  const xs = targets.map(fraction => timelinePosition(fraction, 0, 1, width));
+  const placed = timelineEventLayout(xs.map(x => ({x, variants: [{width: gap}]})), width, 0);
+  return { width, xs, lanes: placed.map(point => point.lane) };
+}
+
+/** Measured label variants and their 44px targets share disjoint lane intervals.
+ * Labels stay centred on their date, except for explicit edge clamping.
+ * Rows alternate -1,+1,-2,+2; input order is never changed.
  */
-export function timelineDatePosition(day, days, xs, minDay, maxDay, width) {
-  if (day <= minDay) return 0;
-  if (day >= maxDay) return width;
-  let previousDay = minDay, previousX = 0;
-  for (let i = 0; i < days.length; i++) {
-    let last = i;
-    while (last + 1 < days.length && days[last + 1] === days[i]) last++;
-    if (day === days[i]) return (xs[i] + xs[last]) / 2;
-    if (day < days[i]) {
-      return previousX + (xs[i] - previousX) * (day - previousDay) / (days[i] - previousDay);
-    }
-    previousDay = days[i];
-    previousX = xs[last];
-    i = last;
-  }
-  return previousX + (width - previousX) * (day - previousDay) / (maxDay - previousDay);
+export function timelineEventLayout(items, width, gap = 8) {
+  const lanes = [];
+  return items.map((item, index) => {
+    const neighbours = items.filter((_, i) => i !== index).map(other => Math.abs(other.x - item.x));
+    const budget = Math.max(44, Math.min(156, width, ...(neighbours.length ? neighbours : [width])) - gap);
+    const variant = item.variants.find(value => value.width <= budget) ?? item.variants.at(-1);
+    const size = Math.min(width, Math.max(44, variant.width));
+    const center = Math.max(size / 2, Math.min(width - size / 2, item.x));
+    const left = center - size / 2, right = center + size / 2;
+    let row = lanes.findIndex(intervals => intervals.every(interval => left >= interval.right + gap || right + gap <= interval.left));
+    if (row < 0) { row = lanes.length; lanes.push([]); }
+    lanes[row].push({left, right});
+    return { ...variant, width: size, center, left, lane: row % 2 ? (row + 1) / 2 : -(row / 2 + 1) };
+  });
 }
 
 /** Keep complete labels in the visible rail; pack collisions into separate rows. */
@@ -82,4 +92,5 @@ export function appointmentRows(items, groupFor, columns) {
   }
   return rows;
 }
+
 

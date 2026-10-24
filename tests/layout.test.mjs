@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tooltipPosition, timelineGeometry, timelineDatePosition, timelineLabelLayout, appointmentRows } from '../js/layout.js';
+import { tooltipPosition, timelineGeometry, timelinePosition, timelineLabelLayout, appointmentRows } from '../js/layout.js';
 
 test('tooltip prefers above, falls below, and clamps all viewport edges', () => {
   const size = {width:260,height:100}, viewport = {width:360,height:640};
@@ -10,17 +10,17 @@ test('tooltip prefers above, falls below, and clamps all viewport edges', () => 
   assert.equal(tooltipPosition({left:0,width:20,top:2,bottom:1000},size,viewport).top,528);
 });
 
-test('dense dates stay linear within four visible widths and use disjoint touch lanes', () => {
-  const dates = [.04,.05,.1,.8,.9,.95,.96,.96,.97,.97,1];
-  for (const available of [400,600,1000,1800]) {
+test('dense dates fit one width and alternate disjoint 44px target lanes', () => {
+  const dates = [0,.04,.05,.1,.8,.9,.95,.96,.96,.97,.97,1];
+  for (const available of [200,280,400,600,1000,2300]) {
     const {width,xs,lanes} = timelineGeometry(dates,available);
-    assert.ok(width>=available && width<=available*4);
-    xs.forEach((x,i)=>assert.equal(x,dates[i]*width));
+    assert.equal(width,available);
+    xs.forEach((x,i)=>assert.equal(x,22+dates[i]*(width-44)));
     for(let i=0;i<xs.length;i++)for(let j=0;j<i;j++) {
-      assert.ok(Math.abs(xs[i]-xs[j])>=44-1e-8 || Math.abs(lanes[i]-lanes[j])*44>=44);
+      assert.ok(Math.abs(xs[i]-xs[j])>=44-1e-8 || lanes[i] !== lanes[j]);
     }
   }
-  assert.ok(timelineGeometry(dates,280).width>280);
+  assert.deepEqual(timelineGeometry([.5,.5,.5,.5],280).lanes,[-1,1,-2,2]);
 });
 
 test('one plus two appointments share a row with explicit group labels and stable order', () => {
@@ -37,14 +37,11 @@ test('one plus two appointments share a row with explicit group labels and stabl
   }
 });
 
-test('dates between crowded same-day groups stay outside both groups', () => {
-  const position=day=>timelineDatePosition(day,[0,0,10,10],[22,54,86,118],-1,11,140);
-  assert.equal(position(0),38);
-  assert.equal(position(10),102);
-  assert.ok(position(1)>54 && position(9)<86);
-  assert.equal(position(-1),0);
-  assert.equal(position(11),140);
-  assert.equal(timelineDatePosition(5,[],[],0,10,100),50);
+test('every date uses the same linear map, including dates between same-day groups', () => {
+  const position=day=>timelinePosition(day,0,10,144);
+  assert.equal(position(0),22);
+  assert.equal(position(10),122);
+  for (let day=0;day<10;day++) assert.equal(position(day+1)-position(day),10);
 });
 
 test('crowded month labels stay whole and never overlap on the visible rail', () => {
@@ -62,11 +59,12 @@ test('crowded month labels stay whole and never overlap on the visible rail', ()
   assert.ok(timelineLabelLayout(labels,0,280).rows > 1);
 });
 
-test('period labels follow the visible band and disappear completely after scrolling past it', () => {
+test('partially overlapping labels stay complete; fully outside labels are omitted', () => {
   const labels = [{anchor:20,start:0,end:40,width:100},{anchor:100,start:60,end:140,width:100}];
   const layout = timelineLabelLayout(labels,30,150);
   assert.deepEqual(layout.labels,[{visible:true,center:80,row:0},{visible:true,center:100,row:1}]);
   assert.equal(timelineLabelLayout(labels,45,165).labels[0].visible,false);
   assert.equal(timelineLabelLayout(labels,150,270).rows,0);
 });
+
 

@@ -133,14 +133,11 @@ try {
         for(const page of pages)await page.locator('#hero .hero-next').first().press('Enter');
         await compare(pages,name+'-followup-focus',[['card','#card-p5']]);
         for(const page of pages) {
-          await page.evaluate(()=>{const el=document.querySelector('.timeline-scroll');el.dispatchEvent(new WheelEvent('wheel',{deltaX:-100,bubbles:true}));el.scrollLeft=0;});
           await page.locator('[data-filter="Prüfung"]').click();
           await page.setViewportSize({width:768,height:1000});
         }
         await compare(pages,name+'-filter-resize',[['dashboard',null]]);
         for(const page of pages)await page.evaluate(()=>{const el=document.querySelector('.timeline-dot[data-event-id="p4"]');el.dispatchEvent(new PointerEvent('pointerdown',{pointerType:'touch',bubbles:true}));el.dispatchEvent(new PointerEvent('click',{pointerType:'touch',detail:1,bubbles:true}));});
-        await compare(pages,name+'-touch-tooltip',[['timeline','.timeline-card']]);
-        for(const page of pages)await page.evaluate(()=>document.querySelector('.timeline-dot[data-event-id="p4"]').dispatchEvent(new PointerEvent('click',{pointerType:'touch',detail:1,bubbles:true})));
         await compare(pages,name+'-touch-card',[['card','#card-p4']]);
       });
       report.browsers.push(name);
@@ -158,3 +155,4 @@ finally {
 async function comparePhase(pages,label,time) {
   await compare(pages,label,[['hero','#hero .mini-progress'],['stats','#stats-line .mini-progress'],['timeline','.timeline-track']],time);
 }
+

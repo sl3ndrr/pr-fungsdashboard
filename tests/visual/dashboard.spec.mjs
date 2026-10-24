@@ -65,47 +65,15 @@ for(const [date,text,unit] of [['2026-10-06','1','Tag'],['2026-09-25','12','Tage
   });
 }
 
-test('keyboard, touch, tooltip collisions and preserved manual scroll',async({page})=>{
+test('keyboard navigation, hover tooltip and escape',async({page})=>{
   await openDashboard(page,{width:360});
-  const scroller=page.locator('.timeline-scroll');
-  const before=await page.evaluate(()=>({y:scrollY,left:document.querySelector('.timeline-scroll').scrollLeft}));
-  expect(before.y).toBe(0);expect(before.left).toBeGreaterThan(0);
-  const dot=page.locator('.timeline-dot[data-event-id="p4"]');
+  const dot=page.locator('#timeline-event-p4');
   await dot.focus();await freeze(page);
   await expect(dot).toHaveAccessibleName(/05\.10\.2026.*Abgebrochen/);
   await expect(page.locator('#timeline-tooltip')).toBeVisible();
-  const noOverlap=await page.locator('#timeline-tooltip').evaluate(tip=>{
-    const a=tip.getBoundingClientRect();
-    return [...document.querySelectorAll('.timeline-period-label')].every(label=>{
-      const b=label.getBoundingClientRect();return a.bottom<=b.top||a.top>=b.bottom||a.right<=b.left||a.left>=b.right;
-    });
-  });
-  expect(noOverlap).toBe(true);
   await dot.press('Escape');await freeze(page);
   await expect(dot).toBeFocused();await expect(page.locator('#timeline-tooltip')).toBeHidden();
-  await page.locator('#hero .hero-next').first().press('Enter');
-  await expect(page.locator('#card-p5')).toBeFocused();
-  await page.evaluate(()=>{
-    const scroller=document.querySelector('.timeline-scroll');
-    scroller.dispatchEvent(new WheelEvent('wheel',{deltaX:-100,bubbles:true}));scroller.scrollLeft=0;
-  });
-  await page.locator('[data-filter="Prüfung"]').click();await freeze(page);
-  await expect.poll(()=>scroller.evaluate(el=>el.scrollLeft)).toBe(0);
-  await page.setViewportSize({width:768,height:1000});await freeze(page);
-  const centered=await page.evaluate(()=>{
-    const scroller=document.querySelector('.timeline-scroll').getBoundingClientRect(),marker=document.querySelector('.timeline-today').getBoundingClientRect();
-    return Math.abs(marker.left+marker.width/2-(scroller.left+scroller.width/2));
-  });
-  expect(centered).toBeLessThan(1);
-  await page.evaluate(()=>{
-    const dot=document.querySelector('.timeline-dot[data-event-id="p4"]');
-    dot.dispatchEvent(new PointerEvent('pointerdown',{pointerType:'touch',bubbles:true}));
-    dot.dispatchEvent(new PointerEvent('click',{pointerType:'touch',detail:1,bubbles:true}));
-  });
-  await freeze(page);await expect(page.locator('#timeline-tooltip')).toBeVisible();
-  await expect(dot).toHaveAttribute('data-tooltip-open','true');
-  await page.evaluate(()=>document.querySelector('.timeline-dot[data-event-id="p4"]').dispatchEvent(new PointerEvent('click',{pointerType:'touch',detail:1,bubbles:true})));
-  await expect(page.locator('#card-p4')).toBeFocused();
+  await dot.press('Enter');await expect(page.locator('#card-p4')).toBeFocused();
 });
 
 test('system theme follows a dark OS preference',async({page})=>{
@@ -115,6 +83,7 @@ test('system theme follows a dark OS preference',async({page})=>{
   await expect(page.locator('[data-theme-value="system"]')).toHaveAttribute('aria-checked','true');
   await expect(page).toHaveScreenshot('system-dark.png',{fullPage:true});
 });
+
 
 
 

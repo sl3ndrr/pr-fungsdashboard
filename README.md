@@ -8,7 +8,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - „Danach“-Buttons mit Wochentag, State-Layer und Fokus auf der Zielkarte
 - Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
 - Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
-- Interaktiver Zeitstrahl mit Prüfungsachse, horizontal entzerrten Punkten, Tooltips und Zeitraum-Bändern
+- Vollständig eingepasster Zeitstrahl mit linearen Tagen, beschrifteten Reihen, Zeitfensterwahl und tonalen Zeitraum-Bändern
 - Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
 - Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; zunächst ausgeblendet, ab 1280 px beim Öffnen als sticky Seitenspalte
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
@@ -89,37 +89,29 @@ Der Typfilter betrifft ausschließlich die Terminliste. Die nächste Fälligkeit
 Zeitstrahl und Kalender behalten ihre vollständige Datenbasis. Ein Zeitstrahl-Punkt oder
 „Danach“-Eintrag macht bei Bedarf die passende Karte sichtbar.
 
-Die Zeitstrahl-Achse reicht von der ersten bis zur letzten Prüfung (auch abgebrochene
-Prüfungen zählen als Achsengrenze). Der optische Rand beträgt an beiden Enden 4 % der
-Datumsspanne. Liegt ein regulärer Termin außerhalb dieser Grenzen, erweitert sich die
-Achse mit einer Konsolenwarnung. `calOnly`-Termine und Zeiträume verändern die Achse
-nicht. Kollisionsgruppen werden nur horizontal und mit mindestens 32 px Abstand
-verteilt; gleiche Daten behalten die Reihenfolge aus `EVENTS`. „Heute“, Monatsmarken
-und Zeitraum-Bänder verwenden dieselbe entzerrte Datumsskala. Zwischen zwei
-Termin-Gruppen liegen sie zwischen dem letzten Punkt der früheren und dem ersten
-Punkt der späteren Gruppe. Gleichdatierte Gruppen erhalten eine gemeinsame
-Datumsmitte. Die Berechnung nutzt Kalendertage, sodass der Wechsel zwischen
-Sommer- und Winterzeit keine Tagesabstände verzerrt.
+Der Zeitstrahl passt vollständig in seine Containerbreite. Die Connected Group
+„Ab heute | Semester“ wählt das Fenster; die Wahl bleibt bei Re-Renders und
+Tageswechsel erhalten. „Ab heute“ startet zwei Kalendertage vor heute und endet
+zwei Tage nach dem letzten kommenden Haupttermin (mindestens fünf Tage nach
+heute, wenn keine anstehen). „Semester“ zeigt alle Haupttermine mit zwei Tagen Rand.
+Abgebrochene Termine bestimmen die Grenzen mit; `calOnly` und Zeiträume erweitern
+sie nicht. Alle Koordinaten nutzen dieselbe lineare, DST-sichere Kalendertagsskala.
 
-Datumsstriche und Gruppendaten unter den Punkten entfallen; Monatsmarken bleiben.
-Datum und Status stehen im zugänglichen Namen und Tooltip jedes Punkts. Fokus
-öffnet den Tooltip, Escape schließt ihn; bei Touch zeigt die erste Berührung die
-Details und die zweite führt zur Karte. Ein gemeinsames, fest positioniertes
-Overlay außerhalb des Scrollbereichs hält Tooltips innerhalb des Viewports.
-Es bevorzugt Platz über den Zeitraum-Labels und weicht nach unten aus.
-Nur tatsächliche Label-Zeilen reservieren Höhe; geschlossene Tooltips verändern
-die Zeitstrahlkachel nicht. Die Punktverteilung klemmt Kollisionsgruppen mit
-44-px-Hitflächen innerhalb der Schiene statt die gesamte Schiene zu vergrößern.
-Zeitraum-Labels wie „in Wiesbaden“ bleiben einzeilig und werden innerhalb des
-sichtbaren Schienenabschnitts positioniert. Außerhalb liegende Beschriftungen
-werden vollständig ausgeblendet. Monatsnamen werden bei Kollisionen in getrennte
-Zeilen gesetzt; ihre Datumsstriche bleiben an der korrekten Achsenposition.
-Scrollen und Größenänderungen berechnen die Positionen neu.
-Die Legende trennt Terminarten, Status und Zeiträume.
-Beim ersten Layout wird „Heute“ sofort innerhalb des Zeitstrahl-Containers
-zentriert und an dessen Scrollgrenzen begrenzt. Fonts und Containerbreiten können
-die Startposition korrigieren, bis die Person den Zeitstrahl selbst bedient;
-spätere Render und Tageswechsel setzen ihre Scrollposition nicht zurück.
+Jeder Punkt trägt Kurzname und Datum oder bei Platzmangel ein Datum. Kollisionen
+weichen in abwechselnde Reihen ober-/unterhalb der Achse aus. Gleiche Daten behalten
+die Reihenfolge aus `EVENTS`. Punkt und Beschriftung bilden einen nativen Button
+mit mindestens 44 × 44 px. Ein Klick/Tap führt sofort zur Karte und setzt nötige
+Listenfilter zurück. Der nächste offene Termin ist gefüllt hervorgehoben;
+`hideFromNext` bleibt sichtbar, wird aber dabei übersprungen.
+
+Hover/Fokus mit Hover-Gerät öffnet zusätzlich einen viewportbegrenzten Tooltip
+mit Details und Status, Escape schließt ihn. Abbrüche erhalten Durchstreichung und
+zugänglichen Status. Tonale Zeitraum-Bänder werden am Fenster abgeschnitten,
+ihre Labels bleiben vollständig. Monatsnamen heißen „Okt 2026“, danach „Nov“;
+der Jahreswechsel ergänzt erneut das Jahr. Die Heute-Pille liegt über ihrer Linie.
+Die kompakte Legende enthält die sichtbaren Typen und den Abbruchstatus.
+Ein ResizeObserver reagiert ausschließlich auf geänderte Containerbreite;
+es gibt keinen horizontalen Zeitstrahl-Scroller und kein Scroll-Layout.
 
 Design-Tokens und beide Farbpaletten liegen in `css/styles.css`. `color-scheme` und
 `light-dark()` wählen Hell, Dunkel oder das Systemdesign aus einer gemeinsamen
@@ -256,7 +248,7 @@ Transitions werden beim Wechsel beendet. Es gibt keinen globalen
 - Snapshot-Namen sind auf wechselnde Regionen begrenzt, damit stabile Controls
   ihre echten Transitions behalten. Hero-Wechsel verwenden einen eigenen inerten
   Exit-Snapshot und Fade-Through.
-- Zeitstrahl-Punkte behalten die 32-px-Kollisionslogik und erhalten 44-px-Hitflächen.
+- Zeitstrahl-Buttons erhalten mindestens 44-px-Hitflächen; beschriftete Reihen vermeiden Kollisionen.
   Benachbarte Hitflächen können sich dadurch überlappen; die unveränderten
   Punktzentren und Tastaturbedienung haben Vorrang.
 
@@ -375,3 +367,4 @@ große TTF-Datei ohne Inhalt und lehnt Binär-Blob-Lesen als Nicht-UTF-8 ab.
 Gemäß Auftrag bleibt die bestehende Google-Fonts-Einbindung samt System-Fallback
 bestehen. Externe Schrift-Anfragen sind daher weiterhin vorhanden; das Ziel
 „keine externen Requests“ ist noch nicht erfüllt.
+

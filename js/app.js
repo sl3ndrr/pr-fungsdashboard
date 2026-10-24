@@ -1,4 +1,4 @@
-import { tooltipPosition, timelineGeometry, timelineDatePosition, timelineLabelLayout, appointmentRows } from './layout.js';
+import { tooltipPosition, timelineWindow, timelinePosition, timelineEventLayout, timelineLabelLayout, appointmentRows } from './layout.js';
 import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { SEMESTERS, ICONS, STORAGE_KEY } from "./data.js";
 import {
@@ -155,7 +155,7 @@ function toggleDone(id) {
   }, {type:'done'});
 }
 let highlightTimer;
-async function selectTimelineEvent(dot,id,{navigate=true}={}) {
+async function selectTimelineEvent(dot,id) {
   const item=events.find(e=>e.id===id);
   if(item && ((!showPast && calendarDayDiff(parseISOString(item.date),midnight(new Date()))<0) || (typeFilter!=='all' && typeFilter!==item.type))) {
     await withTransition(()=>{
@@ -166,16 +166,6 @@ async function selectTimelineEvent(dot,id,{navigate=true}={}) {
     dot=[...document.querySelectorAll('.timeline-dot')].find(button=>button.dataset.eventId===id);
   }
   const card=document.getElementById(`card-${id}`);
-  if (!navigate) {
-    document.querySelectorAll('.timeline-selected').forEach(el => el.classList.remove('timeline-selected'));
-    card?.classList.add('timeline-selected');
-    if (dot) {
-      dot.focus({preventScroll:true});
-      showTimelineTooltip(dot);
-      dot.dataset.tooltipOpen = 'true';
-    }
-    return;
-  }
   if(dot && !reducedMotion.matches) {
     const ring=document.createElement('span');ring.className='ping-ring motion-decoration';ring.setAttribute('aria-hidden','true');dot.append(ring);
     motion(ring,[{scale:'1'},{scale:'2.2'}],{speed:'fast'});
@@ -258,82 +248,85 @@ document.addEventListener('click', (e) => {
 window.addEventListener('scroll', closeCalMenu, true);
 document.addEventListener('keydown',event=>{if(event.key==='Escape' && document.getElementById('cal-popover').dataset.open==='true'){event.preventDefault();closeCalMenu();}});
 
-function buildTimeline(todayMid, animate, { expanded = true } = {}) {
-  const mainEvents = events.filter(e => !e.calOnly)
-    .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
-  if (!mainEvents.length) return {
-    html: '<p class="timeline-empty">Noch keine Termine für dieses Semester</p>',
-    targetPct: 0, dotEvents: [],
-  };
-  const times = mainEvents.map(e => parseISOString(e.date).getTime());
-  const examTimes = mainEvents.filter(e => e.type === 'Prüfung').map(e => parseISOString(e.date).getTime());
-  let axisStart = examTimes.length ? Math.min(...examTimes) : times.length ? Math.min(...times) : todayMid.getTime();
-  let axisEnd = examTimes.length ? Math.max(...examTimes) : times.length ? Math.max(...times) : axisStart;
-  if (times.some(t => t < axisStart || t > axisEnd)) {
-    console.warn('Semester-Roadmap: Termin außerhalb der Prüfungsachse; Achse erweitert.');
-    axisStart = Math.min(axisStart, ...times);
-    axisEnd = Math.max(axisEnd, ...times);
-  }
-  const dayOf = t => calendarDayDiff(new Date(t), new Date(axisStart));
-  const todayDay = dayOf(todayMid.getTime());
-  const visibleEvents = expanded ? mainEvents : mainEvents.filter(e => parseISOString(e.date) >= todayMid);
-  const visibleTimes = visibleEvents.map(e => parseISOString(e.date).getTime());
-  const firstDay = Math.min(todayDay, ...visibleTimes.map(dayOf));
-  const lastDay = Math.max(todayDay, ...visibleTimes.map(dayOf));
-  // At the four-width cap, reserve half a viewport at either end for centering.
-  const paddingDays = Math.max(14, Math.ceil((lastDay - firstDay) / 6));
-  const minDay = firstDay - paddingDays;
-  const maxDay = lastDay + paddingDays;
-  const days = visibleTimes.map(dayOf);
-
-  // Account for both 8px rail margins and the 44px hit areas at its ends.
-  const availableWidth = Math.max(44, document.getElementById('timeline-container').clientWidth - 16);
-  const { width: trackWidth, xs: dotXs, lanes } = timelineGeometry(days.map(day => (day - minDay) / (maxDay - minDay)), availableWidth, 44, 22, availableWidth * (maxDay - minDay) / 28);
-  const laneHeight = Math.max(0, ...lanes) * 44;
-  // Points, today, month marks and periods all use this exact calendar-day scale.
-  const posOf = t => timelineDatePosition(dayOf(t), days, dotXs, minDay, maxDay, trackWidth) / trackWidth * 100;
-
-  let periodsHtml = '';
-  periods.forEach(p => {
-    const start = parseISOString(p.start).getTime(), end = parseISOString(p.end).getTime();
-    if (end < axisStart || start > axisEnd) return;
-    const left = posOf(Math.max(axisStart, start)), right = posOf(Math.min(axisEnd, end));
-    const mid = (left + right) / 2;
-    periodsHtml += `<div class="timeline-period-span" role="img" aria-label="${escapeHtml(p.label)}, ${formatDate(new Date(start))} bis ${formatDate(new Date(end))}" style="left:${left}%;width:${right - left}%;--period-rgb:${p.rgb}"></div>
-      <div class="timeline-period-label" data-center="${mid}" data-start="${left}" data-end="${right}" style="left:${mid}%;--period-rgb:${p.rgb}">${escapeHtml(p.label)}</div>`;
-  });
-  let dots = '';
-  visibleEvents.forEach((e, i) => {
-    const past = visibleTimes[i] < todayMid.getTime();
-    const description = `${e.type}: ${e.title}, ${formatDate(parseISOString(e.date))}, ${e.time}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}`;
-    dots += `<button type="button" class="timeline-dot ${typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''} ${past ? 'past' : ''} "
-      style="left:${dotXs[i]}px;--delay:${Math.min(i * .02,.4)}s${lanes[i] ? `;top:${-7 - lanes[i] * 44}px` : ''}" data-event-id="${escapeHtml(e.id)}" data-date="${e.date}" aria-label="${escapeHtml(description)}">
-      ${lanes[i] ? `<span class="timeline-stem" style="height:${lanes[i] * 44}px" aria-hidden="true"></span>` : ''}<span class="timeline-point" aria-hidden="true"></span>
-    </button>`;
-  });
-  const todayPct = posOf(todayMid.getTime());
-  const next = visibleEvents.find(e => parseISOString(e.date) >= todayMid && !e.isCancelled);
-  if (next) {
-    const shortName = next.title.replace(/^Beginn /, '').replace(/ \(bis [^)]+\)$/, '').replace('Programmierpraktikum', 'Prog.-Praktikum');
-    dots += `<div class="timeline-next-label" role="note" aria-label="Nächster Termin: ${escapeHtml(next.title)}, ${escapeHtml(formatDate(parseISOString(next.date)))}" data-center="${posOf(parseISOString(next.date).getTime())}"><strong>${escapeHtml(shortName)}</strong><span>${escapeHtml(formatDate(parseISOString(next.date)))}</span></div>`;
-  }
-  dots += `<div class="timeline-today" style="left:${todayPct}%${laneHeight ? `;top:${-13 - laneHeight}px;height:${42 + laneHeight}px` : ''}" aria-hidden="true"></div><div class="timeline-today-label" style="left:${todayPct}%">Heute</div>`;
-  let months = '';
-  const domainStart = new Date(axisStart);
-  domainStart.setDate(domainStart.getDate() + minDay);
-  let cursor = dateInMonth(domainStart.getFullYear(), domainStart.getMonth(), 1);
-  while (dayOf(cursor.getTime()) < minDay) cursor.setMonth(cursor.getMonth() + 1);
-  let guard = 0;
-  while (dayOf(cursor.getTime()) <= maxDay && guard++ < 120) {
-    const position = posOf(cursor.getTime());
-    months += `<span class="timeline-month" data-center="${position}" style="left:${position}%"><span class="timeline-month-label">${escapeHtml(cursor.toLocaleDateString('de-DE', { month: 'short', year: '2-digit' }))}</span></span>`;
+function buildTimeline(todayMid) {
+  const domain = timelineWindow(events, todayMid, timelineMode);
+  if (!domain) return { html: '<p class="timeline-empty">Noch keine Termine für dieses Semester</p>', dotEvents: [] };
+  const { events: visible, origin, todayDay, minDay, maxDay, axisStart, axisEnd } = domain;
+  const width = Math.max(44, document.getElementById('timeline-container').clientWidth);
+  const pos = date => timelinePosition(calendarDayDiff(date, origin), minDay, maxDay, width);
+  const canvas = document.createElement('canvas');
+  const context = canvas.getContext('2d');
+  const font = getComputedStyle(document.getElementById('timeline-container'));
+  context.font = `800 ${font.fontSize} ${font.fontFamily}`;
+  const measure = text => Math.ceil(context.measureText(text).width) + 8;
+  const shortDate = event => parseISOString(event.date).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
+  const shortName = event => event.title.replace(/^Beginn /, '').replace(/ \(bis [^)]+\)$/, '')
+    .replace('Programmierpraktikum', 'Prog.-Praktikum').replace('Wintersemester 2026/27', 'Wintersemester');
+  const layout = timelineEventLayout(visible.map(event => ({ x: pos(parseISOString(event.date)), variants: [
+    { title: shortName(event), date: shortDate(event), width: Math.max(measure(shortName(event)), measure(shortDate(event))) },
+    { title: '', date: shortDate(event), width: measure(shortDate(event)) },
+  ] })), width);
+  const above = Math.max(1, ...layout.map(item => -item.lane));
+  const below = Math.max(0, ...layout.map(item => item.lane));
+  const axisY = 24 + above * 52;
+  const next = upcomingEvents(visible, todayMid, doneItems)[0];
+  const bandTop = axisY + 8;
+  const bands = periods.map(period => {
+    const start = calendarDayDiff(parseISOString(period.start), origin), end = calendarDayDiff(parseISOString(period.end), origin);
+    if (end < minDay || start > maxDay) return null;
+    const left = timelinePosition(Math.max(minDay, start), minDay, maxDay, width);
+    const right = timelinePosition(Math.min(maxDay, end), minDay, maxDay, width);
+    return { period, left, right, anchor: (left + right) / 2, width: Math.max(right - left, measure(period.label)) };
+  }).filter(Boolean);
+  const bandLayout = timelineLabelLayout(bands, 0, width, 8);
+  const hasOutsideLabel = bands.some(band => measure(band.period.label) > band.right - band.left);
+  const bandPitch = hasOutsideLabel ? 48 : 26;
+  const periodsHtml = bands.map((band, i) => {
+    const placed = bandLayout.labels[i], top = bandTop + placed.row * bandPitch;
+    const inside = measure(band.period.label) <= band.right - band.left;
+    // Short bands retain their full span; their label occupies its own adjacent row.
+    return `<div class="timeline-period-span" data-key="period-${band.period.id}" role="img" aria-label="${escapeHtml(band.period.label)}, ${formatDate(parseISOString(band.period.start))} bis ${formatDate(parseISOString(band.period.end))}" style="left:${band.left}px;width:${Math.max(1, band.right - band.left)}px;top:${top}px;--period-rgb:${band.period.rgb}"></div>
+      <span class="timeline-period-label" data-key="period-label-${band.period.id}" style="left:${placed.center}px;top:${inside ? top : top + 22}px">${escapeHtml(band.period.label)}</span>`;
+  }).join('');
+  // Reserve band/label space before lower event lanes, even for overlapping periods.
+  const bandBottom = bandTop + bandLayout.rows * bandPitch;
+  const lowerShift = Math.max(0, bandBottom - (axisY + 36));
+  let dots = visible.map((event, i) => {
+    const item = layout[i], x = pos(parseISOString(event.date));
+    const top = item.lane < 0 ? axisY - 52 * -item.lane : axisY + 36 + 52 * (item.lane - 1) + lowerShift;
+    const pointY = top + 12;
+    const status = event.isCancelled ? `Abgebrochen${cancelledStatus(event) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(event)}`
+      : doneItems.includes(event.id) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
+    const description = `${event.type}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}, ${status}`;
+    return `<span class="timeline-stem" aria-hidden="true" style="left:${x}px;top:${Math.min(axisY, pointY)}px;height:${Math.abs(axisY - pointY)}px"></span>
+      <button id="timeline-event-${escapeHtml(event.id)}" type="button" class="timeline-dot ${typeClass(event.type)} ${event.isCancelled ? 'cancelled' : ''} ${parseISOString(event.date) < todayMid ? 'past' : ''} ${next?.id === event.id ? 'next' : ''}"
+        style="left:${item.left}px;top:${top}px;width:${item.width}px;--point-x:${x - item.left}px" data-event-id="${escapeHtml(event.id)}" data-date="${event.date}" aria-label="${escapeHtml(description)}">
+        <span class="timeline-point" aria-hidden="true"></span><span class="timeline-event-label">${item.title ? `<strong>${escapeHtml(item.title)}</strong>` : ''}<span>${escapeHtml(item.date)}</span></span>
+      </button>`;
+  }).join('');
+  const monthTop = Math.max(axisY + 30, bandBottom, below ? axisY + 36 + below * 52 + lowerShift : 0) + 4;
+  const start = new Date(origin); start.setDate(start.getDate() + minDay);
+  let cursor = dateInMonth(start.getFullYear(), start.getMonth(), 1);
+  const marks = [];
+  let previousYear;
+  while (calendarDayDiff(cursor, origin) <= maxDay && marks.length < 120) {
+    const day = calendarDayDiff(cursor, origin);
+    if (day >= minDay || !marks.length) {
+      const title = cursor.toLocaleDateString('de-DE', {month:'short'}).replace(/\.$/, '') + (previousYear !== cursor.getFullYear() ? ` ${cursor.getFullYear()}` : '');
+      marks.push({ anchor: Math.max(22, pos(cursor)), width: measure(title), title, tick: day >= minDay ? pos(cursor) : null });
+      previousYear = cursor.getFullYear();
+    }
     cursor.setMonth(cursor.getMonth() + 1);
   }
-  return {
-    html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" data-lane-height="${laneHeight}" style="width:${trackWidth}px">
-      <div class="timeline-progress" id="timeline-progress-bar" style="width:${todayPct}%"></div>${periodsHtml}${months}${dots}</div>`,
-    targetPct: todayPct, dotEvents: visibleEvents
-  };
+  const monthLayout = timelineLabelLayout(marks, 0, width, 8);
+  const months = marks.map((mark, i) => `${mark.tick === null ? '' : `<span class="timeline-month-tick" aria-hidden="true" style="left:${mark.tick}px"></span>`}<span class="timeline-month" style="left:${monthLayout.labels[i].center}px;top:${monthTop + monthLayout.labels[i].row * 20}px">${escapeHtml(mark.title)}</span>`).join('');
+  const todayX = Math.max(22, Math.min(width - 22, timelinePosition(todayDay, minDay, maxDay, width)));
+  const pillX = Math.max(28, Math.min(width - 28, todayX));
+  const height = monthTop + Math.max(1, monthLayout.rows) * 20;
+  return { html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="height:${height}px;--axis-y:${axisY}px">
+    <div class="timeline-progress" style="top:${axisY}px;width:${Math.max(0,todayX - 22)}px"></div>
+    <div class="timeline-today" style="left:${todayX}px;height:${axisY + 6}px" aria-hidden="true"></div>
+    <span class="timeline-today-label" style="left:${pillX}px">Heute</span>${periodsHtml}${months}${dots}</div>`, dotEvents: visible };
 }
 
 function renderHero(upcoming, todayMid, animate) {
@@ -619,67 +612,6 @@ function focusAfterRender() {
   return null;
 }
 
-function layoutTimelineLabels() {
-  const scroller = document.querySelector('.timeline-scroll');
-  const track = scroller.querySelector('.timeline-track');
-  const overflow = !!track && scroller.scrollWidth > scroller.clientWidth + 1;
-  document.querySelector('.scroll-hint').hidden = !overflow || timelineManuallyScrolled;
-  document.getElementById('timeline-legend').hidden = !track;
-  const card = scroller.closest('.timeline-card');
-  card.classList.toggle('timeline-more-left', overflow && scroller.scrollLeft > 1);
-  card.classList.toggle('timeline-more-right', overflow && scroller.scrollLeft < scroller.scrollWidth - scroller.clientWidth - 1);
-  if (!track) { scroller.style.paddingTop = '0px'; return; }
-  const width = track.clientWidth;
-  const min = Math.max(0, scroller.scrollLeft - track.offsetLeft + 16);
-  const max = Math.min(width, scroller.scrollLeft + scroller.clientWidth - track.offsetLeft - 16);
-  if (max <= min) return; // Hidden containers are laid out again by ResizeObserver.
-  const next = track.querySelector('.timeline-next-label');
-  if (next) {
-    const half = Math.min(next.offsetWidth, max - min) / 2;
-    next.style.left = `${Math.max(min + half, Math.min(max - half, Number(next.dataset.center) * width / 100))}px`;
-    next.style.top = `${-48 - Number(track.dataset.laneHeight)}px`;
-  }
-  const months = [...track.querySelectorAll('.timeline-month')];
-  months.forEach(month => { month.hidden = false; });
-  const monthLayout = timelineLabelLayout(months.map(month => ({
-    anchor: Number(month.dataset.center) * width / 100,
-    width: month.querySelector('.timeline-month-label').offsetWidth,
-  })), min, max);
-  months.forEach((month, i) => {
-    const placed = monthLayout.labels[i];
-    month.hidden = !placed.visible;
-    if (!placed.visible) return;
-    const label = month.querySelector('.timeline-month-label');
-    label.style.left = `${placed.center - Number(month.dataset.center) * width / 100}px`;
-    label.style.top = `${placed.row * 22}px`;
-  });
-  const periodTop = 76 + Math.max(0, monthLayout.rows - 1) * 22;
-  const labels = [...track.querySelectorAll('.timeline-period-label')];
-  labels.forEach(label => { label.hidden = false; });
-  const layout = timelineLabelLayout(labels.map(label => {
-    const start = Number(label.dataset.start) * width / 100, end = Number(label.dataset.end) * width / 100;
-    return {anchor: (Math.max(min, start) + Math.min(max, end)) / 2,
-      width: Math.max(label.offsetWidth + 12, Math.min(max, end) - Math.max(min, start)), start, end};
-  }), min, max);
-  const seen = new Set();
-  labels.forEach((label, i) => {
-    const placed = layout.labels[i];
-    label.hidden = !placed.visible || seen.has(label.textContent);
-    if (!placed.visible) return;
-    seen.add(label.textContent);
-    label.style.left = `${placed.center}px`;
-    label.style.top = `${periodTop + placed.row * 32 + 5}px`;
-    label.previousElementSibling.style.top = `${periodTop + placed.row * 32}px`;
-  });
-  // Dedicated rows below the points: today pill, months, then periods.
-  track.style.height = `${periodTop + Math.max(1, layout.rows) * 32 + 4}px`;
-  scroller.style.paddingTop = `${48 + Number(track.dataset.laneHeight)}px`;
-  scroller.style.paddingBottom = '0px';
-  const types = new Set([...track.querySelectorAll('.timeline-dot')].filter(dot => dot.offsetLeft + dot.offsetWidth / 2 >= min && dot.offsetLeft + dot.offsetWidth / 2 <= max).map(dot => events.find(e => e.id === dot.dataset.eventId)?.type));
-  const cancelled = [...track.querySelectorAll('.timeline-dot.cancelled')].some(dot => dot.offsetLeft + dot.offsetWidth / 2 >= min && dot.offsetLeft + dot.offsetWidth / 2 <= max);
-  syncHTML(document.getElementById('timeline-legend-items'), [...types].filter(Boolean).map(type => `<span class="cal-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (cancelled ? '<span class="cal-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
-  positionTimelineTooltip();
-}
 
 const timelineTooltip = document.getElementById('timeline-tooltip');
 let tooltipAnchor = null;
@@ -688,10 +620,8 @@ function positionTimelineTooltip() {
   if (!tooltipAnchor?.isConnected || timelineTooltip.dataset.open !== 'true') return;
   const rect = tooltipAnchor.getBoundingClientRect();
   const track = tooltipAnchor.closest('.timeline-track');
-  const labels = [...track.querySelectorAll('.timeline-period-label:not([hidden])')].map(el => el.getBoundingClientRect());
-  const months = [...track.querySelectorAll('.timeline-month:not([hidden]) .timeline-month-label')].map(el => el.getBoundingClientRect());
-  const next = track.querySelector('.timeline-next-label')?.getBoundingClientRect();
-  const labelRects = [...labels, ...months, ...(next ? [next] : [])];
+  const labels = [...track.querySelectorAll('.timeline-period-label,.timeline-event-label,.timeline-month,.timeline-today-label')].map(el => el.getBoundingClientRect());
+  const labelRects = labels;
   const bounds = { left: rect.left, width: rect.width,
     top: Math.min(rect.top, ...labelRects.map(r => r.top)),
     bottom: Math.max(rect.bottom, ...labelRects.map(r => r.bottom)) };
@@ -704,7 +634,6 @@ function positionTimelineTooltip() {
 function closeTimelineTooltip() {
   clearTimeout(tooltipLeaveTimer);
   tooltipAnchor?.removeAttribute('aria-describedby');
-  if (tooltipAnchor) delete tooltipAnchor.dataset.tooltipOpen;
   timelineTooltip.dataset.open = 'false';
   timelineTooltip.setAttribute('aria-hidden', 'true');
   tooltipAnchor = null;
@@ -714,7 +643,6 @@ function showTimelineTooltip(dot) {
   if (!item) return;
   closeTimelineTooltip();
   tooltipAnchor = dot;
-  delete dot.dataset.tooltipDismissed;
   syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span>${item.isCancelled ? `<span>Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + escapeHtml(cancelledStatus(item))}</span>` : ''}`);
   dot.setAttribute('aria-describedby', 'timeline-tooltip');
   timelineTooltip.dataset.open = 'true';
@@ -722,64 +650,32 @@ function showTimelineTooltip(dot) {
   positionTimelineTooltip();
 }
 function leaveTimelineTooltip() {
-  if (tooltipAnchor && document.activeElement !== tooltipAnchor && tooltipAnchor.dataset.tooltipOpen !== 'true') closeTimelineTooltip();
+  if (tooltipAnchor && document.activeElement !== tooltipAnchor) closeTimelineTooltip();
 }
 timelineTooltip.addEventListener('pointerenter', () => clearTimeout(tooltipLeaveTimer));
 timelineTooltip.addEventListener('pointerleave', leaveTimelineTooltip);
-window.addEventListener('scroll', positionTimelineTooltip, true);
+window.addEventListener('scroll', closeTimelineTooltip, true);
 window.addEventListener('resize', positionTimelineTooltip);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && tooltipAnchor) {
     event.preventDefault();
-    tooltipAnchor.dataset.tooltipDismissed = 'true';
     closeTimelineTooltip();
   }
 });
 
-let timelinePastExpanded = false;
-let timelineCentered = false;
-let timelineManuallyScrolled = false;
-let timelineProgrammaticLeft = null;
-const timelineScroller = document.querySelector('.timeline-scroll');
-for (const type of ['wheel', 'pointerdown', 'touchstart']) {
-  timelineScroller.addEventListener(type, () => { timelineManuallyScrolled = true; }, {passive:true});
-}
-document.getElementById('timeline-past-toggle').addEventListener('click', () => {
-  timelinePastExpanded = !timelinePastExpanded;
-  renderPreservingState();
-  scheduleTimelineLayout();
-});
-timelineScroller.addEventListener('keydown', event => {
-  if (['ArrowLeft','ArrowRight','Home','End','PageUp','PageDown'].includes(event.key)) timelineManuallyScrolled = true;
-});
-timelineScroller.addEventListener('scroll', () => {
-  if (timelineProgrammaticLeft === null || Math.abs(timelineScroller.scrollLeft - timelineProgrammaticLeft) > 1) timelineManuallyScrolled = true;
-  layoutTimelineLabels();
-}, {passive:true});
-function scheduleTimelineLayout(center = true) {
-  requestAnimationFrame(() => {
-    layoutTimelineLabels();
-    if (center) centerTimelineToday();
-    layoutTimelineLabels();
+let timelineMode = 'upcoming';
+const timelineContainerElement = document.getElementById('timeline-container');
+document.querySelectorAll('#timeline-window button').forEach(button => {
+  button.addEventListener('click', () => {
+    timelineMode = button.dataset.window;
+    renderPreservingState();
   });
-}
-function centerTimelineToday() {
-  const scroller = document.querySelector('.timeline-scroll');
-  const track = document.querySelector('.timeline-track');
-  const today = document.querySelector('.timeline-today');
-  if (!track || !today) return;
-  const x = track.offsetLeft + today.offsetLeft + today.offsetWidth / 2;
-  timelineProgrammaticLeft = Math.max(0, Math.min(scroller.scrollWidth - scroller.clientWidth, x - scroller.clientWidth / 2));
-  scroller.scrollLeft = timelineProgrammaticLeft;
-  timelineCentered = true;
-}
+});
 
 function renderPreservingState(animate = false) {
   const restoreFocus = focusAfterRender();
   const pageX = window.scrollX;
   const pageY = window.scrollY;
-  const timelineScroll = document.querySelector('.timeline-scroll');
-  const timelineLeft = timelineScroll.scrollLeft;
   const calendarScroll = document.querySelector('.cal-scroll');
   const calendarLeft = calendarScroll.scrollLeft;
 
@@ -791,9 +687,6 @@ function renderPreservingState(animate = false) {
     if (target) target.focus({ preventScroll: true });
     else focusFallback = true;
   }
-  timelineProgrammaticLeft = timelineLeft;
-  if (timelineScroll.scrollLeft !== timelineLeft) timelineScroll.scrollLeft = timelineLeft;
-  layoutTimelineLabels();
   if (calendarScroll.scrollLeft !== calendarLeft) calendarScroll.scrollLeft = calendarLeft;
   if (window.scrollX !== pageX || window.scrollY !== pageY) window.scrollTo(pageX, pageY);
   if (focusFallback) document.getElementById('toggle-past-btn').focus();
@@ -819,8 +712,6 @@ function render(animate) {
     typeFilter = 'all';
     updateTypeFilter();
     closeCalMenu(); closeTimelineTooltip();
-    timelinePastExpanded = false;
-    timelineCentered = false; timelineManuallyScrolled = false; timelineProgrammaticLeft = null;
     buildLegendPeriods();
   }
   if (!events.length && !periods.length) {
@@ -829,13 +720,11 @@ function render(animate) {
     calYear = today.getFullYear(); calMonth = today.getMonth();
   }
   document.getElementById('semester-label').textContent = semester.label;
-  const tl=buildTimeline(todayMid,animate,{expanded:timelinePastExpanded});
-  const pastCount = events.filter(e => !e.calOnly && parseISOString(e.date) < todayMid).length;
-  const pastToggle = document.getElementById('timeline-past-toggle');
-  pastToggle.hidden = !pastCount;
-  pastToggle.textContent = `${pastCount} vergangen${timelinePastExpanded ? ' · zuklappen' : ''}`;
-  pastToggle.setAttribute('aria-expanded', String(timelinePastExpanded));
-  document.querySelector('.timeline-controls').hidden = !tl.dotEvents.length && !pastCount;
+  const tl = buildTimeline(todayMid);
+  document.querySelectorAll('#timeline-window button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.window === timelineMode)));
+  updateFilterIndicator(document.getElementById('timeline-window'));
+  const types = [...new Set(tl.dotEvents.map(event => event.type))];
+  syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="cal-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.length ? '<span class="cal-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
   renderedDay = localDayKey(today);
   document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -849,24 +738,14 @@ function render(animate) {
 
   const timelineContainer = document.getElementById('timeline-container');
   syncHTML(timelineContainer,tl.html);
-  layoutTimelineLabels();
   timelineContainer.querySelectorAll('.timeline-dot').forEach(dot => {
-    let touchActivation = false;
-    listenOnce(dot, 'pointerdown', event => { touchActivation = event.pointerType === 'touch'; });
-    listenOnce(dot, 'click', event => {
-      if (touchActivation && event.detail !== 0 && dot.dataset.tooltipOpen !== 'true') {
-        dot.focus({preventScroll:true});
-        showTimelineTooltip(dot);
-        dot.dataset.tooltipOpen = 'true';
-        selectTimelineEvent(dot, dot.dataset.eventId, {navigate:false});
-        return; // First touch reads details; a second touch navigates.
-      }
+    listenOnce(dot, 'click', () => {
       closeTimelineTooltip();
       selectTimelineEvent(dot, dot.dataset.eventId);
     });
-    listenOnce(dot, 'blur', () => { if (tooltipAnchor === dot) closeTimelineTooltip(); delete dot.dataset.tooltipDismissed; });
-    listenOnce(dot, 'pointerenter', () => { clearTimeout(tooltipLeaveTimer); showTimelineTooltip(dot); });
-    listenOnce(dot, 'focus', () => showTimelineTooltip(dot));
+    listenOnce(dot, 'blur', () => { if (tooltipAnchor === dot) closeTimelineTooltip(); });
+    listenOnce(dot, 'pointerenter', () => { if (matchMedia('(hover: hover)').matches) { clearTimeout(tooltipLeaveTimer); showTimelineTooltip(dot); } });
+    listenOnce(dot, 'focus', () => { if (matchMedia('(hover: hover)').matches) showTimelineTooltip(dot); });
     listenOnce(dot, 'pointerleave', event => {
       if (event.relatedTarget !== timelineTooltip && !timelineTooltip.contains(event.relatedTarget)) tooltipLeaveTimer = setTimeout(leaveTimelineTooltip, 150);
     });
@@ -877,7 +756,6 @@ function render(animate) {
     positionTimelineTooltip();
   }
 
-  if (!timelineCentered) scheduleTimelineLayout();
 
   const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
   const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
@@ -1068,16 +946,15 @@ document.querySelectorAll('#type-filter button').forEach(button => {
     if (!document.hidden) refreshCurrentDay();
   });
   window.addEventListener('pageshow', refreshCurrentDay);
-  document.fonts?.ready.then(() => scheduleTimelineLayout(!timelineManuallyScrolled));
-  let timelineWidth = timelineScroller.clientWidth;
+  document.fonts?.ready.then(() => renderPreservingState());
+  let timelineWidth = timelineContainerElement.clientWidth;
   new ResizeObserver(() => {
-    const width = timelineScroller.clientWidth;
+    const width = timelineContainerElement.clientWidth;
     if (width !== timelineWidth) {
       timelineWidth = width;
       renderPreservingState();
-      scheduleTimelineLayout();
     }
-  }).observe(timelineScroller);
+  }).observe(timelineContainerElement);
   const list = document.getElementById('list');
   let columns = getComputedStyle(list).getPropertyValue('--list-columns');
   new ResizeObserver(() => {
@@ -1091,15 +968,14 @@ document.querySelectorAll('#type-filter button').forEach(button => {
 })();
 
 
-function updateFilterIndicator() {
-  const group=document.getElementById('type-filter');
+function updateFilterIndicator(group = document.getElementById('type-filter')) {
   let indicator=group.querySelector('.filter-indicator');
   if(!indicator){indicator=document.createElement('span');indicator.className='filter-indicator';indicator.setAttribute('aria-hidden','true');group.prepend(indicator);}
   const selected=group.querySelector('[aria-pressed="true"]'),x=selected.offsetLeft,width=selected.offsetWidth;
   if(reducedMotion.matches&&indicator.style.getPropertyValue('--indicator-x')!==`${x}px`)motion(indicator,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
   indicator.style.setProperty('--indicator-x',`${x}px`);indicator.style.setProperty('--indicator-width',`${width}px`);
 }
-new ResizeObserver(updateFilterIndicator).observe(document.getElementById('type-filter'));
+document.querySelectorAll('.segmented-filter').forEach(group => new ResizeObserver(() => updateFilterIndicator(group)).observe(group));
 document.addEventListener('pointerdown',event=>{
   const button=event.target.closest('button:not(:disabled):not(.timeline-dot)');if(!button)return;
   const rect=button.getBoundingClientRect();button.style.setProperty('--x',`${event.clientX-rect.left}px`);button.style.setProperty('--y',`${event.clientY-rect.top}px`);
@@ -1148,4 +1024,5 @@ function animateStatistics() {
     statisticValues.set(value, text);
   });
 }
+
 
