@@ -8,7 +8,7 @@ body{font:16px/1.5 system-ui;margin:24px;background:#f4f7fb;color:#17212d}button
 </style>
 <h1>Browser-Regressionen</h1>
 <p>Mit einem lokalen HTTP-Server öffnen. Die Fixture nutzt ein festes Datum und isolierten In-Memory-Speicher. Produktdaten werden nicht geändert. Diese Prüfungen ersetzen keine visuelle, Tastatur-, Reduced-Motion- oder Performance-Prüfung.</p>
-<button id="run">Matrix prüfen: 360 / 768 / 1280 / 1600 / 2300 px</button>
+<button id="run">Matrix prüfen: 320 / 360 / 390 / 600 / 820 / 1024 / 1280 / 1600 / 2300 px</button>
 <pre id="results" role="log" aria-live="polite"></pre>
 <div id="fixture"></div>
 <script type="module">
@@ -38,9 +38,19 @@ async function check(width,fallback){
   const rail=q('.timeline-track'),dots=[...doc.querySelectorAll('.timeline-dot')];
   assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getDate()===10 && new win.Date(Number(rail.dataset.axisEnd)).getMonth()===10,'Achsenende 10.11.');
   assert(q('#calendar-section').dataset.open==='false'&&q('#calendar-section').inert,'Kalender startet geschlossen');
-  const railY=rail.getBoundingClientRect().top+3;
-  dots.forEach(dot=>assert(Math.abs(dot.getBoundingClientRect().top+10-railY)<.1,'Punkt auf Schiene'));
-  for(let i=1;i<dots.length;i++)assert(dots[i].getBoundingClientRect().left-dots[i-1].getBoundingClientRect().left>=31.9,'32-px-Kollision');
+  const container=q('#timeline-container');
+  assert(container.scrollWidth<=container.clientWidth,'Zeitstrahl passt ohne Scrollen');
+  const bounds=container.getBoundingClientRect();
+  dots.forEach(dot=>{
+    const r=dot.getBoundingClientRect();
+    assert(r.width>=44&&r.height>=44,'44px Ziel');
+    assert(r.left>=bounds.left-.5&&r.right<=bounds.right+.5,'Punkt vollständig sichtbar');
+    assert(!!dot.querySelector('.timeline-event-label').textContent,'Direkte Beschriftung');
+  });
+  for(let i=0;i<dots.length;i++)for(const other of dots.slice(i+1)){
+    const a=dots[i].getBoundingClientRect(),b=other.getBoundingClientRect();
+    assert(!(a.left<b.right-.5&&a.right>b.left+.5&&a.top<b.bottom-.5&&a.bottom>b.top+.5),'Getrennte Ziele');
+  }
   const card=q('#card-p6');q('[data-filter="Prüfung"]').click();await wait(600);assert(q('#card-p6')===card,'Kartenidentität bleibt erhalten');
   q('[data-filter="Abgabe"]').click();await wait(600);assert(!!q('#list .empty-state'),'Leerzustand');q('[data-filter="all"]').click();await wait(600);
   q('#toggle-past-btn').click();await wait(600);const input=q('#card-a1 input'),progress=q('#stats-line .mini-progress span');input.focus();input.click();await wait(600);
@@ -60,9 +70,10 @@ async function check(width,fallback){
 }
 run.addEventListener('click',async()=>{
   run.disabled=true;output.textContent='';
-  try{for(const width of [360,768,1280,1600,2300])for(const fallback of [false,true]){output.textContent+=`Prüfe ${width}px / ${fallback?'Fallback':'native'} …\n`;output.textContent+=await check(width,fallback)+'\n';}output.className='pass';}
+  try{for(const width of [320,360,390,600,820,1024,1280,1600,2300])for(const fallback of [false,true]){output.textContent+=`Prüfe ${width}px / ${fallback?'Fallback':'native'} …\n`;output.textContent+=await check(width,fallback)+'\n';}output.className='pass';}
   catch(error){output.className='fail';output.textContent+='FEHLER: '+error.message+'\n';}finally{run.disabled=false;}
 });
 </script>
 </html>
+
 

@@ -2,7 +2,6 @@ import {test,expect} from 'playwright/test';
 import {openDashboard,freeze} from './helpers.mjs';
 
 const widths=[320,360,390,600,820,1024,1280,1600,2300];
-const rect=r=>({left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height});
 async function geometry(page) {
   return page.evaluate(()=>{
     const box=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
@@ -67,12 +66,15 @@ test('window and stable focused points survive resize and list rerenders',async(
 });
 
 test.describe('real touch activation',()=>{
+  test.skip(({browserName})=>browserName==='firefox','Firefox does not support Playwright isMobile emulation.');
   test.use({hasTouch:true,isMobile:true});
   for(const target of ['.timeline-point','.timeline-event-label'])test(`one tap on ${target} navigates and resets filter`,async({page})=>{
     await openDashboard(page,{width:390,date:'2026-10-24',reduced:true});
     await page.locator('[data-filter="Prüfung"]').click();await freeze(page);
     // Labels/points are descendants of one native button and share the same action.
-    await page.locator(`#timeline-event-t2 ${target}`).tap();await freeze(page);
+    await page.locator('#timeline-event-t2').scrollIntoViewIfNeeded();
+    const box=await page.locator(`#timeline-event-t2 ${target}`).boundingBox();
+    await page.touchscreen.tap(box.x+box.width/2,box.y+box.height/2);await freeze(page);
     await expect(page.locator('#card-t2')).toBeFocused();
     await expect(page.locator('[data-filter="all"]')).toHaveAttribute('aria-pressed','true');
     await expect(page.locator('#timeline-tooltip')).toBeHidden();
@@ -98,9 +100,11 @@ test('empty winter, then a single winter event crossing year boundary',async({pa
     const response=await route.fetch();
     await route.fulfill({response,body:await response.text()+`\nSEMESTERS[1].events.push({id:'winter',type:'Prüfung',title:'Winterprüfung',date:'2027-01-15',time:'10:00 Uhr'});`});
   });
-  await page.reload();await freeze(page);await expect(page.locator('#timeline-event-winter')).toBeVisible();
+  await page.reload();
+  await expect(page.locator('#hero')).toHaveAttribute('data-event-id','winter');
+  await freeze(page);await expect(page.locator('#timeline-event-winter')).toBeVisible();
   assertFit(await geometry(page));
-  await expect(page.locator('.timeline-month')).toContainText(['Dez 2026','Jan 2027']);
+  await expect(page.locator('.timeline-month')).toContainText(['Nov 2026','Dez','Jan 2027']);
 });
 
 test('day/semester change preserves page scroll, window selection, keyed nodes and live state',async({page})=>{

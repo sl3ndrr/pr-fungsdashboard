@@ -33,14 +33,6 @@ export function timelinePosition(day, minDay, maxDay, width, edge = 22) {
   return inset + (day - minDay) / Math.max(1, maxDay - minDay) * (width - inset * 2);
 }
 
-/** Fit every point; collisions alternate above/below the axis, never widen it. */
-export function timelineGeometry(targets, availableWidth, gap = 44) {
-  const width = Math.max(44, availableWidth);
-  const xs = targets.map(fraction => timelinePosition(fraction, 0, 1, width));
-  const placed = timelineEventLayout(xs.map(x => ({x, variants: [{width: gap}]})), width, 0);
-  return { width, xs, lanes: placed.map(point => point.lane) };
-}
-
 /** Measured label variants and their 44px targets share disjoint lane intervals.
  * Labels stay centred on their date, except for explicit edge clamping.
  * Rows alternate -1,+1,-2,+2; input order is never changed.

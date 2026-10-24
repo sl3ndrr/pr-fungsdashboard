@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { tooltipPosition, timelineGeometry, timelinePosition, timelineLabelLayout, appointmentRows } from '../js/layout.js';
+import { tooltipPosition, timelineEventLayout, timelinePosition, timelineLabelLayout, appointmentRows } from '../js/layout.js';
 
 test('tooltip prefers above, falls below, and clamps all viewport edges', () => {
   const size = {width:260,height:100}, viewport = {width:360,height:640};
@@ -13,14 +13,14 @@ test('tooltip prefers above, falls below, and clamps all viewport edges', () => 
 test('dense dates fit one width and alternate disjoint 44px target lanes', () => {
   const dates = [0,.04,.05,.1,.8,.9,.95,.96,.96,.97,.97,1];
   for (const available of [200,280,400,600,1000,2300]) {
-    const {width,xs,lanes} = timelineGeometry(dates,available);
-    assert.equal(width,available);
+    const width=available, xs=dates.map(day=>timelinePosition(day,0,1,width));
+    const lanes=timelineEventLayout(xs.map(x=>({x,variants:[{width:44}]})),width,0).map(item=>item.lane);
     xs.forEach((x,i)=>assert.equal(x,22+dates[i]*(width-44)));
     for(let i=0;i<xs.length;i++)for(let j=0;j<i;j++) {
       assert.ok(Math.abs(xs[i]-xs[j])>=44-1e-8 || lanes[i] !== lanes[j]);
     }
   }
-  assert.deepEqual(timelineGeometry([.5,.5,.5,.5],280).lanes,[-1,1,-2,2]);
+  assert.deepEqual(timelineEventLayout([.5,.5,.5,.5].map(x=>({x:x*280,variants:[{width:44}]})),280).map(item=>item.lane),[-1,1,-2,2]);
 });
 
 test('one plus two appointments share a row with explicit group labels and stable order', () => {

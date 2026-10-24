@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-import {timelineWindow,timelinePosition,timelineGeometry,timelineEventLayout,timelineLabelLayout} from '../js/layout.js';
+import {timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout} from '../js/layout.js';
 import {EVENTS,PERIODS} from '../js/data.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData,upcomingEvents} from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
@@ -41,9 +41,8 @@ test('all viewport widths 320–2300 fit every upcoming point, especially p7',()
   for (let width=320;width<=2300;width++) {
     const window=timelineWindow(events,parseISOString('2026-10-24'));
     const targets=window.events.map(e=>(calendarDayDiff(parseISOString(e.date),window.origin)-window.minDay)/(window.maxDay-window.minDay));
-    const fit=timelineGeometry(targets,width);
-    assert.equal(fit.width,width);
-    assert.ok(fit.xs.every(x=>x>=22&&x<=width-22));
+    const xs=targets.map(target=>timelinePosition(target,0,1,width));
+    assert.ok(xs.every(x=>x>=22&&x<=width-22));
     assert.equal(window.events.at(-1).id,'p7');
   }
 });

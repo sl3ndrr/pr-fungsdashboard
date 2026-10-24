@@ -15,7 +15,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
       })),
     }));
     expect(geometry.overflow).toBe(false);
-    for(const card of geometry.cards){expect(card.labelled).toBe(true);expect(card.leftBorder).toBe('1px');}
+    for(const card of geometry.cards){expect(card.labelled).toBe(true);expect(card.leftBorder).toBe('0px');}
     let dayScale;
     for(let i=1;i<geometry.points.length;i++){
       const previous=geometry.points[i-1],point=geometry.points[i];
@@ -159,7 +159,25 @@ for(const width of [390,1280])test(`German title fits without arbitrary breaks w
   });
   // This specific single word must fit on one line at the acceptance widths.
   expect(lines).toHaveLength(1);
-  await openDashboard(page,{width,date:'2026-09-24'});
-  await expect(page.locator('.hero-next-title').last()).toBeVisible();
+  await openDashboard(page,{width,date:'2026-09-25'});
+  await expect(page.locator('.hero-next-title').last()).toHaveText('Programmierpraktikum');
+  expect(await page.locator('.hero-next-title').last().evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length;})).toBe(1);
   expect(await page.locator('.hero-next-title').last().evaluate(el=>getComputedStyle(el).hyphens)).toBe('auto');
+});
+
+for(const theme of ['light','dark','system'])test(`connected controls share geometry and theme keyboard semantics ${theme}`,async({page})=>{
+  await openDashboard(page,{width:1280,date:'2026-10-24',theme,reduced:true});
+  const option=page.locator(`[data-theme-value="${theme}"]`);await option.focus();
+  await option.press('Home');await freeze(page);
+  await expect(page.locator('[data-theme-value="light"]')).toBeFocused();
+  await expect(page.locator('[data-theme-value="light"]')).toHaveAttribute('aria-checked','true');
+  await page.locator('[data-theme-value="light"]').press('ArrowRight');await freeze(page);
+  await expect(page.locator('[data-theme-value="system"]')).toBeFocused();
+  await expect(page.locator('html')).not.toHaveAttribute('data-theme');
+  expect(await page.evaluate(()=>localStorage.getItem('theme_pref'))).toBe('system');
+  const heights=await page.locator('.segmented-filter').evaluateAll(els=>els.map(el=>({height:el.getBoundingClientRect().height,buttons:[...el.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)})));
+  for(const group of heights) {expect(group.height).toBe(52);expect(group.buttons.every(h=>h===44)).toBe(true);}
+  await page.locator('#toggle-past-btn').click();await freeze(page);
+  await expect(page.locator('#toggle-past-btn')).toHaveAttribute('aria-pressed','true');
+  expect(await page.locator('.past-filter .filter-indicator').isVisible()).toBe(true);
 });
