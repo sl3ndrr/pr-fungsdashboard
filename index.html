@@ -111,20 +111,13 @@
         <section class="timeline-card" aria-labelledby="timeline-heading">
           <div class="timeline-title">
             <h2 id="timeline-heading" class="display">Semesterverlauf</h2>
-            <div class="timeline-controls">
-              <button type="button" id="timeline-past-toggle" aria-expanded="false" aria-controls="timeline-container" hidden></button>
+            <div id="timeline-window" class="segmented-filter" role="group" aria-label="Zeitfenster">
+              <button id="timeline-window-upcoming" type="button" data-window="upcoming" aria-pressed="true" aria-controls="timeline-container">Ab heute</button>
+              <button id="timeline-window-semester" type="button" data-window="semester" aria-pressed="false" aria-controls="timeline-container">Semester</button>
             </div>
           </div>
-          <div class="timeline-viewport">
-            <div class="timeline-scroll" tabindex="0" role="region" aria-label="Semesterverlauf, horizontal verschiebbar">
-              <div id="timeline-container"></div>
-            </div>
-          </div>
-          <p class="scroll-hint">Wischen für mehr</p>
-          <details id="timeline-legend" class="timeline-legend">
-            <summary>Zeichenerklärung · tagesgenau</summary>
-            <div id="timeline-legend-items"></div>
-          </details>
+          <div id="timeline-container" role="region" aria-label="Semesterverlauf, lineare Tagesskala"></div>
+          <div id="timeline-legend-items" class="timeline-legend" aria-label="Zeichenerklärung"></div>
         </section>
       </section>
 
@@ -181,6 +174,7 @@
     <aside id="cal-popover" class="cal-popover" role="dialog" aria-modal="false" aria-label="Termindetails" data-open="false" aria-hidden="true" inert></aside>
   </body>
 </html>
+
 
 
 
