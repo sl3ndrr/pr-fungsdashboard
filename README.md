@@ -10,11 +10,11 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
 - Vollständig eingepasster Zeitstrahl mit linearen Tagen, beschrifteten Reihen, Zeitfensterwahl und tonalen Zeitraum-Bändern
 - Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
-- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; zunächst ausgeblendet, ab 1280 px beim Öffnen als sticky Seitenspalte
+- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; zunächst ausgeblendet, ab 1200 px beim Öffnen als sticky Seitenspalte
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
 - Lokale Speicherung erledigter Abgaben
-- Responsive Darstellung mit einer bis vier Kartenspalten; ab 1560 px volle Inhaltsbreite und maximal vier Spalten
+- Responsive Darstellung mit einer bis vier Kartenspalten; ab 1600 px volle Inhaltsbreite und maximal vier Spalten
 - Tastaturbedienung, sichtbarer Fokus und Unterstützung für reduzierte Bewegung
 - Tageswechsel aktualisiert Datum, Countdown und Ansichten automatisch
 
@@ -198,7 +198,7 @@ Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
 | 8. Countdown | Maskierte Ziffernreels, initiales Hochzählen, imminent | Spatial-fast / Effects | 350 / 210 ms; Start 600 ms |
 | 9. Fortschritt | Clip-Path, gemeinsame Transform-Wellenphase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
 | 10. Zeitstrahl | Punktstaffelung, Rail, Heute, Tooltip, Ring, Bänder | Spatial-fast/default/slow / Effects | 350–570 / 140–300 ms |
-| 11. Kalender | Sticky Spalte ab 1280 px, Spalten-/Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
+| 11. Kalender | Sticky Spalte ab 1200 px, Spalten-/Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
 | 12. Hero/Leerzustand | Container-Transform und Fade-Through / Shared Element | Spatial / Effects | 350–410 / 140–210 ms |
 
 Wellen werden mit einer kleinen SVG-Mask dargestellt. Die Amplitude nimmt nahe
@@ -329,9 +329,9 @@ keine bestandene Browsermatrix oder Pixel-Höhenmessung behauptet.
 
 ### Layout-Optimierung – Phase 2
 
-Ab 1280 px steht der Kalender in einer 380–440 px breiten sticky Seitenspalte.
+Ab 1200 px steht der Kalender in einer 380–440 px breiten sticky Seitenspalte.
 Der Kalender startet auf allen Bildschirmgrößen geschlossen. Der Kalender-Button
-blendet ihn ein/aus; Größenänderungen behalten diese Wahl bei. Unter 1280 px
+blendet ihn ein/aus; Größenänderungen behalten diese Wahl bei. Unter 1200 px
 bleibt der Vollbreiten-Grid-Kollaps. Container Queries passen die Kartenanzahl
 an die tatsächliche Listenbreite an; ein ResizeObserver rendert nur bei geänderter
 Spaltenzahl nach, mit Fokus-/Scrollschutz und denselben Kartenknoten.
@@ -368,3 +368,20 @@ Gemäß Auftrag bleibt die bestehende Google-Fonts-Einbindung samt System-Fallba
 bestehen. Externe Schrift-Anfragen sind daher weiterhin vorhanden; das Ziel
 „keine externen Requests“ ist noch nicht erfüllt.
 
+
+## Fensterklassen und Übersicht
+
+| M3-Klasse | Breite | Übersicht |
+| --- | --- | --- |
+| Compact | < 600 px | Hero mit Zahl neben Titel, danach Zeitstrahl und Statistik |
+| Medium | 600–839 px | Hero, Zeitstrahl, Statistik gestapelt |
+| Expanded | 840–1199 px | Hero links; Zeitstrahl und vollbreite Statistik rechts |
+| Large | 1200–1599 px | Zwei Übersichtsspalten; optional sticky Kalender rechts neben Liste |
+| Extra-large | ≥ 1600 px | Volle Inhaltsbreite, Hero bis 560 px, Rest für Übersicht/Liste |
+
+Die Übersichtsspalten strecken sich auf dieselbe Gesamthöhe. Drei gleich breite
+Statistik-Kacheln füllen die rechte Spalte. Die intrinsischen Container Queries
+der Terminliste (660/1000/1300 px) bleiben unabhängig von Fensterklassen.
+Die bisherige Kalendergrenze 1280 px ist bewusst auf Large (1200 px) migriert;
+die Seitenspalte bleibt 380–440 px breit, sticky und standardmäßig geschlossen.
+Hero- und Kartentitel nutzen deutsche automatische Trennung und `break-word`.
