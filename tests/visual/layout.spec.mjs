@@ -26,7 +26,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
       if(dayScale!==undefined)expect(Math.abs(scale-dayScale)).toBeLessThan(.02);
       dayScale=scale;
     }
-    if(width>=1280) {
+    if(width>=1200) {
       expect(geometry.cards.slice(0,Math.min(geometry.columns,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
     }
     if(width>=1600) for(const card of geometry.cards)expect(card.height).toBeLessThanOrEqual(130);
@@ -73,7 +73,7 @@ for(const width of [768,1280,1600,2300]) {
       const list=document.querySelector('.appointments').getBoundingClientRect(),cal=document.querySelector('#calendar-section').getBoundingClientRect();
       return {listLeft:list.left,listRight:list.right,listTop:list.top,calLeft:cal.left,calTop:cal.top,calWidth:cal.width,sticky:getComputedStyle(document.querySelector('#calendar-section')).position};
     });
-    if(width>=1280){expect(rects.calLeft).toBeGreaterThan(rects.listRight);expect(rects.calWidth).toBeGreaterThanOrEqual(380);expect(rects.calWidth).toBeLessThanOrEqual(440);expect(rects.sticky).toBe('sticky');}
+    if(width>=1200){expect(rects.calLeft).toBeGreaterThan(rects.listRight);expect(rects.calWidth).toBeGreaterThanOrEqual(380);expect(rects.calWidth).toBeLessThanOrEqual(440);expect(rects.sticky).toBe('sticky');}
     else expect(rects.calTop).toBeLessThan(rects.listTop);
     const day=page.locator('.cal-day-select[data-date="2026-10-07"]');
     await day.click();await freeze(page);
@@ -130,3 +130,36 @@ for(const theme of ['light','dark']) {
   });
 }
 
+
+
+for(const width of [320,360,390,600,820,840,1024,1200,1280,1600,2300])test(`overview columns fill available space ${width}px`,async({page},testInfo)=>{
+  await openDashboard(page,{width,date:'2026-10-24'});
+  const measurements=await page.evaluate(()=>{
+    const box=el=>{const r=el.getBoundingClientRect();return {top:r.top,left:r.left,right:r.right,bottom:r.bottom,height:r.height,width:r.width};};
+    return {hero:box(document.querySelector('#hero')),side:box(document.querySelector('.overview-side')),timeline:box(document.querySelector('.timeline-card')),stats:box(document.querySelector('#stats-line')),
+      tiles:[...document.querySelectorAll('.stat-tile')].map(box),pageOverflow:document.documentElement.scrollWidth>innerWidth};
+  });
+  expect(measurements.pageOverflow).toBe(false);
+  if(width>=840) {
+    expect(Math.abs(measurements.hero.height-measurements.side.height)).toBeLessThanOrEqual(1);
+    expect(measurements.side.left).toBeGreaterThan(measurements.hero.right);
+  } else expect(measurements.timeline.top).toBeGreaterThanOrEqual(measurements.hero.bottom);
+  expect(measurements.stats.top).toBeGreaterThanOrEqual(measurements.timeline.bottom);
+  expect(Math.abs(measurements.tiles.at(-1).right-measurements.stats.right)).toBeLessThanOrEqual(1);
+  await testInfo.attach('overview-heights.json',{body:JSON.stringify({width,...measurements},null,2),contentType:'application/json'});
+});
+
+for(const width of [390,1280])test(`German title fits without arbitrary breaks with system font ${width}px`,async({page})=>{
+  await openDashboard(page,{width,date:'2026-10-24'});
+  const title=page.locator('.hero-title');
+  expect(await title.evaluate(el=>getComputedStyle(el).overflowWrap)).toBe('break-word');
+  const lines=await title.evaluate(el=>{
+    const range=document.createRange();range.selectNodeContents(el);
+    return [...range.getClientRects()].map(r=>({left:r.left,right:r.right,top:r.top}));
+  });
+  // This specific single word must fit on one line at the acceptance widths.
+  expect(lines).toHaveLength(1);
+  await openDashboard(page,{width,date:'2026-09-24'});
+  await expect(page.locator('.hero-next-title').last()).toBeVisible();
+  expect(await page.locator('.hero-next-title').last().evaluate(el=>getComputedStyle(el).hyphens)).toBe('auto');
+});
