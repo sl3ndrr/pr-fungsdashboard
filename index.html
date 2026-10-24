@@ -43,12 +43,11 @@
         <div class="theme-control">
           <div
             id="theme-switch"
-            class="theme-switch"
+            class="theme-switch segmented-filter"
             data-value="system"
             role="radiogroup"
             aria-label="Farbschema auswählen"
           >
-            <span class="theme-switch-thumb" aria-hidden="true"></span>
 
             <button
               class="theme-option"
@@ -111,7 +110,7 @@
         <div class="overview-side">
         <section class="timeline-card" aria-labelledby="timeline-heading">
           <div class="timeline-title">
-            <h2 id="timeline-heading" class="display">Semesterverlauf</h2>
+            <h2 id="timeline-heading" class="display">Semester<wbr>verlauf</h2>
             <div id="timeline-window" class="segmented-filter" role="group" aria-label="Zeitfenster">
               <button id="timeline-window-upcoming" type="button" data-window="upcoming" aria-pressed="true" aria-controls="timeline-container">Ab heute</button>
               <button id="timeline-window-semester" type="button" data-window="semester" aria-pressed="false" aria-controls="timeline-container">Semester</button>
@@ -164,7 +163,9 @@
               <button type="button" data-filter="Abgabe" aria-pressed="false" aria-controls="list">Abgaben</button>
               <button type="button" data-filter="Termin" aria-pressed="false" aria-controls="list">Termine</button>
             </div>
-            <button class="pill" id="toggle-past-btn" type="button" aria-pressed="false" aria-controls="list">Vergangene anzeigen</button>
+            <div class="segmented-filter past-filter" role="group" aria-label="Vergangene Termine">
+              <button id="toggle-past-btn" type="button" aria-pressed="false" aria-controls="list">Vergangene anzeigen</button>
+            </div>
           </div>
         </div>
         <div class="dashboard-list" id="list" role="list" aria-labelledby="appointments-heading"></div>

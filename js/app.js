@@ -74,6 +74,8 @@ function applyTheme(theme, { focus = false } = {}) {
     // Das Farbschema bleibt auch ohne verfügbaren Speicher bedienbar.
   }
 
+  updateFilterIndicator(themeSwitch);
+
   if (focus) {
     themeOptions.find((option) => option.dataset.themeValue === selectedTheme)?.focus();
   }
@@ -104,15 +106,13 @@ themeSwitch.addEventListener('keydown', (event) => {
 });
 
 function changeTheme(theme, options = {}) {
-  const thumb = themeSwitch.querySelector('.theme-switch-thumb');
-  const rect = thumb.getBoundingClientRect();
+  const rect = themeOptions.find(option => option.getAttribute('aria-checked') === 'true').getBoundingClientRect();
   withTransition(() => {
     applyTheme(theme, options);
     const icon = themeOptions.find(option => option.dataset.themeValue === theme)?.querySelector('svg');
     motion(icon, [{rotate:'-15deg',scale:'.8'}, {rotate:'0deg',scale:'1'}], {speed:'fast'});
   }, {type:'theme', origin:{x:rect.left+rect.width/2,y:rect.top+rect.height/2}});
   requestedTheme=theme;
-  motion(thumb,[{scale:'1 1',borderRadius:'50%'},{scale:'1.28 .85',borderRadius:'16px',offset:.35},{scale:'1 1',borderRadius:'50%'}],{speed:'fast'});
 }
 let savedTheme = 'system';
 try {
@@ -298,7 +298,7 @@ function buildTimeline(todayMid) {
     const status = event.isCancelled ? `Abgebrochen${cancelledStatus(event) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(event)}`
       : doneItems.includes(event.id) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
     const description = `${event.type}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}, ${status}`;
-    return `<span class="timeline-stem" aria-hidden="true" style="left:${x}px;top:${Math.min(axisY, pointY)}px;height:${Math.abs(axisY - pointY)}px"></span>
+    return `<span class="timeline-stem" data-key="stem-${escapeHtml(event.id)}" aria-hidden="true" style="left:${x}px;top:${Math.min(axisY, pointY)}px;height:${Math.abs(axisY - pointY)}px"></span>
       <button id="timeline-event-${escapeHtml(event.id)}" type="button" class="timeline-dot ${typeClass(event.type)} ${event.isCancelled ? 'cancelled' : ''} ${parseISOString(event.date) < todayMid ? 'past' : ''} ${next?.id === event.id ? 'next' : ''}"
         style="left:${item.left}px;top:${top}px;width:${item.width}px;--point-x:${x - item.left}px" data-event-id="${escapeHtml(event.id)}" data-date="${event.date}" aria-label="${escapeHtml(description)}">
         <span class="timeline-point" aria-hidden="true"></span><span class="timeline-event-label">${item.title ? `<strong>${escapeHtml(item.title)}</strong>` : ''}<span>${escapeHtml(item.date)}</span></span>
@@ -643,7 +643,9 @@ function showTimelineTooltip(dot) {
   if (!item) return;
   closeTimelineTooltip();
   tooltipAnchor = dot;
-  syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span>${item.isCancelled ? `<span>Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + escapeHtml(cancelledStatus(item))}</span>` : ''}`);
+  const status = item.isCancelled ? `Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(item)}`
+    : doneItems.includes(item.id) ? 'Erledigt' : parseISOString(item.date) < midnight(new Date()) ? 'Vergangen' : 'Offen';
+  syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span><span>${escapeHtml(status)}</span>`);
   dot.setAttribute('aria-describedby', 'timeline-tooltip');
   timelineTooltip.dataset.open = 'true';
   timelineTooltip.setAttribute('aria-hidden', 'false');
@@ -689,7 +691,7 @@ function renderPreservingState(animate = false) {
   }
   if (calendarScroll.scrollLeft !== calendarLeft) calendarScroll.scrollLeft = calendarLeft;
   if (window.scrollX !== pageX || window.scrollY !== pageY) window.scrollTo(pageX, pageY);
-  if (focusFallback) document.getElementById('toggle-past-btn').focus();
+  if (focusFallback) document.getElementById('toggle-past-btn').focus({preventScroll:true});
 }
 
 const localDayKey = date => `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
@@ -917,8 +919,8 @@ document.getElementById('cal-next').addEventListener('click', () => calNav(+1));
 const togglePastBtn = document.getElementById('toggle-past-btn');
 function updatePastToggle() {
   togglePastBtn.textContent = showPast ? 'Vergangene ausblenden' : 'Vergangene anzeigen';
-  togglePastBtn.classList.toggle('active', showPast);
   togglePastBtn.setAttribute('aria-pressed', String(showPast));
+  updateFilterIndicator(togglePastBtn.closest('.segmented-filter'));
 }
 togglePastBtn.addEventListener('click', () => {
   withTransition(()=>{showPast=!showPast;updatePastToggle();renderPreservingState();},{type:'filter'});
@@ -971,7 +973,10 @@ document.querySelectorAll('#type-filter button').forEach(button => {
 function updateFilterIndicator(group = document.getElementById('type-filter')) {
   let indicator=group.querySelector('.filter-indicator');
   if(!indicator){indicator=document.createElement('span');indicator.className='filter-indicator';indicator.setAttribute('aria-hidden','true');group.prepend(indicator);}
-  const selected=group.querySelector('[aria-pressed="true"]'),x=selected.offsetLeft,width=selected.offsetWidth;
+  const selected=group.querySelector('[aria-pressed="true"],[aria-checked="true"]');
+  indicator.hidden = !selected;
+  if (!selected) return;
+  const x=selected.offsetLeft,width=selected.offsetWidth;
   if(reducedMotion.matches&&indicator.style.getPropertyValue('--indicator-x')!==`${x}px`)motion(indicator,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
   indicator.style.setProperty('--indicator-x',`${x}px`);indicator.style.setProperty('--indicator-width',`${width}px`);
 }

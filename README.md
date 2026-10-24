@@ -9,7 +9,7 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 - Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
 - Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
 - Vollständig eingepasster Zeitstrahl mit linearen Tagen, beschrifteten Reihen, Zeitfensterwahl und tonalen Zeitraum-Bändern
-- Abgebrochene Termine erhalten einen Status-Chip und durchgestrichenen Titel und aus der nächsten Fälligkeit ausgeblendet
+- Abgebrochene Termine erhalten Status und Durchstreichung und werden aus der nächsten Fälligkeit ausgeblendet
 - Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; zunächst ausgeblendet, ab 1200 px beim Öffnen als sticky Seitenspalte
 - Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
 - Hell-, Dunkel- und Systemmodus
@@ -29,9 +29,13 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 │   ├── app.js           # Initialisierung, UI-Rendering und Interaktionen
 │   ├── data.js          # Termine, Zeiträume und Speicherschlüssel
 │   ├── icons.js         # Statische SVG-Icons für alle UI-Bereiche
+│   ├── layout.js        # Reine Fenster-, Skalen-, Label-/Lane- und Overlay-Geometrie
 │   ├── motion.js        # Federn, DOM-Abgleich und View-Transition-/FLIP-Helfer
 │   ├── storage.js       # Persistenz erledigter Abgaben
 │   └── utils.js         # Wiederverwendbare Datums- und HTML-Hilfen
+├── tests/               # Node-Regressionen; Playwright separat in visual/
+├── docs/                # Designentscheidungen, Browser-Anleitung, Abnahmebericht
+├── scripts/             # CSS-Inventar und Scanner
 ├── .gitignore
 ├── index.html           # Semantisches Markup und Einbindung der Assets
 └── README.md
@@ -171,8 +175,9 @@ inert gerenderte Exit-Kopien gesetzt. Es gibt kein dauerhaftes `will-change`.
 IDs, Event-IDs, Datum und Gruppenschlüssel halten Knoten stabil. Zahlen, Checkboxen,
 Fortschritt und der Filter-Indikator aktualisieren ihre vorhandenen Elemente.
 Listener werden einmal gebunden. Fokus und Scrollpositionen bleiben über
-`focusAfterRender()` / `renderPreservingState()` erhalten. Nur Start und Tageswechsel
-rufen `render(true)` mit Enter-Staffelung auf; Filter/Erledigt/Resize tun das nicht.
+`focusAfterRender()` / `renderPreservingState()` erhalten. Nur der Start ruft
+`render(true)` mit Enter-Staffelung auf. Tageswechsel, Filter, Erledigt und Resize
+verwenden den Fokus-/Scrollschutz ohne Enter-Staffelung.
 
 `withTransition(update, { type })` verwendet die View Transitions API, sofern
 verfügbar und Bewegung erlaubt ist. Karten erhalten kollisionsfreie CSS-Namen aus
@@ -189,7 +194,7 @@ Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
 | Bereich | Animation | Federart | Dauer |
 | --- | --- | --- | --- |
 | 1. Aufbau | 16 px Hochgleiten, .96 → 1, Fade; 25-ms-Staffelung ≤250 ms | Spatial / Effects | 410 / 210 ms |
-| 2. Theme | Thumb/Shape/Icon, Reveal vom Thumb, Farb-Fallback | Spatial-fast/slow / Effects | 350 / 570 / 210 ms |
+| 2. Theme | Gemeinsamer Gruppenindikator, Icon, Reveal vom gewählten Button | Spatial-fast/slow / Effects | 350 / 570 / 210 ms |
 | 3. Buttons | Ripple, Press .97, Pill → lg, Selected-Farbe | Spatial-fast / Effects | 350 / 140–300 ms |
 | 4. Typfilter | Geteilter Indikator: Position, Breite, Gewicht | Spatial-fast / Effects | 350 / 210 ms |
 | 5. Liste | Gemeinsames Grid, Shared-Element/FLIP, Scale/Fade für Karten und Zeilenüberschriften | Spatial / Effects | 350–410 / 140–210 ms |
@@ -220,7 +225,7 @@ sofort am neuen Wert; an 0/100 % bleibt sie innerhalb des Balkens.
 auch in `aria-valuetext`, mit „letzter Tag“ am Ende. Statistik-Texte bleiben gleich.
 „Danach“ bleibt ein echter Button (mindestens 56 px); Hover bei Hover-Geräten,
 Fokus und Press verwenden Effects-State-Layer. Nach Auswahl wird die passende
-Karte sichtbar, fokussiert und gemäß Reduced Motion gescrollt. Die kurzen Daten
+Karte sichtbar, fokussiert und gemäß Reduced Motion gescrollt. Die kurzen Datumsangaben
 entstehen mit `Intl.DateTimeFormat('de-DE')` aus lokal geparsten Kalendertagen.
 
 ### Reduced Motion
@@ -249,125 +254,41 @@ Transitions werden beim Wechsel beendet. Es gibt keinen globalen
   ihre echten Transitions behalten. Hero-Wechsel verwenden einen eigenen inerten
   Exit-Snapshot und Fade-Through.
 - Zeitstrahl-Buttons erhalten mindestens 44-px-Hitflächen; beschriftete Reihen vermeiden Kollisionen.
-  Benachbarte Hitflächen können sich dadurch überlappen; die unveränderten
-  Punktzentren und Tastaturbedienung haben Vorrang.
+  Hitflächen und Beschriftungen sind über disjunkte Reihen zugeordnet.
 
-### Prüfungen und offene Freigabe
+### Komponenten-Konsistenz
 
-Ohne zusätzliche Pakete mit Node.js 24:
+Theme, Typfilter, Zeitfenster und Vergangene-Toggle verwenden `segmented-filter`
+und denselben Indikator. Theme behält Radiogroup, Pfeiltasten/Home/End und
+`theme_pref`; Filter verwenden `aria-pressed`. Alle Buttons sind mindestens 44 px hoch.
+Hero-Dringlichkeit verwendet Gewicht bei ≤7 Tagen und `error-container` bei ≤3 Tagen,
+keinen inset-Ring. „Als Nächstes“/„Danach“ verwenden Title Small in Normalschreibung.
+Die Hero-Form (32 px, 16 px Innenabstand) und die inneren Reihen (16 px) sind konzentrisch.
+Dekorative Rahmen entfallen; die Kalenderzellen behalten eine 3:1-Outline und die
+Checkboxen ihre funktionale Begrenzung. Farben außerhalb der Palette sind Rollen
+oder die unveränderten Zeitraumwerte. Weiße SVG-Masken bestimmen nur Alpha, keine UI-Farbe.
+
+### Prüfungen und offener Browsernachweis
 
 ```bash
 TZ=Europe/Berlin node --test tests/
+node --test scripts/css-duplicates.test.mjs
 ```
 
-Die automatisierten Node-Checks prüfen: Motion-Kanäle und Unterbrechungen, schnelle
-View-Transition-Updates, Live-Reduced-Motion, `linear()`-Fallback, eindeutige
-CSS-Namen, rechnerische AA-Kontraste der Rollen, Fortschritt/Past-Punkte,
-Zeitstrahl-Achse/Kollisionen und DST-Tagesberechnung. Syntax aller ES-Module,
-HTML-Struktur/IDs und `git diff --check` sind zusätzlich geprüft. Die Daten-,
-Storage-, Icon- und Datumshilfs-Module wurden nicht geändert.
+Die aktuelle Änderung besteht **40/40 Node-Tests** und **3/3 Scanner-Tests**.
+Dazu gehören lineare Skala, DST, Fenster, leere/einzelne/gleichdatierte Termine,
+Kollisionen, zugängliche Statuswerte, Farbrollen, Motion und der unveränderte Daten-Fingerprint.
+Die Browsermatrix ist vorbereitet, **nicht bestanden**: 372 Fälle werden über
+Chromium/Firefox/WebKit erkannt. Lokale Browser-Binaries fehlen; der Download wird
+mit HTTP 403 blockiert. Der Cloud-Browser erreicht den lokalen Server nicht;
+eingebettete `data:`-Navigation ist ebenfalls untersagt. Es gibt keine neuen,
+angesehenen Screenshots, DOM-Höhen, Touch- oder Performance-Messungen.
 
-Die lokale Browser-Testseite ist nach Start des HTTP-Servers unter
-<http://localhost:8000/tests/regression.html> erreichbar. Sie prüft 360, 768, 1280
-und 1600 px mit nativer API und erzwungenem View-Transition-Fallback, einschließlich
-Filter, Knoten-/Fokuserhalt, Erledigt, Kalender, Popover, Themes und Tageswechsel.
-Die Fixture verwendet isolierten In-Memory-Speicher und ein festes Datum.
-
-**Noch offen:** Diese Browser-Testseite und die visuellen Prüfungen für Fix 1–6 wurden hier nicht
-ausgeführt: Chromium-/Firefox-/WebKit-Binaries fehlen, und der Cloud-Browser
-blockiert die lokale Vorschau (`ERR_BLOCKED_BY_CLIENT`). Deshalb bleiben visuelle
-Prüfungen in allen drei Browsern, die vollständige Tastatur-/ARIA- und Kontrast-
-Prüfung, echte Reduced-Motion-Emulation sowie ein Performance-Trace mit 4× CPU und
-60-fps-Nachweis offen. Der Nutzer hat die Implementierung ohne Vorab-Reproduktion ausdrücklich erlaubt.
-Die drei PRs (Fixes, visuelle Tests, CSS-Hygiene) bleiben bis zur Browser-Prüfung
-Entwürfe; die
-Implementierungs-Checkliste ist kein vollständiger Nachweis der Definition of Done.
-
-Referenzen und der abgearbeitete Plan: [`docs/design-plan.md`](docs/design-plan.md).
-
-### Visuelle Regressionen (PR B)
-
-Playwright 1.62.1 ist die einzige neue direkte Abhängigkeit und liegt ausschließlich
-als Dev-Werkzeug mit eigenem Paket in `tests/visual/`. Anwendung und Python-HTTP-
-Vorschau bleiben ohne Build. `node --test tests/` benötigt diese Abhängigkeit nicht.
-Chromium/Firefox/WebKit prüfen 360/768/1280/1600 px, Hell/Dunkel, Komponenten,
-Status und eine kleine Reduced-Motion-Variante.
-
-Aus dem Repo-Verzeichnis im gepinnten offiziellen Image ausführen:
-
-```bash
-docker run --rm --ipc=host -v "$PWD:/work" -w /work/tests/visual \
-  mcr.microsoft.com/playwright:v1.62.1-noble \
-  bash -lc 'npm ci --ignore-scripts && npm test'
-```
-
-Zum Aktualisieren der Baselines im selben Befehl `npm test` durch `npm run update`
-ersetzen, die PNGs prüfen und `tests/visual/__snapshots__/` einchecken.
-Datum, Fixtures, Wellenzeiten und die Gegenprobe vor PR A sind in
-[`docs/visual-tests.md`](docs/visual-tests.md) dokumentiert. Ein CI-Workflow ist
-nur vorgeschlagen. Docker-/Browserläufe, eingecheckte Baselines und die
-Vor-A-Gegenprobe stehen noch aus; PR B bleibt ein Entwurf.
-
-
-### Layout-Optimierung – Phase 1
-
-Hero ohne Mindesthöhe oder automatische „Danach“-Lücke; Dringlichkeit erhält
-einen geschlossenen inset-Akzent. Karten ohne linken Farbrand, mit rechts
-stehendem Countdown und 44-px-Checkbox; Typ nur im Icon-Feld. Wochenwerte erst
-ab 14 Tagen. Statistik als 52-px-Segmente direkt unter der Semesterübersicht.
-Ein gemeinsames Grid füllt Zeilen auch über Zeitgruppen hinweg. Da einzelne
-vollbreite Gruppenüberschriften jeweils einen Umbruch erzwingen würden,
-nennt eine gemischte Zeilenüberschrift beide Gruppen; die Karten zeigen dann
-ihre Gruppe zusätzlich. `aria-labelledby` ordnet jede Karte eindeutig zu,
-DOM-Reihenfolge und keyed Karten bleiben chronologisch und stabil.
-
-20 Node-Tests bestanden; Termindaten unverändert. Browserfälle sind für
-360/768/1280/1600/2300 px erweitert, einschließlich Overlay-Klemmung und
-Knotenerhalt. **Nicht visuell verifiziert:** Browser-Binaries fehlen und der
-Playwright-Download wird mit HTTP 403 blockiert. Keine Vorher-/Nachher-Bilder,
-keine bestandene Browsermatrix oder Pixel-Höhenmessung behauptet.
-
-### Layout-Optimierung – Phase 2
-
-Ab 1200 px steht der Kalender in einer 380–440 px breiten sticky Seitenspalte.
-Der Kalender startet auf allen Bildschirmgrößen geschlossen. Der Kalender-Button
-blendet ihn ein/aus; Größenänderungen behalten diese Wahl bei. Unter 1200 px
-bleibt der Vollbreiten-Grid-Kollaps. Container Queries passen die Kartenanzahl
-an die tatsächliche Listenbreite an; ein ResizeObserver rendert nur bei geänderter
-Spaltenzahl nach, mit Fokus-/Scrollschutz und denselben Kartenknoten.
-
-Die kompakten 80-px-Kalenderzellen zeigen den ersten Termin als gekürztes Label
-im Tages-Button und bei mehreren Terminen eine Anzahl. Der 44-px-Tages-Button
-öffnet alle Tagesdetails; deren Termin-Buttons öffnen weiterhin das Popover.
-Separate 44-px-Tags pro Termin würden in den schmalen Zellen die Zielhöhe sprengen.
-Kalender und Popover erhalten beim Schließen einen sinnvollen Fokus-Rücksprung.
-20 Node-Tests bestanden; ergänzte Browserfälle **nicht visuell verifiziert**.
-Phase 2 bleibt als abhängiger Entwurf bis zur Phase-1-Browserprüfung offen.
-
-### Layout-Optimierung – Phase 3
-
-Ein kleines Inline-Script setzt gespeichertes Hell/Dunkel vor dem CSS; System,
-ungültige Werte und gesperrter Speicher bleiben sicher. Theme-Farbe hat helle
-und dunkle Media-Metadaten. Nicht gewählte Theme-Icons stehen ohne Ruhe-Rotation;
-Rotation/Scale beim Wechsel bleiben im Feder-System. Die Wellenphase animiert
-Transform auf beiden Pseudo-Elementen statt eine vererbte registrierte Property.
-Die CSS-Layer trennen Basis, Komponenten, variable Typografie und Motion;
-26 unbedingte Komponentenselektoren sind konsolidiert, tote Tokens und die
-überschriebene Checkbox-Pseudo-Grafik entfernt. Der generierte CSS-Bericht wird
-bei Bedarf erzeugt und nicht mehr eingecheckt.
-
-22 Node-Tests und 3 Scanner-Tests bestanden. **Nicht visuell verifiziert:**
-Browser- und Performance-Checks bleiben offen. Die optionale große Aufteilung
-von `app.js` und die Gitarrentermin-Erzeugung wurden bewusst nicht vorgenommen;
-`data.js` bleibt identisch.
-
-**Offen: Roboto Flex lokal als variable WOFF2 mit OFL selbst hosten.** Direkte
-Font-Downloads sind mit HTTP 403 blockiert; der GitHub-Connector liefert die
-große TTF-Datei ohne Inhalt und lehnt Binär-Blob-Lesen als Nicht-UTF-8 ab.
-Gemäß Auftrag bleibt die bestehende Google-Fonts-Einbindung samt System-Fallback
-bestehen. Externe Schrift-Anfragen sind daher weiterhin vorhanden; das Ziel
-„keine externen Requests“ ist noch nicht erfüllt.
-
+Die Browser-Regression unter <http://localhost:8000/tests/regression.html> bleibt
+als zusätzliche manuelle Testseite erhalten. Reproduktionsbefehle und die
+Screenshot-Regeln stehen in [docs/visual-tests.md](docs/visual-tests.md).
+Der detaillierte Stand aller elf Abnahmekriterien einschließlich fehlender
+Höhenmesswerte steht in [docs/verification-report.md](docs/verification-report.md).
 
 ## Fensterklassen und Übersicht
 

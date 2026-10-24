@@ -32,3 +32,20 @@ test('period labels and neutral past points keep contrast in both timeline theme
     assert.ok(contrast(color('outline',mode),surface)>=3);
   }
 });
+
+
+test('retained calendar boundaries and selected controls meet 3:1 in both themes',()=>{
+  for(const mode of [0,1]) {
+    for(const paper of ['surface-container-low','surface-container','surface-container-high']) {
+      assert.ok(contrast(color('outline',mode),color(paper,mode))>=3,`outline/${paper}, mode ${mode}`);
+    }
+    assert.ok(contrast(color('primary',mode),color('secondary-container',mode))>=3);
+    for(const type of ['primary','error','tertiary'])assert.ok(contrast(color(type,mode),color('surface-container-low',mode))>=3);
+  }
+});
+
+test('tonal follow-up rows retain AA with the inherited hero ink',()=>{
+  for(const mode of [0,1])for(const [ink,paper] of [['on-primary-container','primary-container'],['on-error-container','error-container']]) {
+    assert.ok(contrast(color(ink,mode),mix(color(ink,mode),color(paper,mode),.08))>=4.5);
+  }
+});
