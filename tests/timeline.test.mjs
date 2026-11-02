@@ -88,7 +88,7 @@ test('all visible events have a direct label and complete accessible status; nex
   const {html,dotEvents}=generate();
   assert.equal(dotEvents.length,2);
   assert.equal((html.match(/class="timeline-event-label"/g)||[]).length,2);
-  assert.match(html,/id="timeline-event-p7"[^>]*class="timeline-dot pruefung   next"/);
+  assert.match(html,/id="timeline-event-p7"[^>]*class="timeline-dot pruefung   next "/);
   assert.match(html,/aria-label="Prüfung: Programmierpraktikum, 10.11.2026, 10:00 Uhr, Offen"/);
   const cancelled=generate([{...pointFixtures[0],isCancelled:true,cancelReason:'<b>entfällt</b>'}],[],'2026-09-01','semester');
   assert.match(cancelled.html,/Abgebrochen: &lt;b&gt;entfällt&lt;\/b&gt;/);

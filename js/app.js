@@ -1,5 +1,6 @@
+import {sittingRowsHTML, sittingDate} from './cards.js';
 import { tooltipPosition, timelineWindow, timelinePosition, timelineEventLayout, timelineLabelLayout, appointmentRows } from './layout.js';
-import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
+import { batchUpdate, syncSittingRows, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { SEMESTERS, ICONS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
@@ -187,8 +188,7 @@ function buildTimeline(todayMid) {
   context.font = `800 ${font.fontSize} ${font.fontFamily}`;
   const measure = text => Math.ceil(context.measureText(text).width) + 8;
   const shortDate = event => parseISOString(event.date).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
-  const shortName = event => event.title.replace(/^Beginn /, '').replace(/ \(bis [^)]+\)$/, '')
-    .replace('Programmierpraktikum', 'Prog.-Praktikum').replace('Wintersemester 2026/27', 'Wintersemester');
+  const shortName = event => `${event.short || event.title}${event.sittingKey ? ' ' + event.sittingKey : ''}`;
   const layout = timelineEventLayout(visible.map(event => ({ x: pos(parseISOString(event.date)), variants: [
     { title: shortName(event), date: shortDate(event), width: Math.max(measure(shortName(event)), measure(shortDate(event))) },
     { title: '', date: shortDate(event), width: measure(shortDate(event)) },
@@ -224,9 +224,9 @@ function buildTimeline(todayMid) {
     const pointY = top + 12;
     const status = event.isCancelled ? `Abgebrochen${cancelledStatus(event) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(event)}`
       : isEventDone(event, doneItems) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
-    const description = `${event.type}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}, ${status}`;
+    const description = `${event.type}${event.sittingKey ? ' · ' + event.sittingKey + '-Termin' : ''}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}, ${status}`;
     return `<span class="timeline-stem" data-key="stem-${escapeHtml(event.id)}" aria-hidden="true" style="left:${x}px;top:${Math.min(axisY, pointY)}px;height:${Math.abs(axisY - pointY)}px"></span>
-      <button id="timeline-event-${escapeHtml(event.id)}" type="button" class="timeline-dot ${typeClass(event.type)} ${event.isCancelled ? 'cancelled' : ''} ${parseISOString(event.date) < todayMid ? 'past' : ''} ${next?.id === event.id ? 'next' : ''}"
+      <button id="timeline-event-${escapeHtml(event.id)}" type="button" class="timeline-dot ${typeClass(event.type)} ${event.isCancelled ? 'cancelled' : ''} ${parseISOString(event.date) < todayMid ? 'past' : ''} ${next?.id === event.id ? 'next' : ''} ${event.sittingKey === 'B' ? 'sitting-b' : ''}"
         style="left:${item.left}px;top:${top}px;width:${item.width}px;--point-x:${x - item.left}px" data-event-id="${escapeHtml(event.eventId)}" data-occurrence-id="${escapeHtml(event.id)}" data-date="${event.date}" aria-label="${escapeHtml(description)}">
         <span class="timeline-point" aria-hidden="true"></span><span class="timeline-event-label">${item.title ? `<strong>${escapeHtml(item.title)}</strong>` : ''}<span>${escapeHtml(item.date)}</span></span>
       </button>`;
@@ -275,20 +275,22 @@ function buildHero(upcoming, todayMid, animate) {
   el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''} `;
   const count = diffDays === 0 ? 'Heute' : diffDays;
   const activePeriods = periodsOnDay(todayMid, periods);
+  const otherSitting = item.sittings?.find(sitting => sitting.key !== item.sittingKey);
   syncHTML(el, `
     <h2 class="hero-label">Als Nächstes</h2>
     <div class="hero-main">
       <div class="hero-countdown"><span class="hero-number ${diffDays === 0 ? 'word' : ''}">${count}</span>${diffDays > 0 ? `<span class="hero-unit">${diffDays === 1 ? 'Tag' : 'Tage'}</span>` : ''}</div>
       <div class="hero-text">
-        <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}</span>
+        <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</span>
         <h3 class="hero-title">${escapeHtml(item.title)}</h3>
         <div class="hero-meta"><span>${ICONS.calendar}${d ? escapeHtml(formatDate(d)) : 'Termin noch offen'}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
       </div>
     </div>
+    ${otherSitting ? `<div class="hero-other" data-key="hero-other-${item.id}">${otherSitting.key}-Termin · ${sittingDate(parseISOString(otherSitting.date))} · ${parseISOString(otherSitting.date) < todayMid ? 'vorbei' : 'in ' + calendarDayDiff(parseISOString(otherSitting.date), todayMid) + ' Tagen'}</div>` : ''}
     ${upcoming.length > 1 ? `<div class="hero-after"><h3 class="hero-label">Danach</h3>${upcoming.slice(1, 3).map(e => {
       const days = calendarDayDiff(parseISOString(e.date), todayMid);
-      return `<button class="hero-next" type="button" data-event-id="${escapeHtml(e.eventId || e.id)}" data-occurrence-id="${escapeHtml(e.id)}">
-        <span class="type-icon ${typeClass(e.type)}">${ICONS[e.type]}</span>
+      return `<button class="hero-next" type="button" data-key="next-${escapeHtml(e.id)}" data-event-id="${escapeHtml(e.eventId || e.id)}" data-occurrence-id="${escapeHtml(e.id)}">
+        <span class="type-icon ${typeClass(e.type)}" data-key="next-icon-${escapeHtml(e.id)}" aria-hidden="true">${e.sittingKey ? `<span class="sitting-letter" data-key="next-letter-${escapeHtml(e.id)}" aria-label="${e.sittingKey}-Termin">${e.sittingKey}</span>` : ICONS[e.type]}</span>
         <span class="hero-next-info"><span class="hero-next-title">${escapeHtml(e.title)}</span><span class="hero-next-date">${escapeHtml(formatFollowupDate(parseISOString(e.date)))}</span></span>
         <span class="hero-next-days">${days === 0 ? 'Heute' : days === 1 ? 'Morgen' : `in ${days} Tagen`}</span>
       </button>`;
@@ -514,37 +516,17 @@ function render(animate) {
   function buildCard(item) {
     const { group, labelId } = itemGroups.get(item.id);
     const idx = orderedEvents.indexOf(item);
-    const d        = parseISOString(sortDateOf(item, todayMid, doneItems));
-    const diffDays = d ? calendarDayDiff(d, todayMid) : null;
-    const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
+    const safeId = escapeHtml(item.id);
     const isAbgabe = item.type === 'Abgabe';
-    const isDone   = isEventDone(item, doneItems);
-
-    let countdownClass = '', countdownContent = '';
-    if (!d) {
-      countdownContent = '<span class="primary">Termin noch offen</span>';
-    } else if (item.isCancelled) {
-      // Cancellation is represented once in the meta row, without a countdown tile.
-    } else if (isDone) {
-      countdownClass   = 'done-badge';
-      countdownContent = `<span class="primary">${ICONS.check}Erledigt</span><span class="secondary">abgehakt</span>`;
-    } else if (diffDays < 0) {
-      countdownClass   = 'expired';
-      countdownContent = `<span class="primary">Abgelaufen</span><span class="secondary">vor ${Math.abs(diffDays)} Tg.</span>`;
-    } else if (diffDays === 0) {
-      countdownClass   = 'urgent today-chip';
-      countdownContent = `<span class="primary">Heute</span><span class="secondary">${escapeHtml(item.time)}</span>`;
-    } else {
-      if (diffDays <= 3) countdownClass = 'urgent';
-      countdownContent = `<span class="primary countdown-number">${diffDays}</span><span class="countdown-unit">Tag${diffDays !== 1 ? 'e' : ''}</span>${diffDays >= 14 ? `<span class="secondary">${diffWeeks} Wochen</span>` : ''}`;
-    }
+    const isDone = isEventDone(item, doneItems);
+    const past = isEventPast(item, todayMid);
 
     const checkElement = isAbgabe
       ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden">${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
       : '';
 
     const card = document.createElement('div');
-    card.className = `card ${typeClass(item.type)} ${diffDays < 0 && !item.isCancelled ? 'past' : ''} ${isDone && !item.isCancelled ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} `;
+    card.className = `card ${typeClass(item.type)} ${past && !item.isCancelled ? 'past' : ''} ${isDone && !item.isCancelled ? 'done' : ''} ${item.isCancelled ? 'cancelled' : ''} `;
     card.id = `card-${item.id}`;
     card.tabIndex = -1;
     card.style.viewTransitionName=transitionName(item.id);
@@ -552,23 +534,22 @@ function render(animate) {
     card.setAttribute('aria-labelledby', `title-${item.id} ${labelId}`);
     if (animate) card.style.setProperty('--delay', Math.min(idx * 0.025, 0.15) + 's');
     card.innerHTML = `
-      <div class="card-inner">
-        <div class="card-left">
-          <div class="type-icon ${typeClass(item.type)}" role="img" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
-          <div class="info">
-            ${mixedIds.has(item.id) ? `<span class="card-group">${escapeHtml(group)}</span>` : ''}
-            <h4 id="title-${escapeHtml(item.id)}" class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
-            <div class="meta"><span>${ICONS.calendar}${d ? escapeHtml(formatDate(d)) : 'Termin noch offen'}</span><span>${ICONS.clock}${escapeHtml(item.time || '')}</span>${item.isCancelled ? `<span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span>` : ''}</div>
-          </div>
+      <div class="card-header" data-key="${safeId}-header">
+        <div class="type-icon ${typeClass(item.type)}" data-key="${safeId}-icon" role="img" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
+        <div class="info" data-key="${safeId}-info">
+          ${mixedIds.has(item.id) ? `<span class="card-group" data-key="${safeId}-group">${escapeHtml(group)}</span>` : ''}
+          <h4 id="title-${escapeHtml(item.id)}" class="title"><span class="title-text" data-key="${safeId}-title-text">${escapeHtml(item.title)}</span></h4>
         </div>
-        <div class="card-trailing">${checkElement}${item.isCancelled ? '' : `<div class="countdown ${countdownClass}">${countdownContent}</div>`}</div>
+        ${checkElement}
       </div>
+      ${item.isCancelled ? `<div class="meta" data-key="${safeId}-status"><span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span></div>` : ''}
+      <div class="sitting-list" data-key="${safeId}-sittings">${sittingRowsHTML(item, todayMid, {doneItems, examsFrom:semester.examsFrom})}</div>
     `;
 
     return card;
   }
 
-  syncChildren(listTarget,listEl);
+  syncSittingRows(() => syncChildren(listTarget,listEl));
   listTarget.querySelectorAll('.done-toggle input').forEach(input=>listenOnce(input,'change',()=>toggleDone(input.closest('.card').id.slice(5))));
   enhanceProgress(animate);
   if(animate){enterPage();enterTimeline();}
