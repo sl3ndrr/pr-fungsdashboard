@@ -61,9 +61,27 @@ export function validateData(rawEvents, rawPeriods) {
     else if (ids.has(event.id)) reason = 'ID doppelt';
     else if (!['Prüfung', 'Abgabe', 'Termin'].includes(event.type)) reason = 'Typ unbekannt';
     else if (!present(event.title)) reason = 'Titel fehlt';
-    else if (!present(event.time)) reason = 'Zeitangabe fehlt';
+    else if (event.short !== undefined && !present(event.short)) reason = 'Kurzname ungültig';
+    else if (event.earliest !== undefined && !parseISOString(event.earliest)) reason = 'Frühestes Datum ungültig';
+    else if ('sittings' in event) {
+      if (!Array.isArray(event.sittings)) reason = 'Termine müssen ein Array sein';
+      else if ('date' in event || 'time' in event) reason = 'date/time und sittings schließen sich aus';
+      else if (!event.sittings.length && event.type !== 'Prüfung') reason = 'Leere Termine nur bei Prüfung';
+      else {
+        const keys = new Set();
+        for (const sitting of event.sittings) {
+          if (!sitting || !['A', 'B'].includes(sitting.key)) { reason = 'Terminschlüssel ungültig'; break; }
+          if (keys.has(sitting.key)) { reason = 'Terminschlüssel doppelt'; break; }
+          if (!parseISOString(sitting.date) || !present(sitting.time)) { reason = 'Termindatum oder Zeit ungültig'; break; }
+          keys.add(sitting.key);
+        }
+        const a = event.sittings.find(sitting => sitting?.key === 'A');
+        const b = event.sittings.find(sitting => sitting?.key === 'B');
+        if (!reason && a && b && b.date < a.date) reason = 'B liegt vor A';
+      }
+    } else if (!present(event.time)) reason = 'Zeitangabe fehlt';
     else if (!parseISOString(event.date)) reason = 'Datum ungültig';
-    else if (!boolean(event.isCancelled) || !boolean(event.calOnly) || !boolean(event.isDone) || !boolean(event.hideFromNext))
+    if (!reason && event && (!boolean(event.isCancelled) || !boolean(event.calOnly) || !boolean(event.isDone) || !boolean(event.hideFromNext)))
       reason = 'Statusfeld muss Boolean sein';
 
     if (reason) report('EVENTS', index, reason);
@@ -131,9 +149,63 @@ export function semesterForDate(semesters, date) {
   }, semesters[0]);
 }
 
-export function upcomingEvents(events, todayMid, doneItems) {
-  return events.filter(event => !event.calOnly && !event.hideFromNext && !event.isCancelled &&
-    calendarDayDiff(parseISOString(event.date), todayMid) >= 0 &&
-    !(event.type === 'Abgabe' && doneItems.includes(event.id)))
-    .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
+/** Legacy date/time remains a single unlettered sitting; input is never mutated. */
+export function sittingsOf(event) {
+  if (event.eventId) return [{ key: event.sittingKey || '', date: event.date, time: event.time }];
+  return Array.isArray(event.sittings)
+    ? [...event.sittings].sort((a, b) => a.date.localeCompare(b.date) || a.key.localeCompare(b.key))
+    : event.date ? [{ key: '', date: event.date, time: event.time }] : [];
+}
+export function isEventDone(event, doneItems = []) {
+  return ['Abgabe', 'Prüfung'].includes(event.type) && doneItems.includes(event.eventId || event.id);
+}
+export function nextSitting(event, today, doneItems = []) {
+  if (event.isCancelled || isEventDone(event, doneItems)) return null;
+  return sittingsOf(event).find(sitting => parseISOString(sitting.date) >= today) || null;
+}
+export function sortDateOf(event, today, doneItems = []) {
+  return nextSitting(event, today, doneItems)?.date || sittingsOf(event).at(-1)?.date || null;
+}
+export function isEventPast(event, today) {
+  const last = sittingsOf(event).at(-1);
+  return !!last && parseISOString(last.date) < today;
+}
+export function sortEvents(events, today, doneItems = []) {
+  return [...events].sort((a, b) => {
+    const left = sortDateOf(a, today, doneItems), right = sortDateOf(b, today, doneItems);
+    return left && right ? left.localeCompare(right) : left ? -1 : right ? 1 : 0;
+  });
+}
+export function eventGroup(event, today, doneItems = []) {
+  const date = sortDateOf(event, today, doneItems);
+  if (!date) return 'Termin noch offen';
+  if (isEventPast(event, today)) return 'Vergangen';
+  return parseISOString(date).toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
+}
+/** Stable occurrence IDs address the sitting; eventId always addresses its card. */
+export function occurrencesOf(events) {
+  return events.filter(event => !event.calOnly).flatMap(event => event.eventId ? [event] : sittingsOf(event).map(sitting => ({
+    ...event, ...sitting, id: sitting.key ? `${event.id}-${sitting.key}` : event.id,
+    eventId: event.id, sittingKey: sitting.key,
+  }))).sort((a, b) => a.date.localeCompare(b.date));
+}
+export function upcomingEvents(events, todayMid, doneItems = []) {
+  return occurrencesOf(events).filter(event => !event.hideFromNext && !event.isCancelled &&
+    !isEventDone(event, doneItems) && parseISOString(event.date) >= todayMid);
+}
+export function eventStatistics(events, today, doneItems = []) {
+  const main = events.filter(event => !event.calOnly && !event.isCancelled);
+  const assignments = main.filter(event => event.type === 'Abgabe');
+  const next7 = occurrencesOf(main).filter(event => !isEventDone(event, doneItems) &&
+    calendarDayDiff(parseISOString(event.date), today) >= 0 && calendarDayDiff(parseISOString(event.date), today) <= 7).length;
+  return { total: main.length, undated: main.filter(event => event.type === 'Prüfung' && !sittingsOf(event).length).length,
+    assignments: assignments.length, assignmentsDone: assignments.filter(event => isEventDone(event, doneItems)).length, next7 };
+}
+/** Undo stays available after marking an exam passed, including after B. */
+export function canMarkPassed(event, today, doneItems = []) {
+  if (event.type !== 'Prüfung' || event.isCancelled) return false;
+  const a = sittingsOf(event).find(sitting => sitting.key === 'A');
+  const b = sittingsOf(event).find(sitting => sitting.key === 'B');
+  return !!a && !!b && parseISOString(a.date) < today &&
+    (parseISOString(b.date) >= today || isEventDone(event, doneItems));
 }

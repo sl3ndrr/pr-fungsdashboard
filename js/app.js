@@ -15,6 +15,7 @@ import {
   typeClass,
   validateData,
   upcomingEvents,
+  sittingsOf, nextSitting, sortDateOf, isEventPast, sortEvents, eventGroup, occurrencesOf, eventStatistics, isEventDone, canMarkPassed,
 } from "./utils.js";
 import { loadDoneItems, saveDoneItems } from "./storage.js";
 
@@ -143,9 +144,9 @@ function toggleDone(id) {
 let highlightTimer;
 async function selectTimelineEvent(dot,id) {
   const item=events.find(e=>e.id===id);
-  if(item && ((!showPast && calendarDayDiff(parseISOString(item.date),midnight(new Date()))<0) || (typeFilter!=='all' && typeFilter!==item.type))) {
+  if(item && ((!showPast && isEventPast(item,midnight(new Date()))) || (typeFilter!=='all' && typeFilter!==item.type))) {
     await withTransition(()=>{
-      if(calendarDayDiff(parseISOString(item.date),midnight(new Date()))<0)showPast=true;
+      if(isEventPast(item,midnight(new Date())))showPast=true;
       if(typeFilter!=='all' && typeFilter!==item.type)typeFilter='all';
       updatePastToggle();updateTypeFilter();renderPreservingState();
     },{type:'filter'});
@@ -175,7 +176,7 @@ document.addEventListener('click', event => {
 });
 
 function buildTimeline(todayMid) {
-  const domain = timelineWindow(events, todayMid, timelineMode);
+  const domain = timelineWindow(events, todayMid, timelineMode, doneItems);
   if (!domain) return { html: '<p class="timeline-empty">Noch keine Termine für dieses Semester</p>', dotEvents: [] };
   const { events: visible, origin, todayDay, minDay, maxDay, axisStart, axisEnd } = domain;
   const width = Math.max(44, document.getElementById('timeline-container').clientWidth);
@@ -222,11 +223,11 @@ function buildTimeline(todayMid) {
     const top = item.lane < 0 ? axisY - 52 * -item.lane : axisY + 36 + 52 * (item.lane - 1) + lowerShift;
     const pointY = top + 12;
     const status = event.isCancelled ? `Abgebrochen${cancelledStatus(event) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(event)}`
-      : doneItems.includes(event.id) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
+      : isEventDone(event, doneItems) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
     const description = `${event.type}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}, ${status}`;
     return `<span class="timeline-stem" data-key="stem-${escapeHtml(event.id)}" aria-hidden="true" style="left:${x}px;top:${Math.min(axisY, pointY)}px;height:${Math.abs(axisY - pointY)}px"></span>
       <button id="timeline-event-${escapeHtml(event.id)}" type="button" class="timeline-dot ${typeClass(event.type)} ${event.isCancelled ? 'cancelled' : ''} ${parseISOString(event.date) < todayMid ? 'past' : ''} ${next?.id === event.id ? 'next' : ''}"
-        style="left:${item.left}px;top:${top}px;width:${item.width}px;--point-x:${x - item.left}px" data-event-id="${escapeHtml(event.id)}" data-date="${event.date}" aria-label="${escapeHtml(description)}">
+        style="left:${item.left}px;top:${top}px;width:${item.width}px;--point-x:${x - item.left}px" data-event-id="${escapeHtml(event.eventId)}" data-occurrence-id="${escapeHtml(event.id)}" data-date="${event.date}" aria-label="${escapeHtml(description)}">
         <span class="timeline-point" aria-hidden="true"></span><span class="timeline-event-label">${item.title ? `<strong>${escapeHtml(item.title)}</strong>` : ''}<span>${escapeHtml(item.date)}</span></span>
       </button>`;
   }).join('');
@@ -281,12 +282,12 @@ function buildHero(upcoming, todayMid, animate) {
       <div class="hero-text">
         <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}</span>
         <h3 class="hero-title">${escapeHtml(item.title)}</h3>
-        <div class="hero-meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
+        <div class="hero-meta"><span>${ICONS.calendar}${d ? escapeHtml(formatDate(d)) : 'Termin noch offen'}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
       </div>
     </div>
     ${upcoming.length > 1 ? `<div class="hero-after"><h3 class="hero-label">Danach</h3>${upcoming.slice(1, 3).map(e => {
       const days = calendarDayDiff(parseISOString(e.date), todayMid);
-      return `<button class="hero-next" type="button" data-event-id="${escapeHtml(e.id)}">
+      return `<button class="hero-next" type="button" data-event-id="${escapeHtml(e.eventId || e.id)}" data-occurrence-id="${escapeHtml(e.id)}">
         <span class="type-icon ${typeClass(e.type)}">${ICONS[e.type]}</span>
         <span class="hero-next-info"><span class="hero-next-title">${escapeHtml(e.title)}</span><span class="hero-next-date">${escapeHtml(formatFollowupDate(parseISOString(e.date)))}</span></span>
         <span class="hero-next-days">${days === 0 ? 'Heute' : days === 1 ? 'Morgen' : `in ${days} Tagen`}</span>
@@ -315,12 +316,12 @@ function focusAfterRender() {
 
   const heroNext = active.closest('.hero-next');
   if (heroNext) {
-    return () => [...document.querySelectorAll('.hero-next')].find(button => button.dataset.eventId === heroNext.dataset.eventId);
+    return () => [...document.querySelectorAll('.hero-next')].find(button => button.dataset.occurrenceId === heroNext.dataset.occurrenceId);
   }
   const dot = active.closest('#timeline-container .timeline-dot');
   if (dot) {
     return () => [...document.querySelectorAll('#timeline-container .timeline-dot')]
-      .find(button => button.dataset.eventId === dot.dataset.eventId);
+      .find(button => button.dataset.occurrenceId === dot.dataset.occurrenceId);
   }
 
   return null;
@@ -353,12 +354,12 @@ function closeTimelineTooltip() {
   tooltipAnchor = null;
 }
 function showTimelineTooltip(dot) {
-  const item = events.find(e => e.id === dot.dataset.eventId);
+  const item = occurrencesOf(events).find(event => event.id === dot.dataset.occurrenceId);
   if (!item) return;
   closeTimelineTooltip();
   tooltipAnchor = dot;
   const status = item.isCancelled ? `Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(item)}`
-    : doneItems.includes(item.id) ? 'Erledigt' : parseISOString(item.date) < midnight(new Date()) ? 'Vergangen' : 'Offen';
+    : isEventDone(item, doneItems) ? 'Erledigt' : parseISOString(item.date) < midnight(new Date()) ? 'Vergangen' : 'Offen';
   syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span><span>${escapeHtml(status)}</span>`);
   dot.setAttribute('aria-describedby', 'timeline-tooltip');
   timelineTooltip.dataset.open = 'true';
@@ -434,7 +435,7 @@ function render(animate) {
   });
 
   const mainEvents = events.filter(e => !e.calOnly);
-  const sorted   = [...mainEvents].sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
+  const sorted = sortEvents(mainEvents, todayMid, doneItems);
 
   const upcoming = upcomingEvents(mainEvents, todayMid, doneItems);
   renderHero(upcoming, todayMid, animate);
@@ -460,17 +461,11 @@ function render(animate) {
   }
 
 
-  const abgaben     = mainEvents.filter(e => e.type === 'Abgabe');
-  const abgabenDone = abgaben.filter(e => doneItems.includes(e.id)).length;
-  const next7       = sorted.filter(e => {
-    const diff = calendarDayDiff(parseISOString(e.date), todayMid);
-    return diff >= 0 && diff <= 7 && !e.isCancelled;
-  }).length;
-
+  const stats = eventStatistics(mainEvents, todayMid, doneItems);
   syncHTML(document.getElementById('stats-line'),
-    `<div class="stat-tile"><strong class="stat-value">${mainEvents.filter(e => !e.isCancelled).length}</strong><span class="stat-label">Termine</span></div>
-     <div class="stat-tile"><span class="stat-label">Abgaben</span><strong class="stat-value">${abgabenDone}<span class="stat-total">/${abgaben.length}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${abgaben.length || 1}" aria-valuenow="${abgabenDone}"><span style="clip-path:inset(0 ${100 - (abgaben.length ? abgabenDone / abgaben.length : 0) * 100}% 0 0)"></span></div></div>
-     <div class="stat-tile"><strong class="stat-value">${next7}</strong><span class="stat-label">${next7 === 1 ? 'Termin' : 'Termine'} in 7 Tagen</span></div>`);
+    `<div class="stat-tile" data-key="stats-total"><strong class="stat-value">${stats.total}</strong><span class="stat-label">Termine</span>${stats.undated ? `<span class="stat-note">davon ${stats.undated} ohne Datum</span>` : ''}</div>
+     <div class="stat-tile" data-key="stats-assignments"><span class="stat-label">Abgaben</span><strong class="stat-value">${stats.assignmentsDone}<span class="stat-total">/${stats.assignments}</span></strong><div class="mini-progress" role="progressbar" aria-label="Abgaben erledigt" aria-valuemin="0" aria-valuemax="${stats.assignments || 1}" aria-valuenow="${stats.assignmentsDone}"><span style="clip-path:inset(0 ${100 - (stats.assignments ? stats.assignmentsDone / stats.assignments : 0) * 100}% 0 0)"></span></div></div>
+     <div class="stat-tile" data-key="stats-next7"><strong class="stat-value">${stats.next7}</strong><span class="stat-label">${stats.next7 === 1 ? 'Termin' : 'Termine'} in 7 Tagen</span></div>`);
 
   animateStatistics();
 
@@ -479,12 +474,8 @@ function render(animate) {
   
   // Filter-Logik für die Liste
   const visibleEvents = sorted.filter(item => {
-    const d = parseISOString(item.date);
-    const diffDays = calendarDayDiff(d, todayMid);
-    
-    // Wenn showPast false ist und das Datum in der Vergangenheit liegt, ausblenden
-    if (!showPast && diffDays < 0) return false;
-    
+    if (!showPast && isEventPast(item, todayMid)) return false;
+
     return typeFilter === 'all' || item.type === typeFilter;
   });
 
@@ -492,21 +483,8 @@ function render(animate) {
     listEl.innerHTML = `<div class="empty-state" data-key="empty" style="view-transition-name:empty-state" role="listitem">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
   }
 
-  const weekStart = new Date(todayMid);
-  weekStart.setDate(weekStart.getDate() - (weekStart.getDay() + 6) % 7);
-  const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-  const nextWeekEnd = new Date(weekEnd); nextWeekEnd.setDate(nextWeekEnd.getDate() + 7);
-  const groupFor = item => {
-    const date = parseISOString(item.date);
-    if (date < todayMid) return 'Vergangen';
-    if (date.getTime() === todayMid.getTime()) return 'Heute';
-    if (date <= weekEnd) return 'Diese Woche';
-    if (date <= nextWeekEnd) return 'Nächste Woche';
-    return date.toLocaleDateString('de-DE', { month: 'long', year: 'numeric' });
-  };
-  // Future appointments lead; revealed history follows as its own group.
-  const orderedEvents = [...visibleEvents.filter(e => parseISOString(e.date) >= todayMid),
-    ...visibleEvents.filter(e => parseISOString(e.date) < todayMid)];
+  const groupFor = item => eventGroup(item, todayMid, doneItems);
+  const orderedEvents = visibleEvents;
   const columns = Number(getComputedStyle(listTarget).getPropertyValue('--list-columns')) || 1;
   const itemGroups = new Map();
   const groupIds = new Map();
@@ -536,14 +514,16 @@ function render(animate) {
   function buildCard(item) {
     const { group, labelId } = itemGroups.get(item.id);
     const idx = orderedEvents.indexOf(item);
-    const d        = parseISOString(item.date);
-    const diffDays = calendarDayDiff(d, todayMid);
+    const d        = parseISOString(sortDateOf(item, todayMid, doneItems));
+    const diffDays = d ? calendarDayDiff(d, todayMid) : null;
     const diffWeeks = (diffDays / 7).toFixed(1).replace('.', ',');
     const isAbgabe = item.type === 'Abgabe';
-    const isDone   = isAbgabe && doneItems.includes(item.id);
+    const isDone   = isEventDone(item, doneItems);
 
     let countdownClass = '', countdownContent = '';
-    if (item.isCancelled) {
+    if (!d) {
+      countdownContent = '<span class="primary">Termin noch offen</span>';
+    } else if (item.isCancelled) {
       // Cancellation is represented once in the meta row, without a countdown tile.
     } else if (isDone) {
       countdownClass   = 'done-badge';
@@ -578,7 +558,7 @@ function render(animate) {
           <div class="info">
             ${mixedIds.has(item.id) ? `<span class="card-group">${escapeHtml(group)}</span>` : ''}
             <h4 id="title-${escapeHtml(item.id)}" class="title"><span class="title-text">${escapeHtml(item.title)}</span></h4>
-            <div class="meta"><span>${ICONS.calendar}${escapeHtml(formatDate(d))}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span>${item.isCancelled ? `<span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span>` : ''}</div>
+            <div class="meta"><span>${ICONS.calendar}${d ? escapeHtml(formatDate(d)) : 'Termin noch offen'}</span><span>${ICONS.clock}${escapeHtml(item.time || '')}</span>${item.isCancelled ? `<span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span>` : ''}</div>
           </div>
         </div>
         <div class="card-trailing">${checkElement}${item.isCancelled ? '' : `<div class="countdown ${countdownClass}">${countdownContent}</div>`}</div>
