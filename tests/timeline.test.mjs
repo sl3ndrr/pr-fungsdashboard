@@ -3,15 +3,19 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout} from '../js/layout.js';
 import {EVENTS,PERIODS} from '../js/data.js';
+import * as utils from '../js/utils.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData,upcomingEvents} from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
 const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('function toggleDone'));
 const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
 const {events,periods}=validateData(EVENTS,PERIODS);
 const doc={getElementById:()=>({clientWidth:600}),createElement:()=>({getContext:()=>({measureText:text=>({width:text.length*7})})})};
-const generate=(fixture=events,bands=periods,today='2026-10-24',mode='upcoming',width=600)=>new Function('timelineWindow','timelinePosition','timelineEventLayout','timelineLabelLayout','events','periods','parseISOString','calendarDayDiff','cancelledStatus','escapeHtml','formatDate','typeClass','document','getComputedStyle','today','timelineMode','doneItems','upcomingEvents',dateFn+timelineFn+'\nreturn buildTimeline(today);')(
-  timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout,fixture,bands,parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,
-  {...doc,getElementById:()=>({clientWidth:width})},()=>({fontSize:'12px',fontFamily:'system-ui'}),parseISOString(today),mode,[],upcomingEvents);
+const generate=(fixture=events,bands=periods,today='2026-10-24',mode='upcoming',width=600)=>{
+  const deps={...utils,timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout,
+    events:fixture,periods:bands,document:{...doc,getElementById:()=>({clientWidth:width})},
+    getComputedStyle:()=>({fontSize:'12px',fontFamily:'system-ui'}),today:parseISOString(today),timelineMode:mode,doneItems:[]};
+  return new Function(...Object.keys(deps),dateFn+timelineFn+'\nreturn buildTimeline(today);')(...Object.values(deps));
+};
 
 const pointFixtures = ['2026-09-23','2026-09-24','2026-10-05','2026-10-07'].map((date,i)=>({id:`x${i}`,type:'Prüfung',title:'Langer Titel '.repeat(20),date,time:'10:00 Uhr'}));
 
@@ -86,7 +90,7 @@ test('all visible events have a direct label and complete accessible status; nex
   assert.equal((html.match(/class="timeline-event-label"/g)||[]).length,2);
   assert.match(html,/id="timeline-event-p7"[^>]*class="timeline-dot pruefung   next"/);
   assert.match(html,/aria-label="Prüfung: Programmierpraktikum, 10.11.2026, 10:00 Uhr, Offen"/);
-  const cancelled=generate([{...pointFixtures[0],isCancelled:true,cancelReason:'<b>entfällt</b>'}],[],'2026-09-01');
+  const cancelled=generate([{...pointFixtures[0],isCancelled:true,cancelReason:'<b>entfällt</b>'}],[],'2026-09-01','semester');
   assert.match(cancelled.html,/Abgebrochen: &lt;b&gt;entfällt&lt;\/b&gt;/);
   assert.doesNotMatch(cancelled.html,/<b>/);
 });
@@ -106,11 +110,11 @@ test('month labels carry a four-digit year only first or when the year changes',
 });
 
 test('the seven-day statistic includes the event noun with correct singular and plural',()=>{
-  const stats=source.slice(source.indexOf('  const abgaben     ='),source.indexOf('\n  animateStatistics();'));
+  const stats=source.slice(source.indexOf('  const stats ='),source.indexOf('\n  animateStatistics();'));
   for(const count of [0,1,2]){
     let html;
     const fixture=Array.from({length:count},(_,i)=>({id:`stat${i}`,type:'Termin',date:'2026-10-26'}));
-    new Function('mainEvents','sorted','doneItems','todayMid','calendarDayDiff','parseISOString','document','syncHTML',stats)(fixture,fixture,[],parseISOString('2026-10-22'),calendarDayDiff,parseISOString,doc,(_,value)=>{html=value});
+    new Function('mainEvents','sorted','doneItems','todayMid','calendarDayDiff','parseISOString','document','syncHTML','eventStatistics',stats)(fixture,fixture,[],parseISOString('2026-10-22'),calendarDayDiff,parseISOString,doc,(_,value)=>{html=value},utils.eventStatistics);
     assert.match(html,new RegExp(`>${count}</strong><span class="stat-label">${count===1?'Termin':'Termine'} in 7 Tagen`));
   }
 });

@@ -11,3 +11,4 @@ import './layout.test.mjs';
 import './data.test.mjs';
 import './theme.test.mjs';
 import './semester.test.mjs';
+import './sittings.test.mjs';

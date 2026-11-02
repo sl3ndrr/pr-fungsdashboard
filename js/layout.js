@@ -1,4 +1,4 @@
-import {calendarDayDiff, parseISOString} from './utils.js';
+import {calendarDayDiff, parseISOString, occurrencesOf, isEventDone} from './utils.js';
 
 /** Viewport-clamped overlay geometry; independent of the DOM for regression tests. */
 export function tooltipPosition(anchor, size, viewport, margin = 12, gap = 8) {
@@ -13,8 +13,8 @@ export function tooltipPosition(anchor, size, viewport, margin = 12, gap = 8) {
 }
 
 /** Calendar-day windows. calOnly/periods never determine the event domain. */
-export function timelineWindow(events, today, mode = 'upcoming') {
-  const main = events.filter(event => !event.calOnly)
+export function timelineWindow(events, today, mode = 'upcoming', doneItems = []) {
+  const main = occurrencesOf(events).filter(event => mode === 'semester' || (!event.isCancelled && !isEventDone(event, doneItems)))
     .sort((a, b) => a.date.localeCompare(b.date)); // stable: equal dates retain EVENTS order
   if (!main.length) return null;
   const origin = parseISOString(main[0].date);

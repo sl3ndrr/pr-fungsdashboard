@@ -389,7 +389,7 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 :root[data-transition='theme'] { view-transition-name: root; }
 :root:not([data-transition='filter']) :is(.card,.group-heading,.empty-state) { view-transition-name: none !important; }
 #hero { view-transition-name: none; }
- 
+
 :root:not([data-transition='month-forward']):not([data-transition='month-back']) :is() { view-transition-name: none; }
 ::view-transition-group(*) { animation-duration: var(--dur-spatial); animation-timing-function: var(--spring-spatial); }
 ::view-transition-old(*), ::view-transition-new(*) { mix-blend-mode: normal; }
