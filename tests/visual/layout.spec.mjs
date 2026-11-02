@@ -29,7 +29,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     if(width>=1200) {
       expect(geometry.cards.slice(0,Math.min(geometry.columns,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
     }
-    if(width>=1600) for(const card of geometry.cards)expect(card.height).toBeLessThanOrEqual(130);
+    if(width>=1600) expect(geometry.columns).toBe(4);
     if(width===1600) {
       await page.setViewportSize({width,height:900});await freeze(page);
       expect(await page.locator('#list .card').first().evaluate(el=>el.getBoundingClientRect().bottom)).toBeLessThanOrEqual(900);

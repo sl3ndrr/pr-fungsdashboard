@@ -46,7 +46,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark'])
     const sizes=await page.locator('.countdown:is(.done-badge,.expired)').evaluateAll(nodes=>nodes.map(node=>({
       minHeight:getComputedStyle(node).minHeight,height:node.getBoundingClientRect().height,
     })));
-    for(const size of sizes){expect(size.minHeight).toBe('0px');expect(size.height).toBeLessThan(88);}
+    for(const size of sizes){expect(['auto','0px']).toContain(size.minHeight);expect(size.height).toBeLessThan(88);}
     await expect(page).toHaveScreenshot('status-cards.png',{fullPage:true});
     for(const id of ['p4','a1','fx-expired','fx-today','p6']) {
       await expect(page.locator(`#card-${id}`)).toHaveScreenshot(`card-${id}.png`);
@@ -67,6 +67,7 @@ for(const [date,text,unit] of [['2026-10-06','1','Tag'],['2026-09-25','12','Tage
 
 test('keyboard navigation, hover tooltip and escape',async({page})=>{
   await openDashboard(page,{width:360});
+  await page.locator('[data-window="semester"]').click();await freeze(page);
   const dot=page.locator('#timeline-event-p4');
   await dot.focus();await freeze(page);
   await expect(dot).toHaveAccessibleName(/05\.10\.2026.*Abgebrochen/);

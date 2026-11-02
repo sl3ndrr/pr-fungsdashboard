@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import {timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout} from '../js/layout.js';
-import {EVENTS,PERIODS} from '../js/data.js';
+import {EVENTS,PERIODS,SEMESTERS} from '../js/data.js';
 import * as utils from '../js/utils.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData,upcomingEvents} from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
@@ -10,9 +10,9 @@ const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('
 const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
 const {events,periods}=validateData(EVENTS,PERIODS);
 const doc={getElementById:()=>({clientWidth:600}),createElement:()=>({getContext:()=>({measureText:text=>({width:text.length*7})})})};
-const generate=(fixture=events,bands=periods,today='2026-10-24',mode='upcoming',width=600)=>{
+const generate=(fixture=events,bands=periods,today='2026-10-24',mode='upcoming',width=600,semester={})=>{
   const deps={...utils,timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout,
-    events:fixture,periods:bands,document:{...doc,getElementById:()=>({clientWidth:width})},
+    events:fixture,periods:bands,semester,sittingDate:utils.formatDate,document:{...doc,getElementById:()=>({clientWidth:width})},
     getComputedStyle:()=>({fontSize:'12px',fontFamily:'system-ui'}),today:parseISOString(today),timelineMode:mode,doneItems:[]};
   return new Function(...Object.keys(deps),dateFn+timelineFn+'\nreturn buildTimeline(today);')(...Object.values(deps));
 };
@@ -137,4 +137,26 @@ test('midnight scheduler uses local calendar days, refreshes on wake, and handle
   api.refreshCurrentDay();assert.equal(renders,1);
   document.hidden=true;now=parseISOString('2026-10-27').getTime();callback();assert.equal(renders,1);
   document.hidden=false;api.refreshCurrentDay();assert.equal(renders,2);
+});
+
+test('winter occurrences retain linear, disjoint 44px targets at all acceptance widths',()=>{
+  const winter=SEMESTERS[1];
+  for(const width of [200,262.4,299.2,326.8,398.56,520,598.2,904,1604]) {
+    const domain=timelineWindow(winter.events,parseISOString('2026-11-11'));
+    assert.equal(domain.events.length,9);
+    const input=domain.events.map(e=>({x:timelinePosition(calendarDayDiff(parseISOString(e.date),domain.origin),domain.minDay,domain.maxDay,width),variants:[{width:140},{width:44}]}));
+    const layout=timelineEventLayout(input,width,4);
+    layout.forEach((item,i)=>{
+      assert.ok(item.width>=44);
+      assert.ok(item.left>=0&&item.left+item.width<=width+1e-8);
+      layout.slice(i+1).forEach(other=>assert.ok(item.lane!==other.lane||item.left+item.width+4<=other.left+1e-8||other.left+other.width+4<=item.left+1e-8));
+    });
+  }
+  const {html}=generate(winter.events,[],'2026-11-11','upcoming',262.4,winter);
+  assert.match(html,/Prüfungsphase ab 15.02./);
+  assert.match(html,/Ende offen/);
+  const single=generate([{...winter.events.find(e=>e.id==='ws26-info3'),sittings:[winter.events.find(e=>e.id==='ws26-info3').sittings[0]]}],[],'2026-11-11','upcoming',800,winter);
+  assert.match(single.html,/Info III A/);
+  assert.match(html,/data-occurrence-id="ws26-info3-B"/);
+  assert.doesNotMatch(html,/timeline-event-ws26-exphy1/);
 });

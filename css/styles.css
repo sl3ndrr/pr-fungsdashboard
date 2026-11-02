@@ -131,7 +131,7 @@ body {
 .hero-next-info { display: flex; flex-direction: column; min-width: 0; flex: 1; }
 .hero-next-title { font-size: var(--font-sm); font-weight: 600; overflow-wrap: break-word; hyphens: auto; }
 .hero-next-date, .hero-next-days { font-size: var(--font-xs); color: var(--text-muted); }
-.hero-next-days { text-align: right; flex: 0 0 4.5rem; }
+.hero-next-days { text-align: right; flex: 0 0 auto; white-space: nowrap; }
 .hero-period { font-size: var(--font-xs); color: var(--text-muted); }
 
 .hero-empty { display: flex; flex: 1; min-height: 160px; align-items: center; justify-content: center; gap: var(--space-3); color: var(--done); font-weight: 600; }
@@ -167,7 +167,7 @@ body {
 .timeline-today-label { position: absolute; top: 0; z-index: 9; transform: translateX(-50%); background: var(--text); color: var(--surface-1); border-radius: var(--shape-full); padding: 2px var(--space-2); font-size: var(--font-xs); line-height: 20px; font-weight: 600; }
 .timeline-month-tick { position: absolute; top: calc(var(--axis-y) + 4px); width: 1px; height: 4px; background: var(--outline); }
 .timeline-month { position: absolute; transform: translateX(-50%); font-size: var(--font-xs); line-height: 20px; color: var(--text-muted); white-space: nowrap; }
-.timeline-legend { display: flex; flex-wrap: nowrap; align-items: center; gap: var(--space-1); font-size: var(--type-label-small); color: var(--text-muted); }
+.timeline-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1); font-size: var(--type-label-small); color: var(--text-muted); }
 .timeline-legend:empty { display: none; }
 .timeline-legend .timeline-legend-item { gap: var(--space-1); font-size: inherit; padding: 2px; border-radius: var(--shape-full); background: var(--surface-container-high); }
 .timeline-legend-shape { display: inline-block; flex-shrink: 0; width: 10px; height: 10px; border-radius: var(--shape-full); background: var(--pruefung); }
@@ -202,7 +202,6 @@ body {
 }
 
 /* Full-width headers and shared sitting rows for all event types. */
-.card { gap: var(--space-3); }
 .card-header { display: flex; align-items: flex-start; gap: var(--space-3); min-width: 0; }
 .card-header .info { flex: 1; }
 .card-header .done-toggle { flex: 0 0 44px; }
@@ -234,6 +233,11 @@ body {
 .sitting-row.done { background: var(--tertiary-container); color: var(--on-tertiary-container); }
 .sitting-row.done .sitting-time { color: inherit; }
 .sitting-past-compact { min-height: 48px; }
+.passed-toggle { font: var(--text-label-medium); color: var(--on-surface-variant); }
+.card.done .passed-toggle { color: var(--on-tertiary-container); }
+.timeline-exam-phase { position: relative; min-height: 24px; display: flex; align-items: center; font: var(--text-label-medium); color: var(--on-surface); }
+.timeline-exam-phase::before { content: ''; position: absolute; inset: 0 0 0 var(--phase-start); background: linear-gradient(to right, var(--secondary-container), transparent); border-radius: var(--shape-xs); }
+.timeline-exam-phase span { position: relative; }
 .hero-other { font: var(--text-body-small); color: inherit; }
 .timeline-dot.sitting-b .timeline-point { width: 8px; height: 8px; left: calc(var(--point-x) - 4px); top: 8px; }
 .stat-note { flex-basis: 100%; color: var(--on-surface-variant); font: var(--text-label-small); }
@@ -243,7 +247,7 @@ body {
 .card.past, .card.done { background: var(--surface-2); box-shadow: none; }
 .card.past .title, .card.done .title { color: var(--text-muted); }
 .card.done .title, .card.cancelled .title { text-decoration: line-through; }
-.card { position: relative; min-width: 0; border: 0; padding: var(--space-4); box-shadow: var(--shadow-1); display: flex; flex-direction: column; background: var(--surface-container-low); border-radius: var(--shape-xl); }
+.card { gap: var(--space-3); position: relative; min-width: 0; border: 0; padding: var(--space-4); box-shadow: var(--shadow-1); display: flex; flex-direction: column; background: var(--surface-container-low); border-radius: var(--shape-xl); }
 
 
 .info { min-width: 0; display: flex; flex-direction: column; gap: var(--space-1); }

@@ -7,7 +7,7 @@ globalThis.matchMedia=()=>media;globalThis.document={documentElement:root,queryS
 globalThis.innerWidth=1280;globalThis.innerHeight=900;globalThis.CSS={supports:()=>true};
 const tokens={'--spring-spatial-fast':'linear(0, 1.095, 1)','--spring-spatial':'linear(0, 1.015, 1)','--spring-effects':'linear(0, .5, 1)','--dur-spatial-fast':'350ms','--dur-spatial':'410ms','--dur-spatial-slow':'570ms','--dur-effects-fast':'140ms','--dur-effects':'210ms','--dur-effects-slow':'300ms'};
 globalThis.getComputedStyle=()=>({getPropertyValue:name=>tokens[name]||''});
-const {motion,withTransition,transitionName}=await import('../js/motion.js');
+const {motion,withTransition,transitionName,syncSittingRows}=await import('../js/motion.js');
 function element(){const calls=[];return {calls,animate(frames,options){const animation={frames,options,cancelled:false,cancel(){this.cancelled=true;},finished:new Promise(()=>{})};calls.push(animation);return animation;}};}
 test('paired spring times and separate Spatial / Effects channels',()=>{
   const el=element();motion(el,[{transform:'scale(.96)'},{transform:'scale(1)'}],{speed:'slow'});motion(el,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
@@ -33,4 +33,21 @@ test('rapid snapshot updates run once each, in order, with a direct API fallback
 test('linear() fallback and collision-free CSS identifiers for event IDs',()=>{
   CSS.supports=()=>false;const el=element();motion(el,[{opacity:0},{opacity:1}],{kind:'effects'});assert.equal(el.calls[0].options.easing,'cubic-bezier(.2,0,0,1)');CSS.supports=()=>true;
   const names=['p1','a b','a-b','A','a','💫','a";x'].map(id=>transitionName(id));assert.equal(new Set(names).size,names.length);names.forEach(name=>assert.match(name,/^[a-z][a-z0-9-]+$/));
+});
+
+test('B promotion FLIP uses only the Spatial transform channel and respects live Reduced Motion',()=>{
+  const original=document.querySelectorAll;
+  const row=Object.assign(element(),{dataset:{key:'sitting-exam-B',emphasis:'secondary'}});
+  let height=48;row.getBoundingClientRect=()=>({left:0,top:0,width:220,height});
+  document.querySelectorAll=()=>[row];
+  try {
+    syncSittingRows(()=>{height=64;row.dataset.emphasis='primary';});
+    assert.equal(row.calls.length,1);
+    assert.equal(row.calls[0].frames[0].transform,'translate(0px, 0px) scale(1, 0.75)');
+    assert.equal(row.calls[0].options.easing,tokens['--spring-spatial']);
+    syncSittingRows(()=>{});assert.equal(row.calls.length,1);
+    media.matches=true;
+    syncSittingRows(()=>{height=48;row.dataset.emphasis='secondary';});
+    assert.equal(row.calls.length,1);
+  } finally {media.matches=false;document.querySelectorAll=original;}
 });
