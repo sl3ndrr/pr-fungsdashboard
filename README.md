@@ -47,6 +47,13 @@ npx serve .
 
 ## Termine pflegen
 
+Das Wintersemester 2026/2027 wird am **11.11.2026 um 00:00 Uhr lokaler Gerätezeit**
+aktiv, direkt nach dem letzten Sommertermin am 10.11. Die Umschaltung funktioniert
+auch im geöffneten Tab. Die Sommerdaten bleiben unverändert erhalten.
+Winterprüfungen liegen 2027; das ASP-Portfolio ist am 18.12.2026, „Uhrzeit offen“.
+Fünf Prüfungen haben noch keinen Termin und können frühestens am 15.02.2027 stattfinden.
+
+
 Alle fachlichen Daten liegen zentral in [`js/data.js`](js/data.js):
 
 Bis einschließlich **30.11.2026** bleibt das **Sommersemester 2026** aktiv.

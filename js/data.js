@@ -37,7 +37,7 @@ export const EVENTS = [
   { id: 'g18', type: 'Termin', title: 'Gitarrenunterricht',                 date: '2026-10-26', time: '13:45-15:45 Uhr', calOnly: true }
 ];
 
-/** Zeiträume, die im Kalender und Zeitstrahl dargestellt werden.. */
+/** Zeiträume für Hero-Fortschritt und Zeitstrahl. */
 export const PERIODS = [
   { id: 'asp',        label: 'ASP',        start: '2026-09-07', end: '2026-10-09', rgb: '249, 115, 22' },
   { id: 'wiesbaden-1', label: 'in Wiesbaden', start: '2026-07-25', end: '2026-08-09', rgb: '139, 92, 246' },
@@ -48,9 +48,32 @@ export const PERIODS = [
 export const SEMESTERS = [
   { id: 'ss-2026', label: 'Sommersemester 2026', activeFrom: null, events: EVENTS, periods: PERIODS },
   {
-    id: 'ws-2026-2027', label: 'Wintersemester 2026/2027', activeFrom: '2026-12-01',
-    // Wintertermine und Zeiträume hier ergänzen; IDs semesterübergreifend eindeutig halten.
-    events: [],
+    id: 'ws-2026-2027', label: 'Wintersemester 2026/2027', activeFrom: '2026-11-11', examsFrom: '2027-02-15',
+    // Prüfungsjahre 2027 aus dem Semesterkontext; keine unbekannten Uhrzeiten ergänzen.
+    events: [
+      { id: 'ws26-exphy1', type: 'Prüfung', title: 'Experimentalphysik I', short: 'ExPhy I', sittings: [] },
+      { id: 'ws26-rechenmethoden', type: 'Prüfung', title: 'Rechenmethoden', short: 'Rechenmeth.', sittings: [
+        { key: 'A', date: '2027-02-22', time: '10:00–12:00 Uhr' },
+        { key: 'B', date: '2027-04-01', time: '10:00–12:00 Uhr' },
+      ] },
+      { id: 'ws26-info1', type: 'Prüfung', title: 'Info I', short: 'Info I', sittings: [] },
+      { id: 'ws26-info3', type: 'Prüfung', title: 'Info III', short: 'Info III', sittings: [
+        { key: 'A', date: '2027-02-17', time: '10:00–14:00 Uhr' },
+        { key: 'B', date: '2027-04-07', time: '10:00–14:00 Uhr' },
+      ] },
+      { id: 'ws26-theophys1', type: 'Prüfung', title: 'Theoretische Physik I', short: 'TheoPhy I', sittings: [
+        { key: 'A', date: '2027-02-23', time: '14:00–16:00 Uhr' },
+        { key: 'B', date: '2027-03-30', time: '10:00–12:00 Uhr' },
+      ] },
+      { id: 'ws26-datenbanken', type: 'Prüfung', title: 'Datenbanken für 2FB', short: 'Datenbanken', sittings: [] },
+      { id: 'ws26-weiche-materie', type: 'Prüfung', title: 'Weiche Materie und Biophysik', short: 'Weiche Materie', sittings: [] },
+      { id: 'ws26-mafia1', type: 'Prüfung', title: 'MaFIa 1', short: 'MaFIa 1', sittings: [
+        { key: 'A', date: '2027-02-19', time: '12:30–15:00 Uhr' },
+        { key: 'B', date: '2027-04-02', time: '12:30–15:00 Uhr' },
+      ] },
+      { id: 'ws26-ethik', type: 'Prüfung', title: 'Ethik in Data Science', short: 'Ethik', sittings: [] },
+      { id: 'ws26-asp-portfolio', type: 'Abgabe', title: 'Abgabe ASP-Portfolio', short: 'ASP-Portfolio', date: '2026-12-18', time: 'Uhrzeit offen' },
+    ],
     periods: [],
   },
 ];
