@@ -1,3 +1,5 @@
+> Historischer Review eines früheren Stands. Die aktuelle Struktur und Abnahme stehen in [verification-report.md](verification-report.md). Frühere Scroll-/Countdown-Angaben unten sind überholt.
+
 # PR A – Review und offene Browser-Abnahme
 
 Implementierung aufgrund ausdrücklicher Freigabe ohne Vorab-Reproduktion.

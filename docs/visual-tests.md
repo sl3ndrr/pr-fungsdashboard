@@ -1,9 +1,7 @@
 # Browser- und visuelle Regressionen
 
-Die App bleibt ohne Build und Laufzeitpakete. Playwright 1.62.1 liegt ausschließlich
-in `tests/visual/` als Dev-Werkzeug. Node-Regressionen benötigen es nicht.
-
-## Start
+Die App bleibt ohne Build und Laufzeitpakete. Playwright 1.62.1 ist ausschließlich
+Testwerkzeug; Node-Regressionen benötigen keine Pakete.
 
 ```bash
 TZ=Europe/Berlin node --test tests/
@@ -11,68 +9,55 @@ node --test scripts/css-duplicates.test.mjs
 cd tests/visual
 npm ci --ignore-scripts
 npx playwright install chromium firefox webkit
-npm test
-```
-
-`playwright.config.mjs` startet den statischen Python-Server auf 8765 und setzt
-Zeitzone Europe/Berlin und Locale de-DE. Zum reinen Erkennen der Fälle:
-
-```bash
 npm test -- --list
-npm test -- --project chromium
+npm test -- --project chromium --grep 'A/B'
 ```
 
-## Matrix und Messung
+Die Konfiguration startet einen Python-Webserver auf 8765, Locale de-DE und
+Zeitzone Europe/Berlin. `openDashboard()` setzt Datum und Theme, fängt Google Fonts
+für reproduzierbare Systemschrift ab und lässt Animationstimer weiterlaufen.
 
-`openDashboard` friert das Datum mit `page.clock.setFixedTime` ein; Animationstimer
-laufen weiter. Google Fonts wird abgefangen, damit System-Fallback reproduzierbar
-geprüft wird. Keine echten Daten werden geändert: Randfälle injizieren Fixtures
-nur in abgefangene Modulantworten.
+## Aktuelle Matrix
 
-Die Fit-Fälle hängen `measurements.json` an (Hero-/Zeitstrahlhöhe, Punkte, Labels,
-Pille/Linie und Scrollgrößen). Die Layoutfälle liefern `overview-heights.json`.
-Bei 360/820/1280/2300 px werden zusätzlich Nachher-Vollseitenbilder für Hell/Dunkel
-in den Testausgaben geschrieben. Vorher-Bilder müssen auf dem unveränderten
-Basisstand mit denselben Daten/Fonts/Breiten aufgenommen werden; siehe Capture-Script.
+`sittings.spec.mjs`: 320/360/390/600/840/1200/1600/2300px × Hell/Dunkel ×
+11.11.2026, 23.02.2027 und 08.04.2027. Dazu Tageswechsel A→B mit Knotenidentität,
+Bestanden/Undo, Fokus und B-Tooltip/Navigation. Jede Matrixprüfung hängt
+`ab-measurements.json` und einen vollständigen Screenshot an. Die Ausgaben gehören
+zu den Testartefakten, nicht automatisch zu akzeptierten Baselines.
 
-## Vorher-/Nachher-Aufnahme
+Gemessen werden horizontaler Overflow, Hero-/Zeitstrahlhöhe, 44px-Ziele,
+Zielüberlappung, Danach-Zeilenumbrüche, Spalten, eindeutige IDs und Gruppen-ARIA.
+Die weiteren Specs prüfen Sommerdaten, lineare Skala, Fenster, Tooltip, Themes,
+Fokus, Layout und Wellen. Der explizit leere Winterfall injiziert eine leere Fixture;
+die echten Winterdaten sind seit dieser Änderung befüllt.
 
-Das Capture-Script funktioniert auf beiden Ständen, da es nur gemeinsame IDs nutzt.
-Zuerst den gewünschten Stand mit `python3 -m http.server 8000` starten, dann:
+## Screenshots und Baselines
+
+Auf dem Ausgangsstand sind keine PNG-Baselines eingecheckt. Die bestehenden strengen
+`toHaveScreenshot`-Fälle benötigen nach dem ersten tatsächlichen Lauf angesehene
+Referenzen. Keine Baseline blind erzeugen oder aktualisieren. `sittings.spec.mjs`
+erzeugt unabhängig davon Review-Screenshots als Anhänge.
+
+Für Vorher-/Nachher-Vergleiche mit dem vorhandenen Werkzeug:
 
 ```bash
-cd tests/visual
 node capture.mjs before
-# Server auf neuen Stand wechseln; identische Browserinstallation weiterverwenden
+# identische Browser-/Font-/Datumsbedingungen, Server auf Zielstand umstellen
 node capture.mjs after
 ```
 
-Optional `DASHBOARD_URL` für eine andere Serveradresse. Ausgabe ist
-`tests/visual/test-results/review-before/` bzw. `review-after/`, jeweils acht PNGs
-und `measurements.json`. Bilder tatsächlich ansehen, erst dann Tabellen ausfüllen.
-Das Script ist ein Aufnahme-Werkzeug; es erklärt keine Baseline für akzeptiert.
+Ausgabe: `test-results/review-before/` bzw. `review-after/`, jeweils PNGs und
+`measurements.json`; optional `DASHBOARD_URL`. Jedes Bild vor der Abnahme ansehen.
+`compare-css.mjs` bleibt für reine Kaskadenvergleiche verfügbar; die neue
+Kartenstruktur kann keine Pixelgleichheit mit der vorherigen Darstellung besitzen.
 
-## Baselines
+## Tatsächlicher Stand am 02.11.2026
 
-Bestehende `toHaveScreenshot`-Aufrufe bleiben bewusst streng. Auf dem Basisstand
-waren keine PNG-Baselines eingecheckt. In dieser Arbeit wurden keine erzeugt oder
-aktualisiert, weil der Browser nicht startet. Ein erster erfolgreicher Lauf benötigt
-angesehene und freigegebene Baselines. Niemals ein blindes Update als Nachweis behandeln.
+**507 Fälle in sechs Dateien erkannt** (169 je Chromium/Firefox/WebKit).
+Ein ausgewählter Chromium-A/B-Fall scheitert vor dem Seitenaufruf an fehlender Binary.
+Installation in beschreibbarem Temp-/Browserverzeichnis versucht: Download HTTP 403.
+`channel:'chrome'` versucht: `/opt/google/chrome/chrome` nicht vorhanden.
 
-```bash
-npm run update
-# Alle erzeugten PNGs ansehen, Diff und Mess-JSON prüfen; dann gezielt einchecken.
-```
-
-`compare-css.mjs` bleibt für einen kontrollierten Kaskadenvergleich verfügbar;
-die funktionalen Layoutänderungen dieses Auftrags sind keine Pixel-Gleichheit zum
-Basisstand. Referenzen auf den entfernten Zeitstrahl-Scroller sind bereinigt.
-
-## Tatsächlicher Ausführungsstand dieser Arbeit
-
-372 Fälle in fünf Spec-Dateien werden erkannt. Je Phase ein Chromium-Startversuch,
-alle drei scheitern am fehlenden Executable vor dem Laden der App. Download von
-`cdn.playwright.dev`: HTTP 403. Auch Cloud-Browser-Zugriff auf den lokalen Server
-und eingebettete data-URL-Vorschau waren blockiert. **Null erfolgreich gerenderte
-Browserfälle, null neue Screenshots, null visuelle/Höhen-/Performance-Nachweise.**
-Die Details und alle Abnahmekriterien stehen in [verification-report.md](verification-report.md).
+**0 gerenderte Browserfälle, 0 neue Screenshots, keine DOM-Höhen, Touch-, visuellen
+Kontrast- oder Performance-Nachweise.** Der PR bleibt bis zur Browser-Abnahme Draft.
+Details: [verification-report.md](verification-report.md).

@@ -1,3 +1,5 @@
+> Historische Kaskadenbereinigung. Aktuelle Testzahlen und Grenzen: [verification-report.md](verification-report.md).
+
 # CSS-Hygiene und Verifikation
 
 Die Kaskade ist in `@layer base, components, expressive, motion` geordnet:
