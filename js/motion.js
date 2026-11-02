@@ -192,3 +192,16 @@ reducedMotion.addEventListener('change',()=>{
   if(reducedMotion.matches){pendingUpdate?.();transition?.skipTransition();animations.forEach(animation=>animation.cancel());document.querySelectorAll('.motion-exit').forEach(el=>el.remove());}
 });
 root.dataset.reducedMotion=String(reducedMotion.matches);
+
+/** One reversible FLIP hook for the A → B hierarchy change; no font-size transition. */
+export function syncSittingRows(update) {
+  const before = new Map([...document.querySelectorAll('#list .sitting-row')].map(el =>
+    [el.dataset.key, {emphasis:el.dataset.emphasis, rect:el.getBoundingClientRect()}]));
+  update();
+  const after = [...document.querySelectorAll('#list .sitting-row')].map(el => ({el, rect:el.getBoundingClientRect()}));
+  after.forEach(({el, rect}) => {
+    const old = before.get(el.dataset.key);
+    if (!old || old.emphasis === el.dataset.emphasis || !rect.width || !rect.height) return;
+    motion(el, [{transform:`translate(${old.rect.left-rect.left}px, ${old.rect.top-rect.top}px) scale(${old.rect.width/rect.width}, ${old.rect.height/rect.height})`}, {transform:'none'}]);
+  });
+}
