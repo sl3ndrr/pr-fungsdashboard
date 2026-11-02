@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {EVENTS, PERIODS, SEMESTERS} from '../js/data.js';
-import {semesterForDate, upcomingEvents, calendarRange, parseISOString, validateData} from '../js/utils.js';
+import {semesterForDate, upcomingEvents, parseISOString, validateData} from '../js/utils.js';
 
 test('summer stays active through November; winter starts on 01.12.2026 at local midnight', () => {
   for (const date of [new Date(2026,9,22),new Date(2026,9,26),new Date(2026,10,30,23,59,59)]) {
@@ -32,12 +32,4 @@ test('the semester transition is excluded from both next and follow-up cards onl
     {id:'future',type:'Termin',date:'2026-10-24'},
   ];
   assert.deepEqual(upcomingEvents(fixture,day,['done']).map(e=>e.id),['today','future']);
-});
-
-test('winter data can be filled independently and drives the calendar across the year boundary', () => {
-  const winter = {...SEMESTERS[1],events:[{id:'ws26-p1',date:'2027-01-15'}],periods:[{start:'2026-12-02',end:'2027-02-04'}]};
-  const selected = semesterForDate([SEMESTERS[0],winter],parseISOString('2026-12-01'));
-  assert.deepEqual(calendarRange(selected.events,selected.periods,parseISOString('2026-12-01')),{min:2026*12+11,max:2027*12+1});
-  assert.deepEqual(calendarRange([],[],parseISOString('2026-12-01')),{min:2026*12+11,max:2026*12+11});
-  assert.equal(SEMESTERS[1].events.length,0);
 });

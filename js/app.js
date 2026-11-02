@@ -3,7 +3,6 @@ import { batchUpdate, syncHTML, syncChildren, listenOnce, withTransition, transi
 import { SEMESTERS, ICONS, STORAGE_KEY } from "./data.js";
 import {
   calendarDayDiff,
-  calendarRange,
   cancelledStatus,
   escapeHtml,
   formatDate,
@@ -127,27 +126,14 @@ let showPast = false;
 let typeFilter = 'all';
 
 let doneItems  = [];
-let calVisible = false;
-let selectedCalDate = null;
 
-// Kalendergrenzen automatisch aus Terminen und Zeiträumen ableiten.
-const monthIndex = (year, month) => year * 12 + month;
+// Datumsgeometrie für die Monatsmarken im Zeitstrahl.
 const dateInMonth = (year, month, day) => {
   const date = new Date(0);
   date.setFullYear(year, month, day);
   date.setHours(0, 0, 0, 0);
   return date;
 };
-let { min: CAL_MIN_MONTH_INDEX, max: CAL_MAX_MONTH_INDEX } = calendarRange(events, periods, new Date());
-
-const currentDate = new Date();
-const initialCalMonthIndex = Math.min(
-  CAL_MAX_MONTH_INDEX,
-  Math.max(CAL_MIN_MONTH_INDEX, monthIndex(currentDate.getFullYear(), currentDate.getMonth()))
-);
-let calYear  = Math.floor(initialCalMonthIndex / 12);
-let calMonth = initialCalMonthIndex % 12;
-
 function toggleDone(id) {
   return withTransition(() => {
     doneItems = doneItems.includes(id) ? doneItems.filter(x=>x!==id) : [...doneItems,id];
@@ -184,69 +170,9 @@ async function selectTimelineEvent(dot,id) {
   }
 }
 
-function openCalMenu(anchor, ev) {
-  const pop = document.getElementById('cal-popover');
-  const alreadyOpen = pop.dataset.open === 'true';
-  const isDone = ev.type === 'Abgabe' && doneItems.includes(ev.id);
-  const cancelledBadge = ev.isCancelled ? `<div class="cal-popover-cancelled">${ICONS.cancelled}Abgebrochen</div>` : '';
-
-  let actionBtn = '';
-  if (ev.type === 'Abgabe') {
-    actionBtn = `<button class="cal-popover-btn" type="button">
-      ${isDone ? 'Als offen markieren' : ICONS.check + ' Als erledigt markieren'}
-    </button>`;
-  }
-
-  const popoverHTML = `
-    <div class="cal-popover-head">
-      <span class="badge ${ev.calOnly ? 'cal-only' : typeClass(ev.type)}">${ICONS[ev.type]}${ev.calOnly ? 'Nur im Kalender' : escapeHtml(ev.type)}</span>
-      <button class="cal-popover-close" type="button" aria-label="Termindetails schließen">${ICONS.close}</button>
-    </div>
-    <div class="cal-popover-title">${escapeHtml(ev.title)}</div>
-    <div class="cal-popover-meta">${ICONS.calendar} ${escapeHtml(formatDate(parseISOString(ev.date)))} · ${ICONS.clock} ${escapeHtml(ev.time)}</div>
-    ${cancelledBadge}
-    ${actionBtn}
-  `;
-  if(alreadyOpen)fadeChange(pop,()=>syncHTML(pop,popoverHTML));else syncHTML(pop,popoverHTML);
-  pop.dataset.eventId=ev.id;
-  listenOnce(pop.querySelector('.cal-popover-close'), 'click', closeCalMenu);
-  listenOnce(pop.querySelector('.cal-popover-btn'), 'click', () => {
-    toggleDone(pop.dataset.eventId);
-    closeCalMenu();
-  });
-
-  pop.dataset.open='true';pop.inert=false;pop.setAttribute('aria-hidden','false');popoverAnchor=anchor;
-
-  const tRect = anchor.getBoundingClientRect();
-  const pRect = pop.getBoundingClientRect();
-  let top = tRect.bottom + 6;
-  let left = tRect.left;
-
-  if (left + pRect.width > window.innerWidth - 12) left = window.innerWidth - pRect.width - 12;
-  if (top + pRect.height > window.innerHeight - 12) top = tRect.top - pRect.height - 6;
-
-  pop.style.top  = `${Math.max(10, top)}px`;
-  pop.style.left = `${Math.max(10, left)}px`;
-  pop.style.transformOrigin=`${tRect.left+tRect.width/2-Math.max(10,left)}px ${tRect.top+tRect.height/2-Math.max(10,top)}px`;
-  pop.querySelector('.cal-popover-close').focus({preventScroll:true});
-}
-
-let popoverAnchor;
-function closeCalMenu() {
-  const pop=document.getElementById('cal-popover'),restore=pop.contains(document.activeElement);
-  pop.dataset.open='false';pop.inert=true;pop.setAttribute('aria-hidden','true');
-  if(restore)popoverAnchor?.focus({preventScroll:true});
-}
-
-document.addEventListener('click', (e) => {
-  if (!e.target.closest('.timeline-dot, #timeline-tooltip')) closeTimelineTooltip();
-  const pop = document.getElementById('cal-popover');
-  if (pop && pop.dataset.open === 'true' && !pop.contains(e.target) && !e.target.closest('.cal-event-tag, .cal-day-event')) {
-    closeCalMenu();
-  }
+document.addEventListener('click', event => {
+  if (!event.target.closest('.timeline-dot, #timeline-tooltip')) closeTimelineTooltip();
 });
-window.addEventListener('scroll', closeCalMenu, true);
-document.addEventListener('keydown',event=>{if(event.key==='Escape' && document.getElementById('cal-popover').dataset.open==='true'){event.preventDefault();closeCalMenu();}});
 
 function buildTimeline(todayMid) {
   const domain = timelineWindow(events, todayMid, timelineMode);
@@ -378,201 +304,6 @@ function buildHero(upcoming, todayMid, animate) {
   });
 }
 
-const MONTH_NAMES = ['Januar','Februar','März','April','Mai','Juni',
-                     'Juli','August','September','Oktober','November','Dezember'];
-
-function setExpanded(el,open) {
-  el.dataset.open=String(open);el.inert=!open;el.setAttribute('aria-hidden',String(!open));
-}
-function updateCalendarVisibility() {
-  const section = document.getElementById('calendar-section');
-  const popover = document.getElementById('cal-popover');
-  const hadFocus = section.contains(document.activeElement) || popover.contains(document.activeElement);
-  if (calVisible) renderCalendar(true);
-  else closeCalMenu();
-  setExpanded(section, calVisible);
-  document.getElementById('main-grid').dataset.calendarOpen = String(calVisible);
-  const button = document.getElementById('cal-toggle-btn');
-  button.classList.toggle('active',calVisible);
-  button.setAttribute('aria-expanded',String(calVisible));
-  if (!calVisible && hadFocus) button.focus({preventScroll:true});
-}
-function toggleCalendar() {
-  withTransition(() => {
-    calVisible = !calVisible;
-    updateCalendarVisibility();
-  }, {type:'calendar'});
-}
-
-function calNav(delta) {
-  withTransition(()=>{
-    let nextMonth=calMonth+delta,nextYear=calYear;
-    if(nextMonth>11){nextMonth=0;nextYear++;}
-    if(nextMonth<0){nextMonth=11;nextYear--;}
-    const index=monthIndex(nextYear,nextMonth);
-    if(index<CAL_MIN_MONTH_INDEX||index>CAL_MAX_MONTH_INDEX)return;
-    calMonth=nextMonth;calYear=nextYear;selectedCalDate=null;closeCalMenu();
-    fadeChange(document.getElementById('cal-grid'),()=>renderCalendar(true),{direction:delta});
-    fadeChange(document.getElementById('cal-month-label'),()=>{},{direction:delta,axis:'y'});
-  },{type:delta>0?'month-forward':'month-back'});
-}
-
-function renderSelectedCalDay(byDate) {
-  const panel = document.getElementById('cal-day-details');
-  const wasOpen=panel.dataset.open==='true';
-  if(!selectedCalDate)delete panel.dataset.date;
-  setExpanded(panel,!!selectedCalDate);
-  if(!selectedCalDate)return;
-  const changed=panel.dataset.date!==selectedCalDate;panel.dataset.date=selectedCalDate;
-
-  const selectedDate = parseISOString(selectedCalDate);
-  const dayEvents = byDate.get(selectedCalDate) || [];
-  const dayPeriods = periodsOnDay(midnight(selectedDate), periods);
-  const periodHtml = dayPeriods.map(p => `
-    <span class="cal-day-period" style="--period-rgb:${p.rgb}">
-      ${escapeHtml(p.label)}
-    </span>`).join('');
-
-  const detailsHTML = `<div class="details-inner"><div class="details-content">
-    <div class="cal-day-details-head">
-      <h4 id="cal-day-details-title">Termine am ${escapeHtml(formatDate(selectedDate))}</h4>
-      <button class="cal-day-details-close" type="button" aria-label="Tagesübersicht schließen">${ICONS.close}</button>
-    </div>
-    ${periodHtml ? `<div class="cal-day-periods" aria-label="Zeiträume an diesem Tag">${periodHtml}</div>` : ''}
-    ${dayEvents.length ? `<div class="cal-day-events">
-      ${dayEvents.map(e => {
-        const isDone = e.type === 'Abgabe' && doneItems.includes(e.id);
-        const status = e.isCancelled ? 'Abgebrochen' : isDone ? 'Erledigt' : e.type === 'Abgabe' ? 'Offen' : '';
-        return `<button data-event-id="${escapeHtml(e.id)}" class="cal-day-event ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" type="button"
-          aria-label="${escapeHtml(e.type)}: ${escapeHtml(e.title)}, ${escapeHtml(e.time)}${status ? ', ' + status : ''}. Termindetails öffnen">
-          <span class="cal-day-event-main">
-            <span class="cal-day-event-type">${ICONS[e.type]}${e.calOnly ? 'Nur im Kalender' : escapeHtml(e.type)}</span>
-            <span class="cal-day-event-title">${escapeHtml(e.title)}</span>
-          </span>
-          <span class="cal-day-event-meta">
-            <span>${ICONS.clock}${escapeHtml(e.time)}</span>
-            ${status ? `<span class="cal-day-event-status ${isDone && !e.isCancelled ? 'done' : ''}">${escapeHtml(status)}</span>` : ''}
-          </span>
-        </button>`;
-      }).join('')}
-    </div>` : '<p class="cal-day-empty">Keine Termine an diesem Tag.</p>'}
-  </div></div>`;
-  if(changed && wasOpen && panel.hasChildNodes())fadeChange(panel,()=>syncHTML(panel,detailsHTML));else syncHTML(panel,detailsHTML);
-
-  listenOnce(panel.querySelector('.cal-day-details-close'), 'click', () => {
-    const date=selectedCalDate;selectedCalDate=null;closeCalMenu();renderCalendar();
-    document.querySelector(`#cal-grid .cal-day-select[data-date="${date}"]`)?.focus({preventScroll:true});
-  });
-  panel.querySelectorAll('.cal-day-event').forEach((button, index) => {
-    if(changed){motion(button,[{translate:'0 8px'},{translate:'0 0'}],{delay:Math.min(index*25,250)});motion(button,[{opacity:0},{opacity:1}],{kind:'effects',delay:Math.min(index*25,250)});}
-    listenOnce(button, 'click', (event) => {
-      event.stopPropagation();
-      openCalMenu(button, events.find(e=>e.id===button.dataset.eventId));
-    });
-  });
-}
-
-function renderCalendar(animate = false) {
-  const today = midnight(new Date());
-
-  document.getElementById('cal-month-label').textContent = `${MONTH_NAMES[calMonth]} ${calYear}`;
-
-  const currentMonthIndex = monthIndex(calYear, calMonth);
-  const isMinDate = currentMonthIndex <= CAL_MIN_MONTH_INDEX;
-  const isMaxDate = currentMonthIndex >= CAL_MAX_MONTH_INDEX;
-
-  document.getElementById('cal-prev').disabled = isMinDate;
-  document.getElementById('cal-next').disabled = isMaxDate;
-
-  const monthStart = dateInMonth(calYear, calMonth, 1);
-  const monthEnd   = dateInMonth(calYear, calMonth + 1, 0);
-  const overlappingPeriods = periods.filter(p => {
-    const s = midnight(parseISOString(p.start));
-    const e = midnight(parseISOString(p.end));
-    return monthEnd >= s && monthStart <= e;
-  });
-  syncHTML(document.getElementById('cal-period-indicators'), overlappingPeriods.map(p => `
-    <span class="cal-period-indicator" style="--period-rgb:${p.rgb}">
-      <span class="cal-period-dot-sm" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}
-    </span>`).join(''));
-
-  const byDate = new Map();
-  events.forEach(e => {
-    if (!byDate.has(e.date)) byDate.set(e.date, []);
-    byDate.get(e.date).push(e);
-  });
-
-  const first = dateInMonth(calYear, calMonth, 1);
-  let start = new Date(first);
-  let dow = start.getDay();
-  if (dow === 0) dow = 7;
-  start.setDate(start.getDate() - (dow - 1));
-
-  let html = '<div class="cal-week cal-week-head" role="row">' + ['Mo','Di','Mi','Do','Fr','Sa','So'].map(d => `<div class="cal-day-header" role="columnheader">${d}</div>`).join('') + '</div>';
-  const tagEvents = [];
-  for (let week = 0; week < 6; week++) {
-    const weekStart = new Date(start); weekStart.setDate(weekStart.getDate() + week * 7);
-    const weekEnd = new Date(weekStart); weekEnd.setDate(weekEnd.getDate() + 6);
-    const weekPeriods = periods.filter(p => parseISOString(p.end) >= weekStart && parseISOString(p.start) <= weekEnd);
-    html += `<div class="cal-week" role="row" data-key="week-${week}" style="--period-rows:${weekPeriods.length}">`;
-    for (let weekday = 0; weekday < 7; weekday++) {
-      const cur = new Date(weekStart); cur.setDate(cur.getDate() + weekday);
-      const iso = `${cur.getFullYear()}-${String(cur.getMonth()+1).padStart(2,'0')}-${String(cur.getDate()).padStart(2,'0')}`;
-      const inMonth = cur.getMonth() === calMonth;
-      const isToday = cur.getTime() === today.getTime();
-      const dayEvts = byDate.get(iso) || [];
-      const count = dayEvts.length;
-      const countLabel = `${count} ${count === 1 ? 'Termin' : 'Termine'}`;
-      const numHtml = `<span class="cal-day-num"><span class="cal-day-num-inner">${cur.getDate()}</span></span>`;
-      const mobileDots = dayEvts.slice(0,3).map(e => `<span class="cal-mobile-dot ${e.calOnly ? 'cal-only' : typeClass(e.type)}" aria-hidden="true"></span>`).join('');
-      const firstEvent = dayEvts[0];
-      const compactEvent = firstEvent ? `<span class="cal-compact-event ${firstEvent.calOnly ? 'cal-only' : typeClass(firstEvent.type)}" aria-hidden="true">${escapeHtml(firstEvent.title)}${count > 1 ? ` +${count - 1}` : ''}</span>` : '';
-      const dayButton = `<button class="cal-day-select" type="button" data-date="${iso}" aria-label="${escapeHtml(formatDate(cur))}: ${countLabel} anzeigen" aria-controls="cal-day-details" aria-expanded="${selectedCalDate === iso}">${numHtml}${compactEvent}<span class="cal-day-dots" aria-hidden="true">${mobileDots}</span></button>`;
-      const tagsHtml = dayEvts.slice(0,3).map(e => {
-        tagEvents.push(e);
-        return `<button type="button" class="cal-event-tag ${e.calOnly ? 'cal-only' : typeClass(e.type)} ${e.isCancelled ? 'cancelled' : ''}" data-event-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.title)}, ${escapeHtml(e.time)}${e.isCancelled ? ', Abgebrochen' + (cancelledStatus(e) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(e)) : ''}. Termindetails öffnen">${escapeHtml(e.title)}<span class="cal-event-time">${escapeHtml(e.time)}</span></button>`;
-      }).join('');
-      html += `<div class="cal-day ${inMonth ? '' : 'other-month'} ${weekday >= 5 ? 'weekend' : ''} ${isToday ? 'today' : ''} ${selectedCalDate === iso ? 'selected' : ''}" role="gridcell">
-        ${dayButton}<span class="cal-band-space" aria-hidden="true"></span>${tagsHtml}${count > 3 ? `<button class="cal-more" type="button" data-date="${iso}" aria-label="Alle ${count} Termine am ${escapeHtml(formatDate(cur))} anzeigen" aria-controls="cal-day-details">+${count - 3}</button>` : ''}</div>`;
-    }
-    weekPeriods.forEach((p, row) => {
-      const left = Math.max(0, calendarDayDiff(parseISOString(p.start), weekStart));
-      const right = Math.min(6, calendarDayDiff(parseISOString(p.end), weekStart));
-      html += `<div data-key="band-${week}-${p.id}" class="cal-period-band ${parseISOString(p.start) >= weekStart ? 'starts' : ''} ${parseISOString(p.end) <= weekEnd ? 'ends' : ''}" style="--period-rgb:${p.rgb};left:calc(${left} * 100% / 7 + 2px);width:calc(${right-left+1} * 100% / 7 - 4px);top:calc(48px + ${row} * 22px)"><span>${escapeHtml(p.label)}</span></div>`;
-    });
-    html += '</div>';
-  }
-
-  syncHTML(document.getElementById('cal-grid'),html);
-  document.querySelectorAll('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]').forEach(button => {
-    listenOnce(button, 'click', () => {
-      selectedCalDate = selectedCalDate === button.dataset.date ? null : button.dataset.date;
-      closeCalMenu();
-      renderCalendar();
-      document.querySelector(`#cal-grid .cal-day-select[data-date="${button.dataset.date}"]`)?.focus({ preventScroll: true });
-    });
-  });
-  document.querySelectorAll('#cal-grid .cal-event-tag').forEach((tag, index) => {
-    listenOnce(tag, 'click', (event) => {
-      event.stopPropagation();
-      openCalMenu(tag, events.find(e=>e.id===tag.dataset.eventId));
-    });
-  });
-  renderSelectedCalDay(byDate);
-  if(animate)document.querySelectorAll('.cal-period-band').forEach((band,index)=>motion(band,[{clipPath:'inset(0 100% 0 0)'},{clipPath:'inset(0 0 0 0)'}],{speed:'slow',delay:Math.min(index*25,250)}));
-}
-
-function buildLegendPeriods() {
-  const legend = document.getElementById('cal-legend');
-  legend.replaceChildren();
-  periods.forEach(p => {
-    const item = document.createElement('div');
-    item.className = 'cal-legend-item';
-    item.innerHTML = `<span class="cal-legend-period-swatch" style="background:rgb(${p.rgb})"></span>${escapeHtml(p.label)}-Zeitraum (${escapeHtml(formatDate(parseISOString(p.start)))} – ${escapeHtml(formatDate(parseISOString(p.end)))})`;
-    legend.appendChild(item);
-  });
-}
-
 function focusAfterRender() {
   const active = document.activeElement;
   const card = active.closest('#list .card');
@@ -590,23 +321,6 @@ function focusAfterRender() {
   if (dot) {
     return () => [...document.querySelectorAll('#timeline-container .timeline-dot')]
       .find(button => button.dataset.eventId === dot.dataset.eventId);
-  }
-
-  const calendarTag = active.closest('#cal-grid .cal-event-tag');
-  if (calendarTag) {
-    return () => [...document.querySelectorAll('#cal-grid .cal-event-tag')]
-      .find(button => button.dataset.eventId === calendarTag.dataset.eventId);
-  }
-  const day = active.closest('#cal-grid .cal-day-select[data-date], #cal-grid .cal-more[data-date]');
-  if (day) {
-    const selector = day.matches('.cal-more') ? '.cal-more' : '.cal-day-select';
-    return () => [...document.querySelectorAll(`#cal-grid ${selector}[data-date]`)]
-      .find(button => button.dataset.date === day.dataset.date);
-  }
-
-  if (active.closest('#cal-day-details')) {
-    const index = [...document.querySelectorAll('#cal-day-details button')].indexOf(active);
-    return () => document.querySelectorAll('#cal-day-details button')[index];
   }
 
   return null;
@@ -678,8 +392,6 @@ function renderPreservingState(animate = false) {
   const restoreFocus = focusAfterRender();
   const pageX = window.scrollX;
   const pageY = window.scrollY;
-  const calendarScroll = document.querySelector('.cal-scroll');
-  const calendarLeft = calendarScroll.scrollLeft;
 
   batchUpdate(()=>render(animate));
 
@@ -689,7 +401,6 @@ function renderPreservingState(animate = false) {
     if (target) target.focus({ preventScroll: true });
     else focusFallback = true;
   }
-  if (calendarScroll.scrollLeft !== calendarLeft) calendarScroll.scrollLeft = calendarLeft;
   if (window.scrollX !== pageX || window.scrollY !== pageY) window.scrollTo(pageX, pageY);
   if (focusFallback) document.getElementById('toggle-past-btn').focus({preventScroll:true});
 }
@@ -705,28 +416,18 @@ function render(animate) {
   if (nextSemester.id !== semester.id) {
     semester = nextSemester;
     ({ events, periods } = validateData(semester.events, semester.periods));
-    ({ min: CAL_MIN_MONTH_INDEX, max: CAL_MAX_MONTH_INDEX } = calendarRange(events, periods, todayMid));
-    const index = Math.min(CAL_MAX_MONTH_INDEX, Math.max(CAL_MIN_MONTH_INDEX, monthIndex(today.getFullYear(), today.getMonth())));
-    calYear = Math.floor(index / 12); calMonth = index % 12;
-    selectedCalDate = null;
     showPast = false;
     updatePastToggle();
     typeFilter = 'all';
     updateTypeFilter();
-    closeCalMenu(); closeTimelineTooltip();
-    buildLegendPeriods();
-  }
-  if (!events.length && !periods.length) {
-    // Ein noch ungepflegtes Semester zeigt auch nach einem Monatswechsel den aktuellen Monat.
-    CAL_MIN_MONTH_INDEX = CAL_MAX_MONTH_INDEX = monthIndex(today.getFullYear(), today.getMonth());
-    calYear = today.getFullYear(); calMonth = today.getMonth();
+    closeTimelineTooltip();
   }
   document.getElementById('semester-label').textContent = semester.label;
   const tl = buildTimeline(todayMid);
   document.querySelectorAll('#timeline-window button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.window === timelineMode)));
   updateFilterIndicator(document.getElementById('timeline-window'));
   const types = [...new Set(tl.dotEvents.map(event => event.type))];
-  syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="cal-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.length ? '<span class="cal-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
+  syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="timeline-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.length ? '<span class="timeline-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
   renderedDay = localDayKey(today);
   document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -889,7 +590,6 @@ function render(animate) {
 
   syncChildren(listTarget,listEl);
   listTarget.querySelectorAll('.done-toggle input').forEach(input=>listenOnce(input,'change',()=>toggleDone(input.closest('.card').id.slice(5))));
-  if(calVisible)renderCalendar();
   enhanceProgress(animate);
   if(animate){enterPage();enterTimeline();}
 }
@@ -906,14 +606,6 @@ function refreshCurrentDay() {
   if (!document.hidden && localDayKey(new Date()) !== renderedDay) renderPreservingState();
   scheduleNextDay();
 }
-
-document.getElementById('cal-toggle-btn').innerHTML = ICONS.calendar + ' Kalender';
-document.getElementById('cal-prev').innerHTML = ICONS.left;
-document.getElementById('cal-next').innerHTML = ICONS.right;
-
-document.getElementById('cal-toggle-btn').addEventListener('click', toggleCalendar);
-document.getElementById('cal-prev').addEventListener('click', () => calNav(-1));
-document.getElementById('cal-next').addEventListener('click', () => calNav(+1));
 
 // Filter für vergangene Termine.
 const togglePastBtn = document.getElementById('toggle-past-btn');
@@ -939,9 +631,7 @@ document.querySelectorAll('#type-filter button').forEach(button => {
 });
 
 (async function init() {
-  buildLegendPeriods();
   await initialiseDoneItems();
-  updateCalendarVisibility();
   render(true);
   updateFilterIndicator();
   document.addEventListener('visibilitychange', () => {

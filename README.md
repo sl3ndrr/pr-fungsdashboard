@@ -4,20 +4,6 @@ Ein schlankes, responsives Dashboard für Prüfungen, Abgaben und persönliche T
 
 ## Funktionen
 
-- Nächster offener Termin mit großem Countdown, zwei Folgeterminen und aktuellem Zeitraum-Fortschritt mit Resttagen
-- „Danach“-Buttons mit Wochentag, State-Layer und Fokus auf der Zielkarte
-- Kennzahlen mit Fortschrittsbalken und Typfilter für die Terminliste
-- Chronologische Terminkarten in einem gemeinsamen Grid; Zeitgruppen als Zeilenüberschrift und eindeutige Karten-Zuordnung
-- Vollständig eingepasster Zeitstrahl mit linearen Tagen, beschrifteten Reihen, Zeitfensterwahl und tonalen Zeitraum-Bändern
-- Abgebrochene Termine erhalten Status und Durchstreichung und werden aus der nächsten Fälligkeit ausgeblendet
-- Monatlicher Kalender mit durchgehenden Zeitraum-Balken, Tagesdetails und Detail-Popover; zunächst ausgeblendet, ab 1200 px beim Öffnen als sticky Seitenspalte
-- Neutrale Kategorie „Nur im Kalender“ für `calOnly`-Termine
-- Hell-, Dunkel- und Systemmodus
-- Lokale Speicherung erledigter Abgaben
-- Responsive Darstellung mit einer bis vier Kartenspalten; ab 1600 px volle Inhaltsbreite und maximal vier Spalten
-- Tastaturbedienung, sichtbarer Fokus und Unterstützung für reduzierte Bewegung
-- Tageswechsel aktualisiert Datum, Countdown und Ansichten automatisch
-
 ## Projektstruktur
 
 ```text
@@ -63,43 +49,13 @@ npx serve .
 
 Alle fachlichen Daten liegen zentral in [`js/data.js`](js/data.js):
 
-- `EVENTS` und `PERIODS`: bestehende Termine und Zeiträume des Sommersemesters 2026
-- `SEMESTERS`: Semester mit eigener Bezeichnung, Umschaltdatum, `events` und `periods`
-- `isDone: true`: markiert eine Abgabe beim ersten Laden als erledigt
-- `isCancelled: true`: markiert einen Termin als abgebrochen
-- `cancelReason`: optionaler kurzer String für den Status-Chip, z. B. „verschoben“;
-  ohne Angabe steht dort neutral „Abgebrochen“. Der Zeitstrahl nennt zusätzlich
-  den Status und gegebenenfalls den Grund. Bestehende Daten erhalten keine erfundenen Gründe.
-- `calOnly: true`: zeigt einen Termin nur im Kalender
-- `hideFromNext: true`: lässt einen Termin in „Als Nächstes“ und „Danach“ weg;
-  Liste, Kalender, Zeitstrahl und Kennzahlen behalten ihn. Die bestehende
-  Semestergrenze (`t2`) verwendet dieses Flag.
-
 Bis einschließlich **30.11.2026** bleibt das **Sommersemester 2026** aktiv.
 Am **01.12.2026 um 00:00 Uhr lokaler Gerätezeit** wechselt das Dashboard zum
 **Wintersemester 2026/2027**, auch in einem bereits geöffneten Tab.
 Der Termin „Beginn Wintersemester 2026/27“ am 26.10. löst keinen Ansichtswechsel aus.
 Die aktive Semesterbezeichnung steht im Kopfbereich.
 
-Wintertermine im Eintrag `id: 'ws-2026-2027'` unter `events: []`, Zeiträume unter
-`periods: []` ergänzen. Beide Listen sind bewusst leer; ohne Termine zeigt das
-Dashboard einen Leerzustand und der Kalender den aktuellen Monat. Die Sommerdaten
-bleiben im Code erhalten. IDs müssen semesterübergreifend eindeutig sein, damit
-gespeicherte Abgabe-Häkchen nicht auf neue Termine übertragen werden.
-
 Die Darstellung und Interaktionen müssen für neue Termine nicht angepasst werden.
-
-Der Typfilter betrifft ausschließlich die Terminliste. Die nächste Fälligkeit, Kennzahlen,
-Zeitstrahl und Kalender behalten ihre vollständige Datenbasis. Ein Zeitstrahl-Punkt oder
-„Danach“-Eintrag macht bei Bedarf die passende Karte sichtbar.
-
-Der Zeitstrahl passt vollständig in seine Containerbreite. Die Connected Group
-„Ab heute | Semester“ wählt das Fenster; die Wahl bleibt bei Re-Renders und
-Tageswechsel erhalten. „Ab heute“ startet zwei Kalendertage vor heute und endet
-zwei Tage nach dem letzten kommenden Haupttermin (mindestens fünf Tage nach
-heute, wenn keine anstehen). „Semester“ zeigt alle Haupttermine mit zwei Tagen Rand.
-Abgebrochene Termine bestimmen die Grenzen mit; `calOnly` und Zeiträume erweitern
-sie nicht. Alle Koordinaten nutzen dieselbe lineare, DST-sichere Kalendertagsskala.
 
 Jeder Punkt trägt Kurzname und Datum oder bei Platzmangel ein Datum. Kollisionen
 weichen in abwechselnde Reihen ober-/unterhalb der Achse aus. Gleiche Daten behalten
@@ -116,13 +72,6 @@ der Jahreswechsel ergänzt erneut das Jahr. Die Heute-Pille liegt über ihrer Li
 Die kompakte Legende enthält die sichtbaren Typen und den Abbruchstatus.
 Ein ResizeObserver reagiert ausschließlich auf geänderte Containerbreite;
 es gibt keinen horizontalen Zeitstrahl-Scroller und kein Scroll-Layout.
-
-Design-Tokens und beide Farbpaletten liegen in `css/styles.css`. `color-scheme` und
-`light-dark()` wählen Hell, Dunkel oder das Systemdesign aus einer gemeinsamen
-Definition. Roboto Flex wird über Google Fonts geladen; bei
-fehlender Verbindung greift der System-Fallback. Es gibt keine neuen Abhängigkeiten.
-Der Kalender kann auf sehr schmalen Geräten innerhalb seiner Fläche horizontal
-gescrollt werden, damit alle Tages-Buttons mindestens 44 px breit bleiben.
 
 ## Änderungen veröffentlichen
 
@@ -179,32 +128,7 @@ Listener werden einmal gebunden. Fokus und Scrollpositionen bleiben über
 `render(true)` mit Enter-Staffelung auf. Tageswechsel, Filter, Erledigt und Resize
 verwenden den Fokus-/Scrollschutz ohne Enter-Staffelung.
 
-`withTransition(update, { type })` verwendet die View Transitions API, sofern
-verfügbar und Bewegung erlaubt ist. Karten erhalten kollisionsfreie CSS-Namen aus
-der Event-ID. Snapshot-Namen werden für die betroffene Interaktion aktiviert:
-Karten und Gruppen beim Filtern, Kalendergrid/Titel beim Monatswechsel, Root beim
-kreisförmigen Theme-Reveal. So laufen Checkbox-, Zahlen- und Balken-Transitions
-weiter im echten DOM. Ohne API erfolgen gebündelte FLIP-Messungen und inerte
-Exit-Kopien. Unterbrochene Snapshot-Updates werden einmal und in Reihenfolge
-angewendet; unterbrochene WAAPI-Kanäle starten am aktuell sichtbaren Wert.
-Geometrie für Hero/Countdown-Exits wird vor DOM-Schreiboperationen gesammelt.
-
 ### Animationsübersicht
-
-| Bereich | Animation | Federart | Dauer |
-| --- | --- | --- | --- |
-| 1. Aufbau | 16 px Hochgleiten, .96 → 1, Fade; 25-ms-Staffelung ≤250 ms | Spatial / Effects | 410 / 210 ms |
-| 2. Theme | Gemeinsamer Gruppenindikator, Icon, Reveal vom gewählten Button | Spatial-fast/slow / Effects | 350 / 570 / 210 ms |
-| 3. Buttons | Ripple, Press .97, Pill → lg, Selected-Farbe | Spatial-fast / Effects | 350 / 140–300 ms |
-| 4. Typfilter | Geteilter Indikator: Position, Breite, Gewicht | Spatial-fast / Effects | 350 / 210 ms |
-| 5. Liste | Gemeinsames Grid, Shared-Element/FLIP, Scale/Fade für Karten und Zeilenüberschriften | Spatial / Effects | 350–410 / 140–210 ms |
-| 6. Karten | Tonaler Hover/Press, Scroll, Wash/Bounce | Spatial-fast/default / Effects-slow | 350–410 / 300 ms |
-| 7. Erledigt | Trailing-Checkbox, SVG-Häkchen, Form/Farbe, Titellinie, Statistik-Feder, Balken | Spatial-fast/slow / Effects | 350–570 / 140–210 ms |
-| 8. Countdown | Maskierte Ziffernreels, initiales Hochzählen, imminent | Spatial-fast / Effects | 350 / 210 ms; Start 600 ms |
-| 9. Fortschritt | Clip-Path, gemeinsame Transform-Wellenphase, flache Endpunkte | Spatial-slow / Effects | 570 / 210 ms; Phase 2,5 s |
-| 10. Zeitstrahl | Punktstaffelung, Rail, Heute, Tooltip, Ring, Bänder | Spatial-fast/default/slow / Effects | 350–570 / 140–300 ms |
-| 11. Kalender | Sticky Spalte ab 1200 px, Spalten-/Grid-Kollaps, Shared Axis, Tages-Morph, Details, Wochenbänder, Anker-Popover | Spatial-fast/default/slow / Effects | 350–570 / 140–210 ms |
-| 12. Hero/Leerzustand | Container-Transform und Fade-Through / Shared Element | Spatial / Effects | 350–410 / 140–210 ms |
 
 Wellen werden mit einer kleinen SVG-Mask dargestellt. Die Amplitude nimmt nahe
 0 % und 100 % ab und überblendet in eine gerade Linie. Die langsame Phase läuft
@@ -220,14 +144,6 @@ Zeitraum-Balken zeigt die Füllgrenze auch unabhängig von der Farbe. Sie folgt
 derselben Spatial-slow-Bewegung wie die Füllung und steht bei Reduced Motion
 sofort am neuen Wert; an 0/100 % bleibt sie innerhalb des Balkens.
 
-„Als nächstes“ stellt Zahl und Einheit auch auf schmalen Geräten untereinander
-(„1 Tag“, „Heute“ ohne Einheit). Zeitraum-Fortschritt nennt Tag/Total und Resttage
-auch in `aria-valuetext`, mit „letzter Tag“ am Ende. Statistik-Texte bleiben gleich.
-„Danach“ bleibt ein echter Button (mindestens 56 px); Hover bei Hover-Geräten,
-Fokus und Press verwenden Effects-State-Layer. Nach Auswahl wird die passende
-Karte sichtbar, fokussiert und gemäß Reduced Motion gescrollt. Die kurzen Datumsangaben
-entstehen mit `Intl.DateTimeFormat('de-DE')` aus lokal geparsten Kalendertagen.
-
 ### Reduced Motion
 
 `prefers-reduced-motion: reduce` und ein Live-`matchMedia`-Listener entfernen
@@ -239,34 +155,7 @@ Transitions werden beim Wechsel beendet. Es gibt keinen globalen
 
 ### Bewusste Abweichungen
 
-- Eine Web-Nachbildung, keine pixelgenaue Android-17-/Compose-Implementierung.
-  Die zeitbasierten Samples und Bezier-Fallbacks sind keine physikalischen
-  Federintegratoren; Retargeting erhält den sichtbaren Wert, keine Feder-Velocity.
-- Die Palette ist von Hand auf die vorhandenen semantischen Farbtöne abgestimmt,
-  ohne Android-Dynamic-Color. Bestehende Zeitraumfarben bleiben erhalten.
-- Der Wavy Indicator nutzt eine unskalierte, rechts beschnittene CSS/SVG-Mask und eine
-  Überblendung zur geraden Linie; die Füllgrenze erhält eine eigene kleine
-  Markierung. Die Compose-Wellengeometrie wird nicht exakt reproduziert.
-- Tooltips/Popover bleiben montiert und verwenden Opacity/Scale mit verzögerter
-  Visibility; Kalender/Details verwenden Grid plus `inert`/ARIA. Das ermöglicht
-  Exit-Animationen auch ohne `allow-discrete`. `@starting-style` ergänzt den Einstieg.
-- Snapshot-Namen sind auf wechselnde Regionen begrenzt, damit stabile Controls
-  ihre echten Transitions behalten. Hero-Wechsel verwenden einen eigenen inerten
-  Exit-Snapshot und Fade-Through.
-- Zeitstrahl-Buttons erhalten mindestens 44-px-Hitflächen; beschriftete Reihen vermeiden Kollisionen.
-  Hitflächen und Beschriftungen sind über disjunkte Reihen zugeordnet.
-
 ### Komponenten-Konsistenz
-
-Theme, Typfilter, Zeitfenster und Vergangene-Toggle verwenden `segmented-filter`
-und denselben Indikator. Theme behält Radiogroup, Pfeiltasten/Home/End und
-`theme_pref`; Filter verwenden `aria-pressed`. Alle Buttons sind mindestens 44 px hoch.
-Hero-Dringlichkeit verwendet Gewicht bei ≤7 Tagen und `error-container` bei ≤3 Tagen,
-keinen inset-Ring. „Als Nächstes“/„Danach“ verwenden Title Small in Normalschreibung.
-Die Hero-Form (32 px, 16 px Innenabstand) und die inneren Reihen (16 px) sind konzentrisch.
-Dekorative Rahmen entfallen; die Kalenderzellen behalten eine 3:1-Outline und die
-Checkboxen ihre funktionale Begrenzung. Farben außerhalb der Palette sind Rollen
-oder die unveränderten Zeitraumwerte. Weiße SVG-Masken bestimmen nur Alpha, keine UI-Farbe.
 
 ### Prüfungen und offener Browsernachweis
 
@@ -291,18 +180,3 @@ Der detaillierte Stand aller elf Abnahmekriterien einschließlich fehlender
 Höhenmesswerte steht in [docs/verification-report.md](docs/verification-report.md).
 
 ## Fensterklassen und Übersicht
-
-| M3-Klasse | Breite | Übersicht |
-| --- | --- | --- |
-| Compact | < 600 px | Hero mit Zahl neben Titel, danach Zeitstrahl und Statistik |
-| Medium | 600–839 px | Hero, Zeitstrahl, Statistik gestapelt |
-| Expanded | 840–1199 px | Hero links; Zeitstrahl und vollbreite Statistik rechts |
-| Large | 1200–1599 px | Zwei Übersichtsspalten; optional sticky Kalender rechts neben Liste |
-| Extra-large | ≥ 1600 px | Volle Inhaltsbreite, Hero bis 560 px, Rest für Übersicht/Liste |
-
-Die Übersichtsspalten strecken sich auf dieselbe Gesamthöhe. Drei gleich breite
-Statistik-Kacheln füllen die rechte Spalte. Die intrinsischen Container Queries
-der Terminliste (660/1000/1300 px) bleiben unabhängig von Fensterklassen.
-Die bisherige Kalendergrenze 1280 px ist bewusst auf Large (1200 px) migriert;
-die Seitenspalte bleibt 380–440 px breit, sticky und standardmäßig geschlossen.
-Hero- und Kartentitel nutzen deutsche automatische Trennung und `break-word`.

@@ -37,7 +37,6 @@ async function check(width,fallback){
   assert(q('.hero-title').textContent==='ExPhy 2','Nächster Termin');
   const rail=q('.timeline-track'),dots=[...doc.querySelectorAll('.timeline-dot')];
   assert(new win.Date(Number(rail.dataset.axisStart)).getDate()===6,'Achsenanfang');assert(new win.Date(Number(rail.dataset.axisEnd)).getDate()===10 && new win.Date(Number(rail.dataset.axisEnd)).getMonth()===10,'Achsenende 10.11.');
-  assert(q('#calendar-section').dataset.open==='false'&&q('#calendar-section').inert,'Kalender startet geschlossen');
   const container=q('#timeline-container');
   assert(container.scrollWidth<=container.clientWidth,'Zeitstrahl passt ohne Scrollen');
   const bounds=container.getBoundingClientRect();
@@ -55,12 +54,6 @@ async function check(width,fallback){
   q('[data-filter="Abgabe"]').click();await wait(600);assert(!!q('#list .empty-state'),'Leerzustand');q('[data-filter="all"]').click();await wait(600);
   q('#toggle-past-btn').click();await wait(600);const input=q('#card-a1 input'),progress=q('#stats-line .mini-progress span');input.focus();input.click();await wait(600);
   assert(q('#card-a1 input')===input && doc.activeElement===input,'Checkbox und Fokus bleiben erhalten');assert(q('#stats-line .mini-progress span')===progress,'Fortschrittsbalken bleibt erhalten');assert(!input.checked,'Erledigt umgeschaltet');
-  if(q('#calendar-section').dataset.open!=='true')q('#cal-toggle-btn').click();await wait(600);assert(q('#calendar-section').dataset.open==='true'&&!q('#calendar-section').inert,'Kalender offen / bedienbar');
-  q('.cal-day-select[data-date="2026-09-07"]').click();await wait(600);assert(q('#cal-day-details').dataset.open==='true','Tagesdetails offen');
-  q('#cal-day-details .cal-day-event').click();await wait(450);assert(q('#cal-popover').dataset.open==='true','Popover offen');doc.dispatchEvent(new win.KeyboardEvent('keydown',{key:'Escape',bubbles:true}));await wait(450);assert(q('#cal-popover').inert,'Popover geschlossen / inert');
-  q('#cal-next').click();await wait(600);assert(q('#cal-month-label').textContent==='Oktober 2026','Monatswechsel vorwärts');
-  q('#cal-prev').click();q('#cal-prev').click();await wait(650);assert(q('#cal-month-label').textContent==='August 2026','Schnelle Monatswechsel bleiben korrekt');
-  q('#cal-toggle-btn').click();await wait(600);assert(q('#calendar-section').inert,'Kalender geschlossen / inert');
   q('[data-theme-value="light"]').click();await wait(650);assert(doc.documentElement.dataset.theme==='light','Hell');
   q('[data-theme-value="dark"]').click();await wait(650);assert(doc.documentElement.dataset.theme==='dark','Dunkel');
   q('[data-theme-value="system"]').click();await wait(650);assert(!doc.documentElement.hasAttribute('data-theme'),'System');

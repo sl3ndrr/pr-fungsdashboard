@@ -137,14 +137,3 @@ export function upcomingEvents(events, todayMid, doneItems) {
     !(event.type === 'Abgabe' && doneItems.includes(event.id)))
     .sort((a, b) => parseISOString(a.date) - parseISOString(b.date));
 }
-
-/** Ohne Termine bleibt der aktuelle Monat im Kalender erreichbar. */
-export function calendarRange(events, periods, today) {
-  const dates = [...events.map(e => e.date), ...periods.flatMap(p => [p.start, p.end])];
-  const indices = dates.map(iso => {
-    const date = parseISOString(iso);
-    return date.getFullYear() * 12 + date.getMonth();
-  });
-  const current = today.getFullYear() * 12 + today.getMonth();
-  return { min: indices.length ? Math.min(...indices) : current, max: indices.length ? Math.max(...indices) : current };
-}

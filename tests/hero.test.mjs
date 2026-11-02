@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
 import * as utils from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
-const fn=source.slice(source.indexOf('function buildHero('),source.indexOf('\nconst MONTH_NAMES'));
+const fn=source.slice(source.indexOf('function buildHero('),source.indexOf('\nfunction focusAfterRender'));
 function hero(day,total){
   let html;
   const element={querySelectorAll:()=>[]};
