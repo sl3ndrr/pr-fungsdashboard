@@ -10,5 +10,4 @@ import './timeline.test.mjs';
 import './layout.test.mjs';
 import './data.test.mjs';
 import './theme.test.mjs';
-import './calendar.test.mjs';
 import './semester.test.mjs';

@@ -10,7 +10,7 @@ let transaction = false;
 let updateRects;
 export function batchUpdate(update) {
   const previous=updateRects;
-  updateRects=new WeakMap([...document.querySelectorAll('.hero,.countdown,#cal-grid,#cal-month-label,#cal-day-details')].map(el=>[el,el.getBoundingClientRect()]));
+  updateRects=new WeakMap([...document.querySelectorAll('.hero,.countdown')].map(el=>[el,el.getBoundingClientRect()]));
   try{return update();}finally{updateRects=previous;}
 }
 const token = name => getComputedStyle(root).getPropertyValue(name).trim();
@@ -87,7 +87,7 @@ export function withTransition(update,{type='state',origin}={}) {
   let applied=false;
   const apply=()=>{
     if(applied)return;applied=true;
-    transaction=native&&['filter','month-forward','month-back','theme'].includes(type);
+    transaction=native&&['filter','theme'].includes(type);
     try {update();} finally {transaction=false;if(pendingUpdate===apply)pendingUpdate=null;}
   };
   if(!native) {

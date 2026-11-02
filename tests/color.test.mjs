@@ -34,7 +34,7 @@ test('period labels and neutral past points keep contrast in both timeline theme
 });
 
 
-test('retained calendar boundaries and selected controls meet 3:1 in both themes',()=>{
+test('checkbox boundaries and selected controls meet 3:1 in both themes',()=>{
   for(const mode of [0,1]) {
     for(const paper of ['surface-container-low','surface-container','surface-container-high']) {
       assert.ok(contrast(color('outline',mode),color(paper,mode))>=3,`outline/${paper}, mode ${mode}`);

@@ -5,7 +5,7 @@ import {timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout}
 import {EVENTS,PERIODS} from '../js/data.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData,upcomingEvents} from '../js/utils.js';
 const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
-const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('let { min: CAL_MIN_MONTH_INDEX'));
+const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('function toggleDone'));
 const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
 const {events,periods}=validateData(EVENTS,PERIODS);
 const doc={getElementById:()=>({clientWidth:600}),createElement:()=>({getContext:()=>({measureText:text=>({width:text.length*7})})})};
@@ -116,7 +116,7 @@ test('the seven-day statistic includes the event noun with correct singular and 
 });
 
 test('midnight scheduler uses local calendar days, refreshes on wake, and handles the 25-hour DST day',()=>{
-  const scheduler=source.slice(source.indexOf('function scheduleNextDay()'),source.indexOf("document.getElementById('cal-toggle-btn').innerHTML"));
+  const scheduler=source.slice(source.indexOf('function scheduleNextDay()'),source.indexOf('// Filter für vergangene Termine.'));
   let now=parseISOString('2026-10-25').getTime(),callback,delay,renders=0;
   class ClockDate extends Date{constructor(...args){super(...(args.length?args:[now]));}}
   const document={hidden:false};

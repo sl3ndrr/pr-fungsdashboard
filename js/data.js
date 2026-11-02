@@ -15,7 +15,7 @@ export const EVENTS = [
   { id: 'p6', type: 'Prüfung', title: 'ExPhy 2',                            date: '2026-10-07', time: '09:00 Uhr' },
   { id: 'p5', type: 'Prüfung', title: 'Info II',                            date: '2026-10-14', time: '10:00 Uhr' },
   { id: 'p7', type: 'Prüfung', title: 'Programmierpraktikum',               date: '2026-11-10', time: '10:00 Uhr' },
-  // Semestergrenze bleibt in Liste, Kalender und Zeitstrahl, aber nicht in der Next-Card.
+  // Semestergrenze bleibt in Liste und Zeitstrahl, aber nicht in der Next-Card.
   { id: 't2', type: 'Termin',  title: 'Beginn Wintersemester 2026/27',      date: '2026-10-26', time: 'Ganztägig', hideFromNext: true },
   { id: 'g1', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-06-29', time: '13:45-15:45 Uhr', calOnly: true },
   { id: 'g2', type: 'Termin',  title: 'Gitarrenunterricht',                 date: '2026-08-17', time: '13:45-15:45 Uhr', calOnly: true },

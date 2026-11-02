@@ -29,22 +29,6 @@ laufen weiter. Google Fonts wird abgefangen, damit System-Fallback reproduzierba
 geprüft wird. Keine echten Daten werden geändert: Randfälle injizieren Fixtures
 nur in abgefangene Modulantworten.
 
-- `semester-timeline.spec.mjs`: 320/360/390/600/820/1024/1280/1600/2300 px in Hell/Dunkel.
-  Referenz 24.10.2026: t2 und p7 vollständig sichtbar; `scrollWidth <= clientWidth`.
-  02.10.2026 im Semesterfenster: alle elf Haupttermine, disjunkte Zielrechtecke,
-  Labels und Zeitraumtexte, horizontale Zuordnung ≤8 px außer Rand-Clamping.
-- Heute-Pille vor Linie, vollständige Randposition, Fokus-/Knotenerhalt bei Resize
-  und Re-Render; wirkliche Touch-Kontexte (`hasTouch`, `isMobile`, `touchscreen.tap`)
-  für Punkt und Label mit Navigation in einem Schritt. Firefox überspringt diese
-  zwei Mobile-Emulationsfälle, da Playwright dort `isMobile` nicht unterstützt.
-- Leeres Wintersemester am 01.12.2026, ein einzelner Wintertermin, gleichdatierte
-  Termine, sehr langer Titel, Tages-/Semesterwechsel und Filter-Reset.
-- `layout.spec.mjs`: gleiche Übersichtsspalten ±1 px ab 840 px, volle Statistikbreite,
-  Kalender-Seitenspalte ab 1200 px, Themes/Keyboard, identische Gruppenhöhen,
-  Wortumbruch mit Systemschrift bei 390/1280 px.
-- `dashboard`, `polish`, `waves`: Status, Checkbox-/Knoten-Fokus, Hover/Fokus/Escape,
-  Ziffern, Theme-Vorab-Script, Reduced Motion und gemeinsame Wellenphasen.
-
 Die Fit-Fälle hängen `measurements.json` an (Hero-/Zeitstrahlhöhe, Punkte, Labels,
 Pille/Linie und Scrollgrößen). Die Layoutfälle liefern `overview-heights.json`.
 Bei 360/820/1280/2300 px werden zusätzlich Nachher-Vollseitenbilder für Hell/Dunkel

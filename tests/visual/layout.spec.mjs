@@ -61,51 +61,6 @@ test('keyed cards and checkbox focus survive group/filter changes without spatia
   expect(await page.evaluate(()=>document.getAnimations().filter(a=>a.playState==='running').every(a=>a.effect.getKeyframes().every(f=>!f.transform&&!f.scale&&!f.translate)))).toBe(true);
 });
 
-for(const width of [768,1280,1600,2300]) {
-  test(`calendar sidebar, details and focus ${width}px`,async({page})=>{
-    await openDashboard(page,{width});
-    const calendar=page.locator('#calendar-section'),toggle=page.locator('#cal-toggle-btn');
-    await expect(toggle).toHaveAttribute('aria-expanded','false');
-    expect(await calendar.evaluate(el=>el.inert)).toBe(true);
-    await toggle.click();
-    await freeze(page);await expect(calendar).toBeVisible();
-    const rects=await page.evaluate(()=>{
-      const list=document.querySelector('.appointments').getBoundingClientRect(),cal=document.querySelector('#calendar-section').getBoundingClientRect();
-      return {listLeft:list.left,listRight:list.right,listTop:list.top,calLeft:cal.left,calTop:cal.top,calWidth:cal.width,sticky:getComputedStyle(document.querySelector('#calendar-section')).position};
-    });
-    if(width>=1200){expect(rects.calLeft).toBeGreaterThan(rects.listRight);expect(rects.calWidth).toBeGreaterThanOrEqual(380);expect(rects.calWidth).toBeLessThanOrEqual(440);expect(rects.sticky).toBe('sticky');}
-    else expect(rects.calTop).toBeLessThan(rects.listTop);
-    const day=page.locator('.cal-day-select[data-date="2026-10-07"]');
-    await day.click();await freeze(page);
-    await page.locator('#cal-day-details .cal-day-event').click();await freeze(page);
-    await expect(page.locator('#cal-popover')).toBeVisible();
-    await page.locator('.cal-popover-close').press('Escape');await freeze(page);
-    await expect(page.locator('#cal-day-details .cal-day-event')).toBeFocused();
-    await page.locator('#card-p6').evaluate(el=>window.sidebarCardBefore=el);
-    await toggle.click();await freeze(page);
-    await expect(toggle).toHaveAttribute('aria-expanded','false');
-    expect(await calendar.evaluate(el=>el.inert)).toBe(true);
-    expect(await page.locator('#card-p6').evaluate(el=>el===window.sidebarCardBefore)).toBe(true);
-    await toggle.click();await freeze(page);
-    expect(await page.locator('#card-p6').evaluate(el=>el===window.sidebarCardBefore)).toBe(true);
-  });
-}
-
-test('calendar visibility stays user-controlled across breakpoints',async({page})=>{
-  await openDashboard(page,{width:768});
-  const toggle=page.locator('#cal-toggle-btn');
-  for(const width of [1600,360,1280]) {
-    await page.setViewportSize({width,height:1000});await freeze(page);
-    await expect(toggle).toHaveAttribute('aria-expanded','false');
-  }
-  await toggle.click();await freeze(page);
-  await page.setViewportSize({width:768,height:1000});await freeze(page);
-  await expect(toggle).toHaveAttribute('aria-expanded','true');
-  await toggle.click();await freeze(page);
-  await page.setViewportSize({width:1600,height:1000});await freeze(page);
-  await expect(toggle).toHaveAttribute('aria-expanded','false');
-});
-
 for(const theme of ['light','dark']) {
   test(`saved ${theme} theme is present while the application module is delayed`,async({page})=>{
     await page.clock.setFixedTime(new Date('2026-10-01T12:00:00+02:00'));
