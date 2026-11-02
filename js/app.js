@@ -1,4 +1,4 @@
-import {sittingRowsHTML, sittingDate} from './cards.js';
+import {sittingRowsHTML, sittingDate, sittingAccessibleName} from './cards.js';
 import { tooltipPosition, timelineWindow, timelinePosition, timelineEventLayout, timelineLabelLayout, appointmentRows } from './layout.js';
 import { batchUpdate, syncSittingRows, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
 import { SEMESTERS, ICONS, STORAGE_KEY } from "./data.js";
@@ -186,16 +186,16 @@ function buildTimeline(todayMid) {
   const context = canvas.getContext('2d');
   const font = getComputedStyle(document.getElementById('timeline-container'));
   context.font = `800 ${font.fontSize} ${font.fontFamily}`;
-  const measure = text => Math.ceil(context.measureText(text).width) + 8;
+  const measure = text => Math.ceil(context.measureText(text).width) + 4;
   const shortDate = event => parseISOString(event.date).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
   const shortName = event => `${event.short || event.title}${event.sittingKey ? ' ' + event.sittingKey : ''}`;
   const layout = timelineEventLayout(visible.map(event => ({ x: pos(parseISOString(event.date)), variants: [
     { title: shortName(event), date: shortDate(event), width: Math.max(measure(shortName(event)), measure(shortDate(event))) },
     { title: '', date: shortDate(event), width: measure(shortDate(event)) },
-  ] })), width);
+  ] })), width, 4);
   const above = Math.max(1, ...layout.map(item => -item.lane));
   const below = Math.max(0, ...layout.map(item => item.lane));
-  const axisY = 24 + above * 52;
+  const axisY = 24 + above * 44;
   const next = upcomingEvents(visible, todayMid, doneItems)[0];
   const bandTop = axisY + 8;
   const bands = periods.map(period => {
@@ -220,7 +220,7 @@ function buildTimeline(todayMid) {
   const lowerShift = Math.max(0, bandBottom - (axisY + 36));
   let dots = visible.map((event, i) => {
     const item = layout[i], x = pos(parseISOString(event.date));
-    const top = item.lane < 0 ? axisY - 52 * -item.lane : axisY + 36 + 52 * (item.lane - 1) + lowerShift;
+    const top = item.lane < 0 ? axisY - 44 * -item.lane : axisY + 36 + 44 * (item.lane - 1) + lowerShift;
     const pointY = top + 12;
     const status = event.isCancelled ? `Abgebrochen${cancelledStatus(event) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(event)}`
       : isEventDone(event, doneItems) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
@@ -231,7 +231,7 @@ function buildTimeline(todayMid) {
         <span class="timeline-point" aria-hidden="true"></span><span class="timeline-event-label">${item.title ? `<strong>${escapeHtml(item.title)}</strong>` : ''}<span>${escapeHtml(item.date)}</span></span>
       </button>`;
   }).join('');
-  const monthTop = Math.max(axisY + 30, bandBottom, below ? axisY + 36 + below * 52 + lowerShift : 0) + 4;
+  const monthTop = Math.max(axisY + 30, bandBottom, below ? axisY + 36 + below * 44 + lowerShift : 0) + 4;
   const start = new Date(origin); start.setDate(start.getDate() + minDay);
   let cursor = dateInMonth(start.getFullYear(), start.getMonth(), 1);
   const marks = [];
@@ -250,10 +250,13 @@ function buildTimeline(todayMid) {
   const todayX = Math.max(22, Math.min(width - 22, timelinePosition(todayDay, minDay, maxDay, width)));
   const pillX = Math.max(28, Math.min(width - 28, todayX));
   const height = monthTop + Math.max(1, monthLayout.rows) * 20;
+  const examStart = parseISOString(semester.examsFrom);
+  const examBand = examStart && calendarDayDiff(examStart, origin) <= maxDay
+    ? `<div class="timeline-exam-phase" data-key="exam-phase-${semester.id}" role="img" aria-label="Prüfungsphase frühestens ab ${sittingDate(examStart)}, Ende offen" style="--phase-start:${Math.max(0, pos(examStart))}px"><span data-key="exam-phase-label-${semester.id}">Prüfungsphase ab ${examStart.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'})}</span></div>` : '';
   return { html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="height:${height}px;--axis-y:${axisY}px">
     <div class="timeline-progress" style="top:${axisY}px;width:${Math.max(0,todayX - 22)}px"></div>
     <div class="timeline-today" style="left:${todayX}px;height:${axisY + 6}px" aria-hidden="true"></div>
-    <span class="timeline-today-label" style="left:${pillX}px">Heute</span>${periodsHtml}${months}${dots}</div>`, dotEvents: visible };
+    <span class="timeline-today-label" style="left:${pillX}px">Heute</span>${periodsHtml}${months}${dots}</div>${examBand}`, dotEvents: visible };
 }
 
 function renderHero(upcoming, todayMid, animate) {
@@ -267,7 +270,7 @@ function buildHero(upcoming, todayMid, animate) {
   const item = upcoming[0];
   if (!item) {
     el.className = `hero `;
-    syncHTML(el, `<div class="hero-label">Als Nächstes</div><div class="hero-empty">${ICONS.check}<span>Keine offenen Termine</span></div>`);
+    syncHTML(el, `<div class="hero-label">Als Nächstes</div><div class="hero-empty">${ICONS.check}<span>Keine datierten Termine offen</span></div>`);
     return;
   }
   const d = parseISOString(item.date);
@@ -289,7 +292,7 @@ function buildHero(upcoming, todayMid, animate) {
     ${otherSitting ? `<div class="hero-other" data-key="hero-other-${item.id}">${otherSitting.key}-Termin · ${sittingDate(parseISOString(otherSitting.date))} · ${parseISOString(otherSitting.date) < todayMid ? 'vorbei' : 'in ' + calendarDayDiff(parseISOString(otherSitting.date), todayMid) + ' Tagen'}</div>` : ''}
     ${upcoming.length > 1 ? `<div class="hero-after"><h3 class="hero-label">Danach</h3>${upcoming.slice(1, 3).map(e => {
       const days = calendarDayDiff(parseISOString(e.date), todayMid);
-      return `<button class="hero-next" type="button" data-key="next-${escapeHtml(e.id)}" data-event-id="${escapeHtml(e.eventId || e.id)}" data-occurrence-id="${escapeHtml(e.id)}">
+      return `<button class="hero-next" type="button" data-key="next-${escapeHtml(e.id)}" data-event-id="${escapeHtml(e.eventId || e.id)}" data-occurrence-id="${escapeHtml(e.id)}" aria-label="${escapeHtml(e.title + ", " + sittingAccessibleName({key:e.sittingKey || '',date:e.date,time:e.time}, days === 0 ? 'Heute' : `in ${days} Tagen`))}">
         <span class="type-icon ${typeClass(e.type)}" data-key="next-icon-${escapeHtml(e.id)}" aria-hidden="true">${e.sittingKey ? `<span class="sitting-letter" data-key="next-letter-${escapeHtml(e.id)}" aria-label="${e.sittingKey}-Termin">${e.sittingKey}</span>` : ICONS[e.type]}</span>
         <span class="hero-next-info"><span class="hero-next-title">${escapeHtml(e.title)}</span><span class="hero-next-date">${escapeHtml(formatFollowupDate(parseISOString(e.date)))}</span></span>
         <span class="hero-next-days">${days === 0 ? 'Heute' : days === 1 ? 'Morgen' : `in ${days} Tagen`}</span>
@@ -362,7 +365,7 @@ function showTimelineTooltip(dot) {
   tooltipAnchor = dot;
   const status = item.isCancelled ? `Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(item)}`
     : isEventDone(item, doneItems) ? 'Erledigt' : parseISOString(item.date) < midnight(new Date()) ? 'Vergangen' : 'Offen';
-  syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span><span>${escapeHtml(status)}</span>`);
+  syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span><span>${escapeHtml(status)}</span>`);
   dot.setAttribute('aria-describedby', 'timeline-tooltip');
   timelineTooltip.dataset.open = 'true';
   timelineTooltip.setAttribute('aria-hidden', 'false');
@@ -430,7 +433,7 @@ function render(animate) {
   document.querySelectorAll('#timeline-window button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.window === timelineMode)));
   updateFilterIndicator(document.getElementById('timeline-window'));
   const types = [...new Set(tl.dotEvents.map(event => event.type))];
-  syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="timeline-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.length ? '<span class="timeline-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
+  syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="timeline-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.some(event => event.isCancelled) ? '<span class="timeline-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
   renderedDay = localDayKey(today);
   document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
@@ -542,6 +545,7 @@ function render(animate) {
         </div>
         ${checkElement}
       </div>
+      ${canMarkPassed(item, todayMid, doneItems) ? `<label class="done-toggle passed-toggle" data-key="${safeId}-passed"><input data-key="${safeId}-passed-input" type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)}: Bestanden – B entfällt"><svg class="check-mark" data-key="${safeId}-passed-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-key="${safeId}-passed-text">Bestanden – B entfällt</span></label>` : ''}
       ${item.isCancelled ? `<div class="meta" data-key="${safeId}-status"><span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span></div>` : ''}
       <div class="sitting-list" data-key="${safeId}-sittings">${sittingRowsHTML(item, todayMid, {doneItems, examsFrom:semester.examsFrom})}</div>
     `;

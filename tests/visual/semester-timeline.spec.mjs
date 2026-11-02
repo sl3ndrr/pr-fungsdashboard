@@ -8,7 +8,7 @@ async function geometry(page) {
     const rail=document.querySelector('#timeline-container');
     return {client:rail.clientWidth,scroll:rail.scrollWidth,bounds:box(rail),
       card:box(document.querySelector('.timeline-card')),hero:box(document.querySelector('#hero')),
-      points:[...rail.querySelectorAll('.timeline-dot')].map(el=>({id:el.dataset.eventId,position:getComputedStyle(el).position,stem:box(rail.querySelector(`[data-key="stem-${el.dataset.eventId}"]`)),hit:box(el),point:box(el.querySelector('.timeline-point')),label:box(el.querySelector('.timeline-event-label')),text:el.querySelector('.timeline-event-label').innerText})),
+      points:[...rail.querySelectorAll('.timeline-dot')].map(el=>({id:el.dataset.eventId,position:getComputedStyle(el).position,stem:box(rail.querySelector(`[data-key="stem-${el.dataset.occurrenceId}"]`)),hit:box(el),point:box(el.querySelector('.timeline-point')),label:box(el.querySelector('.timeline-event-label')),text:el.querySelector('.timeline-event-label').innerText})),
       labels:[...rail.querySelectorAll('.timeline-event-label,.timeline-period-label,.timeline-month,.timeline-today-label')].map(box),
       pill:box(rail.querySelector('.timeline-today-label')),line:box(rail.querySelector('.timeline-today')),
       layers:{pill:Number(getComputedStyle(rail.querySelector('.timeline-today-label')).zIndex),line:Number(getComputedStyle(rail.querySelector('.timeline-today')).zIndex)},
@@ -95,15 +95,19 @@ test('same-day dates and very long titles retain labelled disjoint targets',asyn
   expect(points[0]).toBeCloseTo(points[1],1);
 });
 
-test('empty winter, then a single winter event crossing year boundary',async({page})=>{
+test('explicitly empty fixture, then a single winter event crossing year boundary',async({page})=>{
+  await page.route('**/js/data.js',async route=>{
+    const response=await route.fetch();
+    await route.fulfill({response,body:await response.text()+'\nSEMESTERS[1].events=[];'});
+  });
   await openDashboard(page,{width:360,date:'2026-12-01'});
   await expect(page.locator('#semester-label')).toHaveText('Wintersemester 2026/2027');
-  await expect(page.locator('#hero')).toContainText('Keine offenen Termine');
+  await expect(page.locator('#hero')).toContainText('Keine datierten Termine offen');
   await expect(page.locator('.timeline-empty')).toBeVisible();
   await expect(page.locator('.timeline-track,#list .card')).toHaveCount(0);
   await page.route('**/js/data.js',async route=>{
     const response=await route.fetch();
-    await route.fulfill({response,body:await response.text()+`\nSEMESTERS[1].events.push({id:'winter',type:'Prüfung',title:'Winterprüfung',date:'2027-01-15',time:'10:00 Uhr'});`});
+    await route.fulfill({response,body:await response.text()+`\nSEMESTERS[1].events=[{id:'winter',type:'Prüfung',title:'Winterprüfung',date:'2027-01-15',time:'10:00 Uhr'}];`});
   });
   await page.reload();
   await expect(page.locator('#hero')).toHaveAttribute('data-event-id','winter');
@@ -123,7 +127,8 @@ test('day/semester change preserves page scroll, window selection, keyed nodes a
   await expect(page.locator('#timeline-event-p5')).toBeFocused();expect(await page.evaluate(()=>scrollY)).toBe(y);
   await page.clock.setFixedTime(new Date('2026-12-01T00:00:01+01:00'));
   await page.evaluate(()=>window.dispatchEvent(new Event('pageshow')));await freeze(page);
-  await expect(page.locator('.timeline-empty')).toBeVisible();
+  await expect(page.locator('#semester-label')).toHaveText('Wintersemester 2026/2027');
+  await expect(page.locator('#hero')).toHaveAttribute('data-event-id','ws26-asp-portfolio');
   await expect(page.locator('[data-window="semester"]')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('#toggle-past-btn')).toBeFocused();
 });

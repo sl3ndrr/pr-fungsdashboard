@@ -198,7 +198,7 @@ export function eventStatistics(events, today, doneItems = []) {
   const assignments = main.filter(event => event.type === 'Abgabe');
   const next7 = occurrencesOf(main).filter(event => !isEventDone(event, doneItems) &&
     calendarDayDiff(parseISOString(event.date), today) >= 0 && calendarDayDiff(parseISOString(event.date), today) <= 7).length;
-  return { total: main.length, undated: main.filter(event => event.type === 'Prüfung' && !sittingsOf(event).length).length,
+  return { total: main.length, undated: main.filter(event => event.type === 'Prüfung' && !isEventDone(event, doneItems) && !sittingsOf(event).length).length,
     assignments: assignments.length, assignmentsDone: assignments.filter(event => isEventDone(event, doneItems)).length, next7 };
 }
 /** Undo stays available after marking an exam passed, including after B. */
