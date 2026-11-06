@@ -139,3 +139,9 @@ oder gemessenen DOM-Höhen. Das Höhenziel 200–220px bleibt bei dichten Daten 
 Details: [Abnahmebericht](docs/verification-report.md), [Designentscheidungen](docs/design-plan.md),
 [Browseranleitung](docs/visual-tests.md). Ausgangsstand: `9278abb` vom 24.10.2026;
 `pre-calendar-removal` wurde lokal vor den Änderungen gesetzt.
+
+## Mitwirkende
+
+[<img src="https://avatars.githubusercontent.com/u/267193182?s=64&v=4" width="32" height="32" alt="Codex-Profilbild">](https://github.com/codex)
+
+[Codex](https://github.com/codex) hat zu diesem Projekt beigetragen.
