@@ -3,12 +3,10 @@ import {ICONS} from './data.js';
 import {sittingRowsHTML} from './cards.js';
 import {appointmentRows} from './layout.js';
 import {isEventPast, eventGroup, escapeHtml, typeClass, isEventDone, canMarkPassed, cancelledStatus} from './utils.js';
-import {syncSittingRows, syncChildren, transitionName, listenOnce, withTransition} from './motion.js';
+import {syncSittingRows, syncChildren, transitionName, listenOnce} from './motion.js';
 
 function toggleDone(id) {
-  return withTransition(() => {
-    store.toggleDone(id);
-  }, {type:'done'});
+  return store.toggleDone(id);
 }
 
 export function renderList(sorted, todayMid, animate) {

@@ -14,7 +14,7 @@ const generate=(fixture=events,bands=periods,today='2026-10-24',mode='upcoming',
   const deps={...utils,timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout,
     store:{get:()=>({events:fixture,periods:bands,semester,timelineMode:mode,doneItems:[]})},sittingDate:utils.formatDate,document:{...doc,getElementById:()=>({clientWidth:width})},
     getComputedStyle:()=>({fontSize:'12px',fontFamily:'system-ui'}),today:parseISOString(today),timelineMode:mode,doneItems:[]};
-  return new Function(...Object.keys(deps),dateFn+timelineFn+'\nreturn buildTimeline(today);')(...Object.values(deps));
+  return new Function(...Object.keys(deps),'let measurementContext;\n'+dateFn+timelineFn+'\nreturn buildTimeline(today);')(...Object.values(deps));
 };
 
 const pointFixtures = ['2026-09-23','2026-09-24','2026-10-05','2026-10-07'].map((date,i)=>({id:`x${i}`,type:'Prüfung',title:'Langer Titel '.repeat(20),date,time:'10:00 Uhr'}));
@@ -162,4 +162,16 @@ test('winter occurrences retain linear, disjoint 44px targets at all acceptance 
   assert.match(single.html,/Info III A/);
   assert.match(html,/data-occurrence-id="ws26-info3-B"/);
   assert.doesNotMatch(html,/timeline-event-ws26-exphy1/);
+});
+
+test('timeline reuses its canvas but refreshes the measured font on every build',()=>{
+  let canvases=0,fontSize='12px';const fonts=[];
+  const context={set font(value){fonts.push(value);},measureText:text=>({width:text.length*7})};
+  const deps={...utils,timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout,
+    store:{get:()=>({events,periods,semester:{},timelineMode:'upcoming',doneItems:[]})},
+    sittingDate:utils.formatDate,document:{getElementById:()=>({clientWidth:600}),createElement:()=>{canvases++;return {getContext:()=>context};}},
+    getComputedStyle:()=>({fontSize,fontFamily:'system-ui'})};
+  const build=new Function(...Object.keys(deps),'let measurementContext;\n'+dateFn+timelineFn+'\nreturn buildTimeline;')(...Object.values(deps));
+  build(parseISOString('2026-10-24'));fontSize='14px';build(parseISOString('2026-10-24'));
+  assert.equal(canvases,1);assert.deepEqual(fonts,['800 12px system-ui','800 14px system-ui']);
 });

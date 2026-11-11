@@ -4,7 +4,7 @@ import {sittingDate} from './cards.js';
 import {tooltipPosition, timelineWindow, timelinePosition, timelineEventLayout, timelineLabelLayout} from './layout.js';
 import {updateFilterIndicator} from './ui.js';
 import {isEventPast, parseISOString, calendarDayDiff, upcomingEvents, cancelledStatus, isEventDone, formatDate, escapeHtml, typeClass, occurrencesOf} from './utils.js';
-import {withTransition, reducedMotion, motion, syncHTML, listenOnce} from './motion.js';
+import {reducedMotion, motion, syncHTML, listenOnce} from './motion.js';
 
 // Datumsgeometrie für die Monatsmarken im Zeitstrahl.
 const dateInMonth = (year, month, day) => {
@@ -18,9 +18,7 @@ export async function selectTimelineEvent(dot,id) {
   const {events, showPast, typeFilter} = store.get();
   const item=events.find(e=>e.id===id);
   if(item && ((!showPast && isEventPast(item,today())) || (typeFilter!=='all' && typeFilter!==item.type))) {
-    await withTransition(()=>{
-      store.update({showPast:isEventPast(item,today()) ? true : showPast, typeFilter:typeFilter!=='all' && typeFilter!==item.type ? 'all' : typeFilter});
-    },{type:'filter'});
+    await store.update({showPast:isEventPast(item,today()) ? true : showPast, typeFilter:typeFilter!=='all' && typeFilter!==item.type ? 'all' : typeFilter}, {type:'filter'});
     dot=[...document.querySelectorAll('.timeline-dot')].find(button=>button.dataset.eventId===id);
   }
   const card=document.getElementById(`card-${id}`);
@@ -46,6 +44,7 @@ document.addEventListener('click', event => {
   if (!event.target.closest('.timeline-dot, #timeline-tooltip')) closeTimelineTooltip();
 });
 
+let measurementContext;
 export function buildTimeline(todayMid) {
   const {events, periods, semester, timelineMode, doneItems} = store.get();
   const domain = timelineWindow(events, todayMid, timelineMode, doneItems);
@@ -53,8 +52,8 @@ export function buildTimeline(todayMid) {
   const { events: visible, origin, todayDay, minDay, maxDay, axisStart, axisEnd } = domain;
   const width = Math.max(44, document.getElementById('timeline-container').clientWidth);
   const pos = date => timelinePosition(calendarDayDiff(date, origin), minDay, maxDay, width);
-  const canvas = document.createElement('canvas');
-  const context = canvas.getContext('2d');
+  measurementContext ||= document.createElement('canvas').getContext('2d');
+  const context = measurementContext;
   const font = getComputedStyle(document.getElementById('timeline-container'));
   context.font = `800 ${font.fontSize} ${font.fontFamily}`;
   const measure = text => Math.ceil(context.measureText(text).width) + 4;

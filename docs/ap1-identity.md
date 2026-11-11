@@ -133,6 +133,7 @@ unveränderten Ausgangsstand.
 | --- | ---: | ---: | --- | ---: |
 | Unverändertes `main`, Selbstvergleich | 226 | 2.344 | identisch | 0 |
 | Schritt 1: Module und expliziter Zustand | 226 | 2.344 | identisch | 0 |
+| Schritt 2: RAF-Bündelung und Messcanvas | 226 | 2.344 | identisch | 0 |
 
 Referenz: `record-controlled`; Selbstvergleich: `repeat-controlled`.
 Nach lokalem Verbindungsabbruch wurden 156 vollständig abgeschlossene Fälle
@@ -144,3 +145,9 @@ Schritt 1: vollständiger Browserlauf `structure-complete`, danach 41 Quelldatei
 bytegleich übernommen und per SHA-256 manifestiert. Mobile Tooltip- und Desktop-
 Abhaken-Aufnahmen manuell verglichen: keine Abweichung. Im Checkout: 63/63
 Node-Tests und 3/3 Scanner-Tests bestanden; `app.js` hat 53 Zeilen.
+
+Schritt 2: `rendering-controlled`, nach Verbindungsabbruch 187 abgeschlossene
+Browserfälle erneut vollständig aus ihren Aufnahmen validiert und 39 im Browser
+geprüft. 43 Quelldateien bytegleich übernommen und manifestiert; 68/68 Node-Tests
+und 3/3 Scanner-Tests bestanden. Die fünf zusätzlichen Tests prüfen RAF-Bündelung,
+abwartbare Renderergebnisse, Fehlerbehandlung und Canvas-/Schrift-Wiederverwendung.
