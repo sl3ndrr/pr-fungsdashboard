@@ -101,6 +101,7 @@ B ist kleiner und gefüllt. Undatierte Prüfungen erzeugen keinen Punkt.
 | --- | --- |
 | `js/app.js` | Start, Simulation, Ready-Status und Observer |
 | `js/state.js` | Expliziter Zustands-Snapshot, Transaktionen und serialisierte Speicherung |
+| `js/scheduler.js` | Gemeinsame, abwartbare Renderanforderung je Animation Frame |
 | `js/render.js` | Renderfolge, unveränderter Fokus-/Scroll-Erhalt und Tageswechsel |
 | `js/theme.js` | Gespeichertes/System-Theme und Tastaturbedienung |
 | `js/hero.js` | Nächster Termin, Danach und Periodenfortschritt |
@@ -140,7 +141,7 @@ TZ=Europe/Berlin node --test tests/
 node --test scripts/css-duplicates.test.mjs
 ```
 
-**63/63 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
+**68/68 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
 Validierung, Sortierung/Gruppierung, Occurrences, Statistik, ARIA-Ausgabe und Motion enthalten.
 **Historischer Browser-Befund vor AP0:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
 fehlgeschlagen; Browserdownload HTTP 403, kein System-Chrome. Keine neuen Screenshots

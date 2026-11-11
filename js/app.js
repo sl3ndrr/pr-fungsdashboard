@@ -1,18 +1,25 @@
+import {createRenderScheduler} from './scheduler.js';
+import {withTransition} from './motion.js';
 import {store} from './state.js';
 import {simulatedDay} from './clock.js';
 import {initialiseTheme} from './theme.js';
 import {initialiseUI, updateFilterIndicator} from './ui.js';
 import {updatePastToggle, updateTypeFilter} from './filters.js';
-import {render, renderPreservingState, refreshCurrentDay} from './render.js';
+import {renderPreservingState, refreshCurrentDay} from './render.js';
 
 initialiseUI();
 initialiseTheme();
+const requestRender = createRenderScheduler(({animate, type}) => {
+  const update = () => {updatePastToggle();updateTypeFilter();renderPreservingState(animate);};
+  return type ? withTransition(update, {type}) : update();
+});
 const timelineContainerElement = document.getElementById('timeline-container');
 
 (async function init() {
   await store.initialiseDoneItems();
-  store.onRender(() => {updatePastToggle();updateTypeFilter();renderPreservingState();});
-  render(true);
+  store.onRender(requestRender);
+  document.fonts?.ready.then(() => requestRender());
+  await requestRender({animate:true});
   updateFilterIndicator();
   const simulated = simulatedDay();
   if (simulated) {
@@ -31,13 +38,12 @@ const timelineContainerElement = document.getElementById('timeline-container');
     if (!document.hidden) refreshCurrentDay();
   });
   window.addEventListener('pageshow', refreshCurrentDay);
-  document.fonts?.ready.then(() => renderPreservingState());
   let timelineWidth = timelineContainerElement.clientWidth;
   new ResizeObserver(() => {
     const width = timelineContainerElement.clientWidth;
     if (width !== timelineWidth) {
       timelineWidth = width;
-      renderPreservingState();
+      requestRender();
     }
   }).observe(timelineContainerElement);
   const list = document.getElementById('list');
@@ -46,7 +52,7 @@ const timelineContainerElement = document.getElementById('timeline-container');
     const next = getComputedStyle(list).getPropertyValue('--list-columns');
     if (next !== columns) {
       columns = next;
-      renderPreservingState();
+      requestRender();
     }
   }).observe(list);
   refreshCurrentDay();

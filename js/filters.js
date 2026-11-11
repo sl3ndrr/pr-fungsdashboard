@@ -1,5 +1,4 @@
 import {store} from './state.js';
-import {withTransition} from './motion.js';
 import {updateFilterIndicator} from './ui.js';
 
 // Filter für vergangene Termine.
@@ -11,7 +10,7 @@ export function updatePastToggle() {
   updateFilterIndicator(togglePastBtn.closest('.segmented-filter'));
 }
 togglePastBtn.addEventListener('click', () => {
-  withTransition(()=>{store.update({showPast:!store.get().showPast});},{type:'filter'});
+  store.update({showPast:!store.get().showPast}, {type:'filter'});
 });
 
 export function updateTypeFilter() {
@@ -23,7 +22,7 @@ export function updateTypeFilter() {
 }
 document.querySelectorAll('#type-filter button').forEach(button => {
   button.addEventListener('click', () => {
-    withTransition(()=>{store.update({typeFilter:button.dataset.filter});},{type:'filter'});
+    store.update({typeFilter:button.dataset.filter}, {type:'filter'});
   });
 });
 
