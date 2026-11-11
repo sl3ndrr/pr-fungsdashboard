@@ -24,7 +24,6 @@ async function fixture(width,fallback){
     const NativeDate=window.Date;window.__fixtureNow=new NativeDate(2026,8,30,12).getTime();
     window.Date=class extends NativeDate{constructor(...args){super(...(args.length?args:[window.__fixtureNow]));}static now(){return window.__fixtureNow;}};
     const memory=new Map();Object.defineProperty(window,'localStorage',{value:{getItem:key=>memory.get(key)??null,setItem:(key,value)=>memory.set(key,String(value)),removeItem:key=>memory.delete(key)}});
-    window.storage={get:async key=>({value:memory.get(key)??null}),set:async(key,value)=>memory.set(key,value)};
     window.__errors=[];window.addEventListener('error',event=>window.__errors.push(event.message));window.addEventListener('unhandledrejection',event=>window.__errors.push(String(event.reason)));
     ${fallback?"Object.defineProperty(document,'startViewTransition',{value:undefined,configurable:true});":''}
   <\/script>`;

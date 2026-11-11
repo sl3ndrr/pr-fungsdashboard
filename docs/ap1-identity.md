@@ -134,6 +134,7 @@ unveränderten Ausgangsstand.
 | Unverändertes `main`, Selbstvergleich | 226 | 2.344 | identisch | 0 |
 | Schritt 1: Module und expliziter Zustand | 226 | 2.344 | identisch | 0 |
 | Schritt 2: RAF-Bündelung und Messcanvas | 226 | 2.344 | identisch | 0 |
+| Schritt 3: Speicherpfad und Altlasten | 226 | 2.344 | identisch | 0 |
 
 Referenz: `record-controlled`; Selbstvergleich: `repeat-controlled`.
 Nach lokalem Verbindungsabbruch wurden 156 vollständig abgeschlossene Fälle
@@ -151,3 +152,59 @@ Browserfälle erneut vollständig aus ihren Aufnahmen validiert und 39 im Browse
 geprüft. 43 Quelldateien bytegleich übernommen und manifestiert; 68/68 Node-Tests
 und 3/3 Scanner-Tests bestanden. Die fünf zusätzlichen Tests prüfen RAF-Bündelung,
 abwartbare Renderergebnisse, Fehlerbehandlung und Canvas-/Schrift-Wiederverwendung.
+
+Schritt 3: vollständiger Browserlauf `cleanup-controlled`; 44 Dateien bytegleich
+übernommen und manifestiert. Mobile und Desktop-Interaktionen manuell verglichen:
+keine sichtbare Abweichung. Im tatsächlichen Checkout: 71/71 Node-Tests, 3/3
+Scanner-Tests und 2/2 separat ausgeführte Clock-Tests bestanden. `app.js` hat
+abschließend 59 Zeilen. Sommer-Fingerprint und beide Datenbestände bleiben erhalten.
+
+### Unabhängige Renderzählung
+
+`render-count.mjs` läuft ohne Screenshots oder Animations-Overrides in Chromium
+151.0.7922.34: sieben Viewports × hell/dunkel = 14 Fälle, `?heute=2027-02-18`,
+Reduced Motion, Fonts und 500 ms Wartezeit vor dem Ablesen. Danach einmaliger
+Resize auf 1200 px (von 1200 auf 1600 px), erneut 500 ms Wartezeit.
+
+| Messung | Vorher, pro Fall | Endstand, pro Fall |
+| --- | --- | --- |
+| Render beim Laden | 2 in 14/14 | 1 in 13/14; 2 bei 1200×900 hell |
+| Render bei Resize | 2 in 14/14 | 1 in 14/14 |
+| Neue Messcanvas beim Laden | 2 in 14/14 | 1 in 14/14 |
+| Neue Messcanvas bei Resize | 2 in 14/14 | 0 in 14/14 |
+
+Protokolle: `test-results/render-count/before`, `final`, `comparison.json`.
+Später verfügbare Fonts können weiterhin einen zweiten Laderender benötigen.
+Die Zahlen belegen weniger Aufrufe/Allokationen, keine allgemeine Laufzeitmessung.
+
+### Ergänzende Browserabnahme und Grenzen
+
+- 14 Chromium-Tastatur-/Theme-/Kontrastfälle: 308 Tab-Stopps mit sichtbarem Fokus,
+  1.022 Text-Kontrastproben, Minimum 6,1829:1, identische Ergebnisse vor/nachher.
+- Vorhandenes `ux-check.mjs` am tatsächlichen Endstand: 375×812 hell und 1200×900
+  dunkel am 18.02.2027, Reduced Motion. Konsole, Overflow, 44-px-Ziele und Labels
+  ohne Befund. Repräsentative Vorher-/Nachher-Aufnahmen manuell angesehen.
+- Vorhandene Chromium-Funktionsspecs `sittings`, `layout`, `semester-timeline`:
+  vor/nachher jeweils 98 bestanden, dieselben 10 fehlgeschlagen, 0 übersprungen.
+  Dazu gehören bestehende erfolgreiche Prüfungen von Fokus-/Scroll-Erhalt sowie
+  Tages-/Semesterwechsel. Fehler: neun Layout-Skalenprüfungen anhand verschobener
+  Hitboxmitten und ein Same-day-Fall mit fehlendem abgesagtem `p4`.
+- Die gesamte vorhandene Chromium-Suite wurde versucht und nach acht Screenshot-
+  Referenzfehlern abgebrochen. Unbestätigte automatisch erzeugte Referenzen wurden
+  nicht übernommen; keine bestehende Baseline oder Assertion wurde abgeschwächt.
+- Kein WebKit-Nachweis; normale Bewegung und browserübergreifende Pixelgleichheit
+  gehören nicht zum Identitäts-Gate. Vollständiges HTML wird verglichen, Bilder
+  erfassen Viewports und das Seitenende. Nur repräsentative Bilder wurden manuell
+  angesehen, die gesamte Matrix automatisiert geprüft.
+- `html`/`raw()` ist als optionaler Folgeschritt ausgelassen: bestehende Visual-
+  Specs sind nicht vollständig grün; eine Template-Umstellung vergrößerte den Diff.
+
+### Nachweis entfernter Altlasten
+
+Die Suche vor der Entfernung über `js/`, `tests/`, `css/` fand die sechs Namen
+`--radius-sm`, `--radius-md`, `--font-lg`, `--font-xl`, `--surface-0`, `--border`
+ausschließlich an ihren Definitionen in `:root`. `--delay` hatte nur eine
+schreibende Stelle und keinen Leser; damit entfällt auch die zugehörige
+`indexOf`-Suche. Die abschließende Suche findet keinen dieser Namen und keinen
+`window.storage`-Pfad mehr. CSS-Scanner-Ausgabe wurde erzeugt; 3/3 Scanner-Tests
+bestehen. Andere Funktionen und Aliase wurden beibehalten.

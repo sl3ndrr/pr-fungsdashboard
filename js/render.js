@@ -59,7 +59,7 @@ export function render(animate) {
   renderStatistics(mainEvents, todayMid, doneItems);
 
 
-  renderList(sorted, todayMid, animate);
+  renderList(sorted, todayMid);
   enhanceProgress(animate);
   if(animate){enterPage();enterTimeline();}
 }

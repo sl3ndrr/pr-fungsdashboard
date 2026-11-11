@@ -17,3 +17,5 @@ import './cards.test.mjs';
 import './state.test.mjs';
 
 import './scheduler.test.mjs';
+
+import './storage.test.mjs';

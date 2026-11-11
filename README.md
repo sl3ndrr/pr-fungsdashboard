@@ -141,7 +141,7 @@ TZ=Europe/Berlin node --test tests/
 node --test scripts/css-duplicates.test.mjs
 ```
 
-**68/68 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
+**71/71 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
 Validierung, Sortierung/Gruppierung, Occurrences, Statistik, ARIA-Ausgabe und Motion enthalten.
 **Historischer Browser-Befund vor AP0:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
 fehlgeschlagen; Browserdownload HTTP 403, kein System-Chrome. Keine neuen Screenshots

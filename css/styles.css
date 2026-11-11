@@ -41,7 +41,7 @@
   --outline: light-dark(#697585, #8d98a8); --outline-variant: light-dark(#bfc8d5, #424b58);
   --shape-xs: 4px; --shape-xxl: 48px; --shape-sm: 8px; --shape-md: 12px; --shape-lg: 16px; --shape-lg-inc: 20px;
   --shape-xl: 28px; --shape-xl-inc: 32px; --shape-full: 9999px;
-  --radius-sm: var(--shape-sm); --radius-md: var(--shape-md); --radius-lg: var(--shape-xl); --radius-pill: var(--shape-full);
+  --radius-lg: var(--shape-xl); --radius-pill: var(--shape-full);
   --space-1: .25rem; --space-2: .5rem; --space-3: .75rem; --space-4: 1rem; --space-6: 1.5rem; --space-8: 2rem; --space-12: 3rem;
   --font-body: 'Roboto Flex', Roboto, system-ui, -apple-system, sans-serif; --font-display: var(--font-body);
   --type-display-large: clamp(3.5rem, 6vw, 5.5rem);
@@ -53,7 +53,6 @@
   --type-title-large: 1.375rem;
   --type-body-large: 1rem; --type-body-medium: .875rem; --type-body-small: .75rem;
   --font-xs: var(--type-body-small); --font-sm: var(--type-body-medium); --font-md: var(--type-body-large);
-  --font-lg: var(--type-title-large); --font-xl: var(--type-headline-small);
   --text-display-large: 800 var(--type-display-large)/1 var(--font-display);
   --text-display-small: 700 var(--type-display-small)/1.1 var(--font-display);
   --text-label-small: 600 var(--type-label-small)/1.3 var(--font-body);
@@ -70,9 +69,8 @@
   /* Dense timeline captions use the Label Medium size in two 12px lines inside a 44px target. */
   --text-timeline-label: 600 var(--type-label-medium)/1 var(--font-body);
   --state-hover: 8%; --state-focus: 10%; --state-pressed: 10%; --state-disabled-content: 38%; --state-disabled-container: 12%;
-  --surface-0: var(--surface); --surface-1: var(--surface-container-lowest); --surface-2: var(--surface-container-high);
+  --surface-1: var(--surface-container-lowest); --surface-2: var(--surface-container-high);
   --bg: var(--surface);
-  --border: var(--outline-variant);
   --text: var(--on-surface); --text-muted: var(--on-surface-variant); --text-faint: var(--on-surface-variant);
   --pruefung: var(--error); --pruefung-bg: var(--error-container);
   --abgabe: var(--primary); --abgabe-bg: var(--primary-container);
