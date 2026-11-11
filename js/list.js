@@ -9,7 +9,7 @@ function toggleDone(id) {
   return store.toggleDone(id);
 }
 
-export function renderList(sorted, todayMid, animate) {
+export function renderList(sorted, todayMid) {
   const {semester, doneItems, showPast, typeFilter} = store.get();
   const listTarget=document.getElementById('list');
   const listEl=document.createElement('div');
@@ -55,7 +55,6 @@ export function renderList(sorted, todayMid, animate) {
   });
   function buildCard(item) {
     const { group, labelId } = itemGroups.get(item.id);
-    const idx = orderedEvents.indexOf(item);
     const safeId = escapeHtml(item.id);
     const isAbgabe = item.type === 'Abgabe';
     const isDone = isEventDone(item, doneItems);
@@ -72,7 +71,6 @@ export function renderList(sorted, todayMid, animate) {
     card.style.viewTransitionName=transitionName(item.id);
     card.setAttribute('role', 'listitem');
     card.setAttribute('aria-labelledby', `title-${item.id} ${labelId}`);
-    if (animate) card.style.setProperty('--delay', Math.min(idx * 0.025, 0.15) + 's');
     card.innerHTML = `
       <div class="card-header" data-key="${safeId}-header">
         <div class="type-icon ${typeClass(item.type)}" data-key="${safeId}-icon" role="img" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
