@@ -22,7 +22,7 @@ export function renderList(sorted, todayMid) {
   });
 
   if (visibleEvents.length === 0) {
-    listEl.innerHTML = `<div class="empty-state" data-key="empty" style="view-transition-name:empty-state" role="listitem">Keine ${typeFilter === 'all' ? 'Termine' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'Termine'} in dieser Ansicht.</div>`;
+    listEl.innerHTML = `<div class="empty-state" data-key="empty" style="view-transition-name:empty-state" role="listitem">Keine ${typeFilter === 'all' ? 'Einträge' : typeFilter === 'Prüfung' ? 'Prüfungen' : typeFilter === 'Abgabe' ? 'Abgaben' : 'sonstigen Einträge'} in dieser Ansicht.</div>`;
   }
 
   const groupFor = item => eventGroup(item, todayMid, doneItems);

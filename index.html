@@ -106,7 +106,7 @@
       </header>
 
       <section class="top-grid" aria-label="Semesterübersicht">
-        <section id="hero" class="hero" aria-live="polite"></section>
+        <section id="hero" class="hero"></section>
 
         <div class="overview-side">
         <section class="timeline-card" aria-labelledby="timeline-heading">
@@ -132,17 +132,18 @@
         <div class="list-heading">
           <h2 id="appointments-heading" class="section-title display">Termine</h2>
           <div class="list-controls">
-            <div id="type-filter" class="segmented-filter" role="group" aria-label="Termine nach Typ filtern">
+            <div id="type-filter" class="segmented-filter" role="group" aria-label="Einträge nach Typ filtern">
               <button type="button" data-filter="all" aria-pressed="true" aria-controls="list">Alle</button>
               <button type="button" data-filter="Prüfung" aria-pressed="false" aria-controls="list">Prüfungen</button>
               <button type="button" data-filter="Abgabe" aria-pressed="false" aria-controls="list">Abgaben</button>
-              <button type="button" data-filter="Termin" aria-pressed="false" aria-controls="list">Termine</button>
+              <button type="button" data-filter="Termin" aria-pressed="false" aria-controls="list">Sonstiges</button>
             </div>
             <div class="segmented-filter past-filter" role="group" aria-label="Vergangene Termine">
               <button id="toggle-past-btn" type="button" aria-pressed="false" aria-controls="list">Vergangene anzeigen</button>
             </div>
           </div>
         </div>
+        <p class="sitting-legend">A = 1. Termin · B = Wiederholung</p>
         <div class="dashboard-list" id="list" role="list" aria-labelledby="appointments-heading"></div>
       </section>
     </main>
