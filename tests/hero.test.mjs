@@ -39,3 +39,7 @@ test('hero empty state makes clear that only dated occurrences are exhausted',()
   assert.match(html,/Keine datierten Termine offen/);
   assert.doesNotMatch(html,/hero-number/);
 });
+
+test('hero weekday comes from the event date',()=>{
+  assert.match(hero(1,9), /class=\"hero-weekday\">Donnerstag<\/span>/);
+});

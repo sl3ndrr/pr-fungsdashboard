@@ -29,7 +29,7 @@ function buildHero(upcoming, todayMid, animate) {
   syncHTML(el, `
     <h2 class="hero-label">Als Nächstes</h2>
     <div class="hero-main">
-      <div class="hero-countdown"><span class="hero-number ${diffDays === 0 ? 'word' : ''}">${count}</span>${diffDays > 0 ? `<span class="hero-unit">${diffDays === 1 ? 'Tag' : 'Tage'}</span>` : ''}</div>
+      <div class="hero-countdown"><span class="hero-number ${diffDays === 0 ? 'word' : ''}">${count}</span>${diffDays > 0 ? `<span class="hero-unit">${diffDays === 1 ? 'Tag' : 'Tage'}</span>` : ''}<span class="hero-weekday">${escapeHtml(d.toLocaleDateString('de-DE', {weekday:'long'}))}</span></div>
       <div class="hero-text">
         <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</span>
         <h3 class="hero-title">${escapeHtml(item.title)}</h3>
