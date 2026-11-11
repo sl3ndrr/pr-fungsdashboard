@@ -23,7 +23,7 @@ export default defineConfig({
     name: browserName, use: {browserName},
   })),
   webServer: {
-    command: 'python3 -m http.server 8765 --bind 127.0.0.1',
+    command: `"${process.env.PYTHON || 'python3'}" -m http.server 8765 --bind 127.0.0.1`,
     cwd: process.env.DASHBOARD_ROOT || root,
     url: 'http://127.0.0.1:8765',
     reuseExistingServer: false,
