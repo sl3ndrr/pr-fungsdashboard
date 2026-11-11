@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFileSync} from 'node:fs';
-const app = readFileSync(new URL('../js/app.js', import.meta.url), 'utf8');
+const app = ['app.js','state.js','theme.js','hero.js','timeline.js','list.js','stats.js','filters.js','ui.js','render.js'].map(name=>readFileSync(new URL('../js/'+name,import.meta.url),'utf8')).join('\n');
 const css = readFileSync(new URL('../css/styles.css', import.meta.url), 'utf8');
 test('determinate fill is clipped, never scaleX-scaled (hero and statistics)', () => {
   assert.doesNotMatch(app, /scaleX\(/);
