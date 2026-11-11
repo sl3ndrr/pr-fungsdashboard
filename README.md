@@ -14,7 +14,7 @@ Dashboard: <http://localhost:8000>. Browser-Regression: <http://localhost:8000/t
 ## Funktionen
 
 - Nächster offener Einzeltermin mit Countdown, zweitem Prüfungstermin und zwei Danach-Buttons.
-- Prüfungskarten mit A-/B-Zeilen; der nächste offene Termin erhält die große Darstellung.
+- Prüfungskarten mit A-/B-Zeilen (A = 1. Termin, B = Wiederholung); der nächste offene Termin erhält die große Darstellung.
 - Prüfungen ohne Datum: „Termin noch offen“, frühestes Datum, kein Countdown.
 - Einheitliche Terminzeilen auch für Abgaben und persönliche Termine.
 - Eingepasster linearer Zeitstrahl mit einem Punkt je Termin, Semester-/Ab-heute-Fenster,
@@ -81,10 +81,10 @@ Eine Karte repräsentiert ein Event. Hero/Danach repräsentieren einzelne Occurr
 Der nächste Termin liegt heute oder später. Nach A bleibt eine Prüfung mit offenem B
 aktuell; erst nach dem letzten Termin ist sie vergangen. Karten sortieren nach dem
 nächsten offenen, sonst letzten Termin. Undatierte Prüfungen folgen allen datierten
-Karten in Datenreihenfolge. Der Typfilter betrifft ausschließlich die Liste;
+Karten in Datenreihenfolge. Der Typfilter „Sonstiges“ bezeichnet persönliche Termine und betrifft ausschließlich die Liste;
 Navigation setzt nötige Filter zurück.
 
-„Termine“ zählt jedes Event einmal, einschließlich undatierter Prüfungen, ohne
+„Einträge“ zählt jedes Event einmal, einschließlich undatierter Prüfungen, ohne
 abgebrochene Events. „Davon … ohne Datum“ nennt offene undatierte Prüfungen.
 „Termine in 7 Tagen“ zählt einzelne Termine von heute bis einschließlich heute +7,
 ohne abgebrochene oder erledigte Events. Erledigte Prüfungen bleiben in der Gesamtsumme.
