@@ -132,9 +132,15 @@ unveränderten Ausgangsstand.
 | Quellstand | Szenarien | Checkpoints | Normalisiertes HTML | Playwright-Diffpixel |
 | --- | ---: | ---: | --- | ---: |
 | Unverändertes `main`, Selbstvergleich | 226 | 2.344 | identisch | 0 |
+| Schritt 1: Module und expliziter Zustand | 226 | 2.344 | identisch | 0 |
 
 Referenz: `record-controlled`; Selbstvergleich: `repeat-controlled`.
 Nach lokalem Verbindungsabbruch wurden 156 vollständig abgeschlossene Fälle
 erneut aus ihren gespeicherten Aufnahmen validiert und 70 im Browser geprüft.
 Alle Konsolen-, Overflow-, Zielgrößen- und Labelprüfungen bestehen.
 Vor dem Einrichtungscommit: 58/58 Node-Tests und 3/3 CSS-Scanner-Tests bestanden.
+
+Schritt 1: vollständiger Browserlauf `structure-complete`, danach 41 Quelldateien
+bytegleich übernommen und per SHA-256 manifestiert. Mobile Tooltip- und Desktop-
+Abhaken-Aufnahmen manuell verglichen: keine Abweichung. Im Checkout: 63/63
+Node-Tests und 3/3 Scanner-Tests bestanden; `app.js` hat 53 Zeilen.

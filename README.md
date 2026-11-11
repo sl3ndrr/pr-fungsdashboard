@@ -99,7 +99,17 @@ B ist kleiner und gefüllt. Undatierte Prüfungen erzeugen keinen Punkt.
 
 | Datei | Verantwortung |
 | --- | --- |
-| `js/app.js` | Rendern, Filter, Theme, Fokus, Semester-/Tageswechsel |
+| `js/app.js` | Start, Simulation, Ready-Status und Observer |
+| `js/state.js` | Expliziter Zustands-Snapshot, Transaktionen und serialisierte Speicherung |
+| `js/render.js` | Renderfolge, unveränderter Fokus-/Scroll-Erhalt und Tageswechsel |
+| `js/theme.js` | Gespeichertes/System-Theme und Tastaturbedienung |
+| `js/hero.js` | Nächster Termin, Danach und Periodenfortschritt |
+| `js/timeline.js` | Lineare Zeitskala, Legende, Tooltip und Kartenauswahl |
+| `js/list.js` | Filterung, Gruppierung und Karten |
+| `js/stats.js` | Statistik und Zahlen-Feedback |
+| `js/filters.js` | Filter-Steuerelemente und Zustandsänderungen |
+| `js/ui.js` | Ripple, Indikator, Fortschritt und Fokusziele |
+| `js/clock.js` | Gemeinsame Datumsquelle und validiertes `?heute=` |
 | `js/cards.js` | Terminzeilen und zugängliche Namen; `sittingRows()` entscheidet A/B-Hierarchie |
 | `js/utils.js` | Validierung, Datumsmathematik, Occurrences, Sortierung, Statistik |
 | `js/layout.js` | Lineare Skala, kollisionsfreie Reihen, Overlay- und Listengeometrie |
@@ -130,11 +140,13 @@ TZ=Europe/Berlin node --test tests/
 node --test scripts/css-duplicates.test.mjs
 ```
 
-**58/58 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
+**63/63 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
 Validierung, Sortierung/Gruppierung, Occurrences, Statistik, ARIA-Ausgabe und Motion enthalten.
-**Browser-Abnahme offen:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
+**Historischer Browser-Befund vor AP0:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
 fehlgeschlagen; Browserdownload HTTP 403, kein System-Chrome. Keine neuen Screenshots
 oder gemessenen DOM-Höhen. Das Höhenziel 200–220px bleibt bei dichten Daten offen.
+
+Aktueller AP1-Nachweis: [HTML-/Pixel-Gate, Matrix und Renderzahlen](docs/ap1-identity.md).
 
 Details: [Abnahmebericht](docs/verification-report.md), [Designentscheidungen](docs/design-plan.md),
 [Browseranleitung](docs/visual-tests.md). Ausgangsstand: `9278abb` vom 24.10.2026;

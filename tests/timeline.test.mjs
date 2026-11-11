@@ -5,14 +5,14 @@ import {timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout}
 import {EVENTS,PERIODS,SEMESTERS} from '../js/data.js';
 import * as utils from '../js/utils.js';
 import {parseISOString,calendarDayDiff,cancelledStatus,escapeHtml,formatDate,typeClass,validateData,upcomingEvents} from '../js/utils.js';
-const source=readFileSync(new URL('../js/app.js',import.meta.url),'utf8');
-const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('function toggleDone'));
-const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nfunction renderHero('));
+const source=readFileSync(new URL('../js/timeline.js',import.meta.url),'utf8');
+const dateFn=source.slice(source.indexOf('const dateInMonth ='),source.indexOf('let highlightTimer;'));
+const timelineFn=source.slice(source.indexOf('function buildTimeline('),source.indexOf('\nconst timelineTooltip ='));
 const {events,periods}=validateData(EVENTS,PERIODS);
 const doc={getElementById:()=>({clientWidth:600}),createElement:()=>({getContext:()=>({measureText:text=>({width:text.length*7})})})};
 const generate=(fixture=events,bands=periods,today='2026-10-24',mode='upcoming',width=600,semester={})=>{
   const deps={...utils,timelineWindow,timelinePosition,timelineEventLayout,timelineLabelLayout,
-    events:fixture,periods:bands,semester,sittingDate:utils.formatDate,document:{...doc,getElementById:()=>({clientWidth:width})},
+    store:{get:()=>({events:fixture,periods:bands,semester,timelineMode:mode,doneItems:[]})},sittingDate:utils.formatDate,document:{...doc,getElementById:()=>({clientWidth:width})},
     getComputedStyle:()=>({fontSize:'12px',fontFamily:'system-ui'}),today:parseISOString(today),timelineMode:mode,doneItems:[]};
   return new Function(...Object.keys(deps),dateFn+timelineFn+'\nreturn buildTimeline(today);')(...Object.values(deps));
 };
@@ -110,7 +110,8 @@ test('month labels carry a four-digit year only first or when the year changes',
 });
 
 test('the seven-day statistic includes the event noun with correct singular and plural',()=>{
-  const stats=source.slice(source.indexOf('  const stats ='),source.indexOf('\n  animateStatistics();'));
+  const statsSource=readFileSync(new URL('../js/stats.js',import.meta.url),'utf8');
+  const stats=statsSource.slice(statsSource.indexOf('  const stats ='),statsSource.indexOf('\n  animateStatistics();'));
   for(const count of [0,1,2]){
     let html;
     const fixture=Array.from({length:count},(_,i)=>({id:`stat${i}`,type:'Termin',date:'2026-10-26'}));
@@ -120,7 +121,8 @@ test('the seven-day statistic includes the event noun with correct singular and 
 });
 
 test('midnight scheduler uses local calendar days, refreshes on wake, and handles the 25-hour DST day',()=>{
-  const scheduler=source.slice(source.indexOf('function scheduleNextDay()'),source.indexOf('// Filter für vergangene Termine.'));
+  const renderSource=readFileSync(new URL('../js/render.js',import.meta.url),'utf8');
+  const scheduler=renderSource.slice(renderSource.indexOf('function scheduleNextDay()')).replace('export function refreshCurrentDay','function refreshCurrentDay');
   let now=parseISOString('2026-10-25').getTime(),callback,delay,renders=0,simulated=false;
   class ClockDate extends Date{constructor(...args){super(...(args.length?args:[now]));}}
   const document={hidden:false};
