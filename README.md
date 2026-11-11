@@ -119,7 +119,7 @@ Spatial darf überschwingen, Effects nicht. Reduced Motion wird live respektiert
 `syncHTML`/`syncChildren` erhalten Knoten über stabile IDs/Keys; die A→B-Vergrößerung
 verwendet nur Transform-FLIP, keine Font-Size-Transition.
 
-Roboto Flex bleibt über Google Fonts mit System-Fallback eingebunden.
+Roboto Flex wird lokal als variable WOFF2-Schrift unter OFL-Lizenz ausgeliefert; ein System-Fallback bleibt verfügbar.
 Self-Hosting wurde versucht; der Abruf ist in dieser Umgebung mit HTTP 403 gesperrt.
 Die einmalige Font-Ready-Neuberechnung bleibt für korrekte Labelmessung erhalten.
 
