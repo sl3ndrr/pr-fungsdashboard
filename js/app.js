@@ -1,3 +1,4 @@
+import {now, today, simulatedDay} from './clock.js';
 import {sittingRowsHTML, sittingDate, sittingAccessibleName} from './cards.js';
 import { tooltipPosition, timelineWindow, timelinePosition, timelineEventLayout, timelineLabelLayout, appointmentRows } from './layout.js';
 import { batchUpdate, syncSittingRows, syncHTML, syncChildren, listenOnce, withTransition, transitionName, reducedMotion, motion, enterPage, fadeChange } from './motion.js';
@@ -20,7 +21,7 @@ import {
 } from "./utils.js";
 import { loadDoneItems, saveDoneItems } from "./storage.js";
 
-let semester = semesterForDate(SEMESTERS, new Date());
+let semester = semesterForDate(SEMESTERS, now());
 let { events, periods } = validateData(semester.events, semester.periods);
 
 async function initialiseDoneItems() {
@@ -145,9 +146,9 @@ function toggleDone(id) {
 let highlightTimer;
 async function selectTimelineEvent(dot,id) {
   const item=events.find(e=>e.id===id);
-  if(item && ((!showPast && isEventPast(item,midnight(new Date()))) || (typeFilter!=='all' && typeFilter!==item.type))) {
+  if(item && ((!showPast && isEventPast(item,today())) || (typeFilter!=='all' && typeFilter!==item.type))) {
     await withTransition(()=>{
-      if(isEventPast(item,midnight(new Date())))showPast=true;
+      if(isEventPast(item,today()))showPast=true;
       if(typeFilter!=='all' && typeFilter!==item.type)typeFilter='all';
       updatePastToggle();updateTypeFilter();renderPreservingState();
     },{type:'filter'});
@@ -364,7 +365,7 @@ function showTimelineTooltip(dot) {
   closeTimelineTooltip();
   tooltipAnchor = dot;
   const status = item.isCancelled ? `Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(item)}`
-    : isEventDone(item, doneItems) ? 'Erledigt' : parseISOString(item.date) < midnight(new Date()) ? 'Vergangen' : 'Offen';
+    : isEventDone(item, doneItems) ? 'Erledigt' : parseISOString(item.date) < today() ? 'Vergangen' : 'Offen';
   syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span><span>${escapeHtml(status)}</span>`);
   dot.setAttribute('aria-describedby', 'timeline-tooltip');
   timelineTooltip.dataset.open = 'true';
@@ -416,8 +417,8 @@ let renderedDay = null;
 let dayTimer;
 
 function render(animate) {
-  const today    = new Date();
-  const todayMid = midnight(today);
+  const current = now();
+  const todayMid = midnight(current);
   const nextSemester = semesterForDate(SEMESTERS, todayMid);
   if (nextSemester.id !== semester.id) {
     semester = nextSemester;
@@ -434,8 +435,8 @@ function render(animate) {
   updateFilterIndicator(document.getElementById('timeline-window'));
   const types = [...new Set(tl.dotEvents.map(event => event.type))];
   syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="timeline-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.some(event => event.isCancelled) ? '<span class="timeline-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
-  renderedDay = localDayKey(today);
-  document.getElementById('today-date').textContent = today.toLocaleDateString('de-DE', {
+  renderedDay = localDayKey(current);
+  document.getElementById('today-date').textContent = current.toLocaleDateString('de-DE', {
     weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
   });
 
@@ -561,14 +562,15 @@ function render(animate) {
 
 function scheduleNextDay() {
   clearTimeout(dayTimer);
-  const now = new Date();
-  const nextMidnight = midnight(now);
+  if (simulatedDay()) return;
+  const current = now();
+  const nextMidnight = midnight(current);
   nextMidnight.setDate(nextMidnight.getDate() + 1);
-  dayTimer = setTimeout(refreshCurrentDay, Math.max(1, nextMidnight.getTime() - now.getTime() + 25));
+  dayTimer = setTimeout(refreshCurrentDay, Math.max(1, nextMidnight.getTime() - current.getTime() + 25));
 }
 
 function refreshCurrentDay() {
-  if (!document.hidden && localDayKey(new Date()) !== renderedDay) renderPreservingState();
+  if (!document.hidden && localDayKey(now()) !== renderedDay) renderPreservingState();
   scheduleNextDay();
 }
 
@@ -599,6 +601,19 @@ document.querySelectorAll('#type-filter button').forEach(button => {
   await initialiseDoneItems();
   render(true);
   updateFilterIndicator();
+  const simulated = simulatedDay();
+  if (simulated) {
+    const notice = document.getElementById('simulation-notice');
+    notice.hidden = false;
+    notice.querySelector('span').textContent = 'Simulierter Tag: ' + simulated.toLocaleDateString('de-DE', {weekday:'short', day:'2-digit', month:'2-digit', year:'numeric'});
+    notice.querySelector('button').addEventListener('click', () => {
+      const url = new URL(location.href);
+      url.searchParams.delete('heute');
+      location.assign(url.href);
+    });
+  }
+  document.documentElement.dataset.ready = 'true';
+  document.getElementById('startup-error').hidden = true;
   document.addEventListener('visibilitychange', () => {
     if (!document.hidden) refreshCurrentDay();
   });

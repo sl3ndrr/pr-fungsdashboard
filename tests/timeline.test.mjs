@@ -121,18 +121,19 @@ test('the seven-day statistic includes the event noun with correct singular and 
 
 test('midnight scheduler uses local calendar days, refreshes on wake, and handles the 25-hour DST day',()=>{
   const scheduler=source.slice(source.indexOf('function scheduleNextDay()'),source.indexOf('// Filter für vergangene Termine.'));
-  let now=parseISOString('2026-10-25').getTime(),callback,delay,renders=0;
+  let now=parseISOString('2026-10-25').getTime(),callback,delay,renders=0,simulated=false;
   class ClockDate extends Date{constructor(...args){super(...(args.length?args:[now]));}}
   const document={hidden:false};
-  const create=new Function('Date','document','midnight','setTimeout','clearTimeout','onRender',`
+  const create=new Function('Date','document','midnight','setTimeout','clearTimeout','onRender','now','simulatedDay',`
     const localDayKey=date=>date.toLocaleDateString('de-DE');
     let dayTimer;
     let renderedDay=localDayKey(new Date());
     function renderPreservingState(){renderedDay=localDayKey(new Date());onRender();}
     ${scheduler}; return {refreshCurrentDay,scheduleNextDay};`);
-  const api=create(ClockDate,document,d=>new ClockDate(d.getFullYear(),d.getMonth(),d.getDate()),(fn,ms)=>{callback=fn;delay=ms;return 1},()=>{},()=>renders++);
+  const api=create(ClockDate,document,d=>new ClockDate(d.getFullYear(),d.getMonth(),d.getDate()),(fn,ms)=>{callback=fn;delay=ms;return 1},()=>{},()=>renders++,()=>new ClockDate(),()=>simulated);
   api.scheduleNextDay();
   assert.equal(delay,25*60*60*1000+25);
+  simulated=true; delay=null; api.scheduleNextDay(); assert.equal(delay,null); simulated=false;
   now=parseISOString('2026-10-26').getTime()+25;callback();assert.equal(renders,1);
   api.refreshCurrentDay();assert.equal(renders,1);
   document.hidden=true;now=parseISOString('2026-10-27').getTime();callback();assert.equal(renders,1);
