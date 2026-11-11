@@ -129,7 +129,7 @@ body {
 }
 
 /* Next appointment */
-.hero { align-self: start; padding: var(--space-4); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-3); box-shadow: var(--shadow-1); min-width: 0; background: var(--primary-container); color: var(--on-primary-container); border: 0; border-radius: var(--shape-xl-inc); }
+.hero { padding: var(--space-4); display: flex; flex-direction: column; align-items: stretch; gap: var(--space-3); box-shadow: var(--shadow-1); min-width: 0; background: var(--primary-container); color: var(--on-primary-container); border: 0; border-radius: var(--shape-xl-inc); }
 .hero.urgent .hero-number { font-weight: 900; }
 
 .hero-label { font: var(--text-title-small); color: inherit; }
@@ -137,6 +137,7 @@ body {
 .hero-countdown { flex-shrink: 0; display: flex; flex-direction: column; min-width: 5rem; font-variant-numeric: tabular-nums; }
 
 .hero-number.word { font-size: var(--type-display-medium); }
+.hero-weekday { font: var(--text-body-small); margin-top: var(--space-2); }
 .hero-unit { color: var(--text-muted); font-size: var(--font-sm); margin-top: 0; }
 .hero.imminent .hero-number { color: var(--urgent); }
 .hero-text { min-width: 0; }
