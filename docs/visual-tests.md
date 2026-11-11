@@ -61,3 +61,9 @@ Installation in beschreibbarem Temp-/Browserverzeichnis versucht: Download HTTP 
 **0 gerenderte Browserfälle, 0 neue Screenshots, keine DOM-Höhen, Touch-, visuellen
 Kontrast- oder Performance-Nachweise.** Der PR bleibt bis zur Browser-Abnahme Draft.
 Details: [verification-report.md](verification-report.md).
+
+# Visuelle Prüfungen
+
+Im Projektverzeichnis `python3 -m http.server 8000` starten, anschließend `cd tests/visual && npm ci`. `node ux-check.mjs --heute 2027-02-18 --viewport 375x812 --theme dark --reduced-motion --selector .simulation-notice` erzeugt einen Vollseiten-Screenshot und JSON unter `test-results/ux/`. `--selector` kann für Kontrastmessungen wiederholt werden; transparente und halbtransparente Hintergründe sind manuell nachzuprüfen. `--out PFAD` wählt einen anderen Ausgabeordner, `--all` führt die gesamte Matrix aus. `DASHBOARD_URL` überschreibt die Serveradresse. Die Ergebnisse sind keine automatisch akzeptierten Baselines.
+
+Die vorhandenen Specs laufen mit `npx playwright test`; Browser müssen zuvor mit `npx playwright install` installiert werden. Auf Systemen ohne `python3` kann `PYTHON` den Pfad zum Python-Interpreter festlegen.
