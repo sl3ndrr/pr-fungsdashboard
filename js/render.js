@@ -1,4 +1,5 @@
 import {store} from './state.js';
+import {exportableOccurrences} from './ics.js';
 import {now, simulatedDay} from './clock.js';
 import {midnight, sortEvents, upcomingEvents} from './utils.js';
 import {batchUpdate, enterPage} from './motion.js';
@@ -47,6 +48,9 @@ export function render(animate) {
   });
 
   const mainEvents = events.filter(e => !e.calOnly);
+  const exportAll = document.getElementById('export-all');
+  exportAll.disabled = exportableOccurrences(mainEvents, todayMid, doneItems).length === 0;
+  document.getElementById('export-reason').hidden = !exportAll.disabled;
   const sorted = sortEvents(mainEvents, todayMid, doneItems);
 
   const upcoming = upcomingEvents(mainEvents, todayMid, doneItems);

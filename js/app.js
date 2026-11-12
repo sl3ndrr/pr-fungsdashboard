@@ -1,4 +1,6 @@
 import {createRenderScheduler} from './scheduler.js';
+import {downloadCalendar} from './ics-download.js';
+import {filenameSlug} from './ics.js';
 import {withTransition} from './motion.js';
 import {store} from './state.js';
 import {simulatedDay} from './clock.js';
@@ -7,6 +9,10 @@ import {initialiseUI, updateFilterIndicator} from './ui.js';
 import {updatePastToggle, updateTypeFilter} from './filters.js';
 import {renderPreservingState, refreshCurrentDay} from './render.js';
 
+document.getElementById('export-all').addEventListener('click', () => {
+  const {events, semester} = store.get();
+  downloadCalendar(events, `semester-roadmap-${filenameSlug(semester.id)}.ics`);
+});
 initialiseUI();
 initialiseTheme();
 const requestRender = createRenderScheduler(({animate, type}) => {

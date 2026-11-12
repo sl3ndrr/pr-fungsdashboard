@@ -525,3 +525,11 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .simulation-notice:not([hidden]) { display: flex; align-items: center; justify-content: space-between; gap: .75rem; margin-block: .75rem; padding: .5rem .75rem; border-radius: var(--shape-md); background: var(--surface-1); color: var(--text); box-shadow: 0 2px 12px #0004; }
 .simulation-notice button { min-width: 44px; min-height: 44px; padding-inline: .75rem; border: 1px solid currentColor; border-radius: var(--shape-full); background: transparent; color: inherit; cursor: pointer; }
 #startup-error:not([hidden]) { padding: 1rem; color: #7d1111; background: #fff0f0; }
+
+/* Calendar export keeps the card header reserved for the completion toggle. */
+.card-footer { display: flex; margin-top: auto; }
+.export-button { min-height: 44px; padding: 0 var(--space-4); border: 0; border-radius: var(--shape-full); background: var(--primary-container); color: var(--on-primary-container); font: var(--text-label-large); cursor: pointer; }
+.export-button:disabled { opacity: .65; cursor: default; }
+.room-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.export-all-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
+#export-reason { font: var(--text-body-small); color: var(--on-surface-variant); }

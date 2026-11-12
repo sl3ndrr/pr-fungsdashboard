@@ -70,10 +70,13 @@ Weitere Felder:
 | Feld | Wirkung |
 | --- | --- |
 | `short` | Kurzname im Zeitstrahl, sonst vollständiger Titel |
+| `room` | Optionaler nichtleerer Raumtext am Event oder einzelnen Termin; der Termin überschreibt das Event |
 | `isCancelled` / `cancelReason` | Abgebrochen, optionaler Grund; kein Countdown |
 | `isDone` | Initial erledigte Abgabe/Prüfung, sofern kein Speicherstand existiert |
 | `hideFromNext` | Aus Hero/Danach ausblenden; Liste und Sieben-Tage-Statistik behalten den Termin |
 | `calOnly` | Beibehaltenes Altdatenflag; diese persönlichen Einträge werden nicht angezeigt |
+
+Kalenderexport als `.ics` ist pro Karte und für das Semester verfügbar. Exportiert werden datierte Termine ab heute, außer abgebrochenen oder erledigten Einträgen; undatierte Prüfungen erzeugen keinen Termin. Unbekannte Uhrzeiten werden als Ganztag exportiert.
 
 ## Terminlogik
 
