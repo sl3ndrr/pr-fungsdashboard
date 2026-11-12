@@ -56,14 +56,15 @@ for(const width of [320,375,840,1200,2300])for(const theme of ['light','dark'])t
   await input.uncheck();await settleComponents(page);
   await expect(page.locator('[data-key="stats-assignments"]')).not.toHaveClass(/is-complete/);
   // Real summer assignments provide 0/2, 1/2 and 2/2 without altering production data.
+  // Keep one real undated exam: this fixture tests active-semester statistics, not the AP5 archive.
   for(const doneItems of [[],['a1'],['a1','a2']]) {
-    await page.evaluate(async doneItems=>{const {store}=await import('/js/state.js');const {EVENTS}=await import('/js/data.js');await store.update({events:EVENTS.filter(e=>e.type==='Abgabe'),doneItems,showPast:true});},doneItems);
+    await page.evaluate(async doneItems=>{const {store}=await import('/js/state.js');const {EVENTS,SEMESTERS}=await import('/js/data.js');const open=SEMESTERS[1].events.find(e=>e.sittings?.length===0);await store.update({events:[...EVENTS.filter(e=>e.type==='Abgabe'),open],doneItems,showPast:true});},doneItems);
     await settleComponents(page);
     const colour=await page.locator('[data-key="stats-assignments"] .mini-progress').evaluate(el=>{const s=getComputedStyle(el);return {actual:s.getPropertyValue('--progress-color').trim(),neutral:s.getPropertyValue('--text-muted').trim(),complete:s.getPropertyValue('--tertiary').trim()};});
     expect(colour.actual).toBe(doneItems.length===2?colour.complete:colour.neutral);
     await evidence(page,testInfo,'assignments-'+doneItems.length);
   }
-  await page.evaluate(async()=>{const {store}=await import('/js/state.js');const {EVENTS}=await import('/js/data.js');await store.update({events:EVENTS.filter(e=>e.isCancelled),doneItems:[],showPast:true});});
+  await page.evaluate(async()=>{const {store}=await import('/js/state.js');const {EVENTS,SEMESTERS}=await import('/js/data.js');const open=SEMESTERS[1].events.find(e=>e.sittings?.length===0);await store.update({events:[...EVENTS.filter(e=>e.isCancelled),open],doneItems:[],showPast:true});});
   await settleComponents(page);await expect(page.locator('.card.cancelled')).toHaveCount(1);await evidence(page,testInfo,'cancelled');
   await page.evaluate(async()=>{const {store}=await import('/js/state.js');await store.update({events:[],typeFilter:'all'});});
   await expect(page.locator('.empty-state')).toHaveText('Keine Einträge in dieser Ansicht.');
