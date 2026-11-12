@@ -61,7 +61,7 @@ export function renderList(sorted, todayMid) {
     const past = isEventPast(item, todayMid);
 
     const checkElement = isAbgabe
-      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="visually-hidden">${isDone ? 'Erledigt' : 'Abhaken'}</span></label>`
+      ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="done-label" aria-hidden="true">${isDone ? 'Erledigt' : 'Offen'}</span></label>`
       : '';
 
     const card = document.createElement('div');
