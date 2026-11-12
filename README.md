@@ -33,6 +33,30 @@ Am **11.11.2026 um 00:00 Uhr lokaler Gerätezeit** wird das Wintersemester 2026/
 aktiv, auch im bereits geöffneten Tab. Der letzte Sommertermin liegt am 10.11.
 Die Sommerdaten sind unverändert erhalten.
 
+Die Semesterzeile im Kopf ist eine native, mit Tastatur und Touch bedienbare Auswahl
+für alle Einträge aus `SEMESTERS`. Ohne gültiges `?semester=<id>` gilt weiterhin das
+nach Datum aktive Semester. Eine Auswahl setzt den Parameter mit `history.replaceState`;
+Reload behält sie, auch über einen Tageswechsel. Die Semesterwahl wird nicht lokal
+gespeichert: Ein neuer Besuch ohne Parameter zeigt das aktive Semester.
+
+Ein Semester erscheint als Archiv, sobald **alle nicht-`calOnly`-Events nach ihrem
+letzten Kalendertag vergangen** sind. Der letzte Termintag zählt vollständig mit;
+undatierte Prüfungen verhindern den Abschluss, auch nach allen bekannten Terminen.
+Erledigt-Markierungen ersetzen keine fehlenden Daten. Beim Öffnen eines Archivs
+sind „Semester“ und „Vergangene anzeigen“ voreingestellt; beide bleiben umschaltbar.
+Der Heute-Marker erscheint dort nur innerhalb der tatsächlichen Terminspanne,
+nicht in deren grafischem Randabstand.
+
+Der Rückblick zählt Prüfungs-Events einschließlich abgebrochener Prüfungen einmal,
+nennt davon die ausdrücklich als bestanden markierten, nicht abgebrochenen Prüfungen
+und zählt erledigte/gesamte nicht abgebrochene Abgaben sowie alle Abbrüche separat.
+Es werden keine Noten oder bestandenen Prüfungen aus vergangenen Daten abgeleitet.
+Die Archivstatistik ersetzt die Sieben-Tage-Vorschau durch Statuszahlen.
+Bestehende Häkchen bleiben bedienbar und verwenden denselben gemeinsamen lokalen
+Speicher mit global eindeutigen Event-IDs. **Änderungen im Archiv ändern diesen
+gemeinsamen Speicher.** Die `isDone`-Vorbelegung wird über alle Semester ermittelt,
+wenn noch kein Speicherstand existiert; ein vorhandenes leeres Array bleibt leer.
+
 ## Daten pflegen
 
 `js/data.js` enthält `EVENTS`/`PERIODS` für den Sommer und `SEMESTERS` für die Auswahl.
@@ -107,6 +131,8 @@ B ist kleiner und gefüllt. Undatierte Prüfungen erzeugen keinen Punkt.
 | --- | --- |
 | `js/app.js` | Start, Simulation, Ready-Status und Observer |
 | `js/state.js` | Expliziter Zustands-Snapshot, Transaktionen und serialisierte Speicherung |
+| `js/semesters.js` | Validierte Semesterparameter, kalendertagsbasierter Abschluss und Archivzahlen |
+| `js/semester-control.js` | Native Semesterwahl, URL und Fokus nach dem Wechsel |
 | `js/scheduler.js` | Gemeinsame, abwartbare Renderanforderung je Animation Frame |
 | `js/render.js` | Renderfolge, unveränderter Fokus-/Scroll-Erhalt und Tageswechsel |
 | `js/theme.js` | Gespeichertes/System-Theme und Tastaturbedienung |

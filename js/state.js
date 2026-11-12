@@ -2,12 +2,16 @@ import {now} from './clock.js';
 import {SEMESTERS, STORAGE_KEY} from './data.js';
 import {semesterForDate, validateData} from './utils.js';
 import {loadDoneItems, saveDoneItems} from './storage.js';
+import {semesterIdFromSearch, isSemesterComplete} from './semesters.js';
 
 /** One explicit snapshot and one render notification per state transaction. */
-export function createState(semesters, current, {loadItems, saveItems, key} = {}) {
-  const semester = semesterForDate(semesters, current);
-  let state = Object.freeze({semester, ...validateData(semester.events, semester.periods),
-    doneItems: [], showPast: false, typeFilter: 'all', timelineMode: 'upcoming'});
+export function createState(semesters, current, {loadItems, saveItems, key, search = ''} = {}) {
+  const selectedSemesterId = semesterIdFromSearch(semesters, search);
+  const semester = semesters.find(item => item.id === selectedSemesterId) || semesterForDate(semesters, current);
+  const data = validateData(semester.events, semester.periods);
+  const archive = isSemesterComplete(data.events, current);
+  let state = Object.freeze({semester, ...data, selectedSemesterId, archive,
+    doneItems: [], showPast: archive, typeFilter: 'all', timelineMode: archive ? 'semester' : 'upcoming'});
   let render = () => {};
   let pendingSave = Promise.resolve();
 
@@ -39,12 +43,24 @@ export function createState(semesters, current, {loadItems, saveItems, key} = {}
       saveCompletedItems();
       return rendered;
     },
+    selectSemester(id, date) {
+      const semester = semesters.find(item => item.id === id);
+      if (!semester) return;
+      if (id === state.semester.id) return update({selectedSemesterId:id});
+      const data = validateData(semester.events, semester.periods);
+      const archive = isSemesterComplete(data.events, date);
+      return update({semester, ...data, selectedSemesterId:id, archive,
+        showPast:archive, typeFilter:'all', timelineMode:archive ? 'semester' : 'upcoming'});
+    },
     // Called at the beginning of an existing render: never recursively render.
     prepareSemester(date) {
-      const semester = semesterForDate(semesters, date);
-      if (semester.id === state.semester.id) return false;
-      state = Object.freeze({...state, semester, ...validateData(semester.events, semester.periods),
-        showPast: false, typeFilter: 'all'});
+      const semester = semesters.find(item => item.id === state.selectedSemesterId) || semesterForDate(semesters, date);
+      const changed = semester.id !== state.semester.id;
+      const data = changed ? validateData(semester.events, semester.periods) : {events:state.events, periods:state.periods};
+      const archive = isSemesterComplete(data.events, date);
+      if (!changed && archive === state.archive) return false;
+      state = Object.freeze({...state, semester, ...data, archive,
+        showPast:archive, typeFilter:'all', timelineMode:archive ? 'semester' : state.timelineMode});
       return true;
     },
     saved: () => pendingSave,
@@ -53,4 +69,5 @@ export function createState(semesters, current, {loadItems, saveItems, key} = {}
 
 export const store = createState(SEMESTERS, now(), {
   loadItems: loadDoneItems, saveItems: saveDoneItems, key: STORAGE_KEY,
+  search: typeof location === 'undefined' ? '' : location.search,
 });

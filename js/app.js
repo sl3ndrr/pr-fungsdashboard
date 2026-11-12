@@ -8,6 +8,7 @@ import {initialiseTheme} from './theme.js';
 import {initialiseUI, updateFilterIndicator} from './ui.js';
 import {updatePastToggle, updateTypeFilter} from './filters.js';
 import {renderPreservingState, refreshCurrentDay} from './render.js';
+import {initialiseSemesterControl} from './semester-control.js';
 
 document.getElementById('export-all').addEventListener('click', () => {
   const {events, semester} = store.get();
@@ -15,6 +16,7 @@ document.getElementById('export-all').addEventListener('click', () => {
 });
 initialiseUI();
 initialiseTheme();
+initialiseSemesterControl();
 const requestRender = createRenderScheduler(({animate, type}) => {
   const update = () => {updatePastToggle();updateTypeFilter();renderPreservingState(animate);};
   return type ? withTransition(update, {type}) : update();

@@ -1,5 +1,6 @@
 import {eventStatistics} from './utils.js';
 import {syncHTML, motion} from './motion.js';
+import {archiveSummary} from './semesters.js';
 
 export function renderStatistics(mainEvents, todayMid, doneItems) {
   const stats = eventStatistics(mainEvents, todayMid, doneItems);
@@ -12,6 +13,14 @@ export function renderStatistics(mainEvents, todayMid, doneItems) {
 }
 
 const statisticValues = new WeakMap();
+export function renderArchiveStatistics(events, doneItems) {
+  const stats = archiveSummary(events, doneItems);
+  syncHTML(document.getElementById('stats-line'),
+    `<div class="stat-tile" data-key="archive-exams"><strong class="stat-value">${stats.exams}</strong><span class="stat-label">Prüfungen</span></div>
+     <div class="stat-tile" data-key="archive-passed"><strong class="stat-value">${stats.examsPassed}</strong><span class="stat-label">Als bestanden markiert</span></div>
+     <div class="stat-tile" data-key="archive-cancelled"><strong class="stat-value">${stats.cancelled}</strong><span class="stat-label">Abgebrochene Einträge</span></div>`);
+  animateStatistics();
+}
 function animateStatistics() {
   document.querySelectorAll('.stat-value').forEach(value => {
     const text = value.textContent;

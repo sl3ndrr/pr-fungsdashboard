@@ -4,16 +4,29 @@ import {sittingDate, sittingAccessibleName} from './cards.js';
 import {selectTimelineEvent} from './timeline.js';
 import {parseISOString, calendarDayDiff, periodsOnDay, typeClass, escapeHtml, formatDate, formatFollowupDate, remainingDaysText} from './utils.js';
 import {syncHTML, listenOnce, fadeChange} from './motion.js';
+import {archiveSummary} from './semesters.js';
 
 export function renderHero(upcoming, todayMid, animate) {
-  const hero=document.getElementById('hero'),key=upcoming[0]?.id||'empty';
+  const hero=document.getElementById('hero'),key=store.get().archive ? 'archive-' + store.get().semester.id : upcoming[0]?.id||'empty';
   if(hero.dataset.eventId && hero.dataset.eventId!==key && !animate)fadeChange(hero,()=>buildHero(upcoming,todayMid,animate));
   else buildHero(upcoming,todayMid,animate);
   hero.dataset.eventId=key;
 }
 function buildHero(upcoming, todayMid, animate) {
-  const {periods} = store.get();
+  const {periods, archive, events, doneItems} = store.get();
   const el = document.getElementById('hero');
+  if (archive) {
+    const summary = archiveSummary(events, doneItems);
+    el.className = 'hero';
+    syncHTML(el, `<h2 class="hero-label">Semester abgeschlossen</h2>
+      <h3 class="archive-title">Dein Semesterrückblick</h3>
+      <dl class="archive-summary">
+        <div><dt>Prüfungen</dt><dd>${summary.exams}<span>davon ${summary.examsPassed} als bestanden markiert</span></dd></div>
+        <div><dt>Abgaben erledigt</dt><dd>${summary.assignmentsDone} von ${summary.assignments}</dd></div>
+        <div><dt>Abgebrochene Einträge</dt><dd>${summary.cancelled}</dd></div>
+      </dl>`);
+    return;
+  }
   const item = upcoming[0];
   if (!item) {
     el.className = `hero `;

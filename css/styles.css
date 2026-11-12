@@ -170,6 +170,18 @@ body {
 #timeline-window { flex-shrink: 0; }
 #timeline-window button { padding-inline: var(--space-2); }
 .header-semester { color: var(--text-muted); font-size: var(--font-sm); }
+/* Keep the existing header geometry; the native select supplies a 44px target. */
+.semester-control { position: relative; display: table; padding-inline-end: var(--space-8); max-width: 100%; }
+.semester-control::after { content: ''; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; border: solid var(--on-surface-variant); border-width: 0 2px 2px 0; transform: translateY(-75%) rotate(45deg); pointer-events: none; }
+#semester-select { position: absolute; inset-inline: 0; top: 50%; transform: translateY(-50%); width: 100%; min-width: 44px; height: 44px; appearance: none; border: 0; border-radius: var(--shape-sm); background: transparent; color: transparent; font: var(--text-body-medium); cursor: pointer; }
+#semester-select option { color: var(--on-surface); background: var(--surface); }
+#semester-select:focus-visible { outline: 3px solid var(--on-surface); outline-offset: 3px; }
+.archive-title { font: var(--text-headline-small); }
+.archive-summary { display: grid; gap: var(--space-4); }
+.archive-summary dt { font: var(--text-body-medium); }
+.archive-summary dd { font: var(--text-title-large); font-variant-numeric: tabular-nums; }
+.archive-summary dd span { display: block; font: var(--text-body-small); }
+.archive-notice { font: var(--text-body-small); color: var(--on-surface-variant); margin-bottom: var(--space-4); }
 .timeline-empty { padding-block: var(--space-6); color: var(--text-muted); }
 #timeline-container { width: 100%; min-width: 0; font-size: var(--font-xs); }
 .timeline-track { position: relative; width: 100%; }
