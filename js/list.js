@@ -1,4 +1,6 @@
 import {store} from './state.js';
+import {exportableOccurrences, filenameSlug} from './ics.js';
+import {downloadCalendar} from './ics-download.js';
 import {ICONS} from './data.js';
 import {sittingRowsHTML} from './cards.js';
 import {appointmentRows} from './layout.js';
@@ -57,6 +59,7 @@ export function renderList(sorted, todayMid) {
     const isAbgabe = item.type === 'Abgabe';
     const isDone = isEventDone(item, doneItems);
     const past = isEventPast(item, todayMid);
+    const exportable = exportableOccurrences([item], todayMid, doneItems).length > 0;
 
     const checkElement = isAbgabe
       ? `<label class="done-toggle"><input type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)} erledigt"><svg class="check-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="done-label" aria-hidden="true">${isDone ? 'Erledigt' : 'Offen'}</span></label>`
@@ -80,11 +83,16 @@ export function renderList(sorted, todayMid) {
       ${canMarkPassed(item, todayMid, doneItems) ? `<label class="done-toggle passed-toggle" data-key="${safeId}-passed"><input data-key="${safeId}-passed-input" type="checkbox" ${isDone ? 'checked' : ''} aria-label="${escapeHtml(item.title)}: Bestanden – B entfällt"><svg class="check-mark" data-key="${safeId}-passed-mark" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 12l5 5L20 6" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span data-key="${safeId}-passed-text">Bestanden – B entfällt</span></label>` : ''}
       ${item.isCancelled ? `<div class="meta" data-key="${safeId}-status"><span class="cancelled-chip">${escapeHtml(cancelledStatus(item))}</span></div>` : ''}
       <div class="sitting-list" data-key="${safeId}-sittings">${sittingRowsHTML(item, todayMid, {doneItems, examsFrom:semester.examsFrom})}</div>
+      ${exportable ? `<div class="card-footer" data-key="${safeId}-footer"><button type="button" class="export-button card-export" data-key="${safeId}-export" aria-label="${escapeHtml(item.title)} in Kalender exportieren (.ics)">In Kalender exportieren</button></div>` : ''}
     `;
 
     return card;
   }
 
   syncSittingRows(() => syncChildren(listTarget,listEl));
+  listTarget.querySelectorAll('.card-export').forEach(button => listenOnce(button, 'click', () => {
+    const event = store.get().events.find(item => item.id === button.closest('.card').id.slice(5));
+    if (event) downloadCalendar([event], filenameSlug(event.title) + '.ics');
+  }));
   listTarget.querySelectorAll('.done-toggle input').forEach(input=>listenOnce(input,'change',()=>toggleDone(input.closest('.card').id.slice(5))));
 }
