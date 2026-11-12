@@ -257,9 +257,10 @@ body {
 .sitting-past-compact { min-height: 48px; }
 .passed-toggle { font: var(--text-label-medium); color: var(--on-surface-variant); }
 .card.done .passed-toggle { color: var(--on-tertiary-container); }
-.timeline-exam-phase { position: relative; min-height: 24px; display: flex; align-items: center; font: var(--text-label-medium); color: var(--on-surface); }
-.timeline-exam-phase::before { content: ''; position: absolute; inset: 0 0 0 var(--phase-start); background: linear-gradient(to right, var(--secondary-container), transparent); border-radius: var(--shape-xs); }
-.timeline-exam-phase span { position: relative; }
+.timeline-exam-phase { position: relative; min-height: 40px; font: var(--text-label-medium); color: var(--on-surface); }
+.timeline-exam-phase::before { content: ''; position: absolute; inset: 28px 0 0 var(--phase-start); background: linear-gradient(to right, var(--secondary-container), transparent); border-radius: 0 var(--shape-xs) var(--shape-xs) 0; }
+.timeline-exam-phase::after { content: ''; position: absolute; left: var(--phase-label-left); top: 20px; width: var(--phase-leader-width); height: 20px; border-top: 1px solid var(--outline); border-right: 2px solid var(--outline); }
+.timeline-exam-phase span { position: relative; left: var(--phase-label-left); white-space: nowrap; }
 .hero-other { font: var(--text-body-small); color: inherit; }
 .timeline-dot.sitting-b .timeline-point { width: 8px; height: 8px; left: calc(var(--point-x) - 4px); top: 8px; }
 .stat-note { flex-basis: 100%; color: var(--on-surface-variant); font: var(--text-label-small); }

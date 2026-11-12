@@ -53,15 +53,29 @@ export function timelineEventLayout(items, width, gap = 8) {
   });
 }
 
-/** Keep complete labels in the visible rail; pack collisions into separate rows. */
-export function timelineLabelLayout(labels, min, max, gap = 12) {
+/** Keep complete labels in the rail. Optional thinning retains a single reading row;
+ * higher-priority labels (year changes) win before chronological packing.
+ * Period labels still use separate rows and are never thinned.
+ */
+export function timelineLabelLayout(labels, min, max, gap = 12, {singleRow = false} = {}) {
   const rows = [];
+  const intervals = [];
   const placed = new Map();
-  [...labels].sort((a, b) => a.anchor - b.anchor).forEach(label => {
+  [...labels].sort((a, b) => (singleRow ? (b.priority || 0) - (a.priority || 0) : 0) || a.anchor - b.anchor).forEach(label => {
     const visible = (label.end ?? label.anchor) >= min && (label.start ?? label.anchor) <= max;
     if (!visible) { placed.set(label, { visible: false }); return; }
     const half = Math.min(label.width, max - min) / 2;
     const center = Math.max(min + half, Math.min(max - half, label.anchor));
+    if (singleRow) {
+      if (intervals.some(other => center - half < other.right + gap && center + half + gap > other.left)) {
+        placed.set(label, {visible:false});
+        return;
+      }
+      intervals.push({left:center - half, right:center + half});
+      rows[0] = max;
+      placed.set(label, {visible:true, center, row:0});
+      return;
+    }
     let row = rows.findIndex(end => center - half >= end + gap);
     if (row < 0) row = rows.length;
     rows[row] = center + half;

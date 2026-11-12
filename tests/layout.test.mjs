@@ -67,4 +67,24 @@ test('partially overlapping labels stay complete; fully outside labels are omitt
   assert.equal(timelineLabelLayout(labels,150,270).rows,0);
 });
 
+test('thinned month labels keep one chronological row and prefer a year change', () => {
+  const labels = [{anchor:22,width:62,priority:1},{anchor:52,width:62,priority:2},
+    {anchor:100,width:28},{anchor:150,width:28},{anchor:200,width:28}];
+  for (const width of [200,262,313,520]) {
+    const result = timelineLabelLayout(labels,0,width,8,{singleRow:true});
+    assert.equal(result.rows,1);
+    assert.equal(result.labels[1].visible,true);
+    const visible = result.labels.filter(item=>item.visible);
+    assert.ok(visible.every(item=>item.row===0));
+    visible.forEach((item,i)=>{
+      if(i) assert.ok(item.center>visible[i-1].center);
+      assert.ok(item.center>=0&&item.center<=width);
+    });
+    result.labels.forEach((item,i)=>result.labels.slice(i+1).forEach((other,j)=>{
+      if(item.visible&&other.visible)assert.ok(other.center-labels[i+j+1].width/2>=item.center+labels[i].width/2+8);
+    }));
+  }
+  assert.deepEqual(timelineLabelLayout([],0,262,8,{singleRow:true}),{labels:[],rows:0});
+});
+
 

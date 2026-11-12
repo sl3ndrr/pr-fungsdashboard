@@ -175,3 +175,18 @@ test('timeline reuses its canvas but refreshes the measured font on every build'
   build(parseISOString('2026-10-24'));fontSize='14px';build(parseISOString('2026-10-24'));
   assert.equal(canvases,1);assert.deepEqual(fonts,['800 12px system-ui','800 14px system-ui']);
 });
+
+test('exam phase leader ends at its linear start and never invents an end date',()=>{
+  const winter=SEMESTERS[1];
+  for(const width of [262,313,520,900])for(const mode of ['upcoming','semester'])for(const day of ['2026-11-11','2027-02-18','2027-04-08']) {
+    const domain=timelineWindow(winter.events,parseISOString(day),mode);
+    const html=generate(winter.events,[],day,mode,width,winter).html;
+    const start=Math.max(0,timelinePosition(calendarDayDiff(parseISOString(winter.examsFrom),domain.origin),domain.minDay,domain.maxDay,width));
+    const match=html.match(/--phase-start:([\d.]+)px;--phase-label-left:([\d.]+)px;--phase-leader-width:([\d.]+)px/);
+    assert.ok(match);
+    assert.equal(Number(match[1]),start);
+    assert.ok(Math.abs(Number(match[2])+Number(match[3])-start)<1e-8);
+    assert.match(html,/Prüfungsphase ab 15\.02\. · Ende offen/);
+    assert.doesNotMatch(html,/phase-end|Prüfungsphase[^<]*bis /);
+  }
+});
