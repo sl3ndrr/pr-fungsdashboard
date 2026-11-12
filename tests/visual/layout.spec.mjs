@@ -96,7 +96,9 @@ for(const width of [320,360,390,600,820,840,1024,1200,1280,1600,2300])test(`over
   });
   expect(measurements.pageOverflow).toBe(false);
   if(width>=840) {
-    expect(Math.abs(measurements.hero.height-measurements.side.height)).toBeLessThanOrEqual(1);
+    // AP2 deliberately removes stretching: the hero must retain its intrinsic height.
+    expect(measurements.hero.height).toBeLessThan(measurements.side.height);
+    expect(await page.locator('#hero').evaluate(el=>getComputedStyle(el).alignSelf)).toBe('start');
     expect(measurements.side.left).toBeGreaterThan(measurements.hero.right);
   } else expect(measurements.timeline.top).toBeGreaterThanOrEqual(measurements.hero.bottom);
   expect(measurements.stats.top).toBeGreaterThanOrEqual(measurements.timeline.bottom);
