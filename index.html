@@ -37,7 +37,10 @@
       <header class="page-header">
         <div class="page-brand">
           <h1 class="display">Semester-Roadmap</h1>
-          <p id="semester-label" class="header-semester"></p>
+          <div class="semester-control">
+            <p id="semester-label" class="header-semester"></p>
+            <select id="semester-select" aria-label="Semester auswählen" title="Semester auswählen"></select>
+          </div>
           <p id="today-date" class="header-date"></p>
         </div>
         <div class="header-actions">
@@ -145,6 +148,7 @@
           </div>
         </div>
         <p class="sitting-legend">A = 1. Termin · B = Wiederholung</p>
+        <p id="archive-notice" class="archive-notice" hidden>Archivansicht: Häkchen bleiben bearbeitbar. Änderungen werden im gemeinsamen lokalen Speicher für alle Semester gespeichert.</p>
         <div class="dashboard-list" id="list" role="list" aria-labelledby="appointments-heading"></div>
       </section>
     </main>

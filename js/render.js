@@ -6,7 +6,8 @@ import {batchUpdate, enterPage} from './motion.js';
 import {buildTimeline, renderTimelineLegend, renderTimeline, closeTimelineTooltip, enterTimeline} from './timeline.js';
 import {renderHero} from './hero.js';
 import {renderList} from './list.js';
-import {renderStatistics} from './stats.js';
+import {renderStatistics, renderArchiveStatistics} from './stats.js';
+import {updateSemesterControl} from './semester-control.js';
 import {updatePastToggle, updateTypeFilter} from './filters.js';
 import {enhanceProgress, focusAfterRender} from './ui.js';
 
@@ -38,8 +39,8 @@ export function render(animate) {
     updateTypeFilter();
     closeTimelineTooltip();
   }
-  const {semester, events, doneItems} = store.get();
-  document.getElementById('semester-label').textContent = semester.label;
+  const {events, doneItems, archive} = store.get();
+  updateSemesterControl();
   const tl = buildTimeline(todayMid);
   renderTimelineLegend(tl);
   renderedDay = localDayKey(current);
@@ -60,7 +61,8 @@ export function render(animate) {
 
 
 
-  renderStatistics(mainEvents, todayMid, doneItems);
+  if (archive) renderArchiveStatistics(mainEvents, doneItems);
+  else renderStatistics(mainEvents, todayMid, doneItems);
 
 
   renderList(sorted, todayMid);

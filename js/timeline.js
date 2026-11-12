@@ -46,7 +46,7 @@ document.addEventListener('click', event => {
 
 let measurementContext;
 export function buildTimeline(todayMid) {
-  const {events, periods, semester, timelineMode, doneItems} = store.get();
+  const {events, periods, semester, timelineMode, doneItems, archive} = store.get();
   const domain = timelineWindow(events, todayMid, timelineMode, doneItems);
   if (!domain) return { html: '<p class="timeline-empty">Noch keine Termine für dieses Semester</p>', dotEvents: [] };
   const { events: visible, origin, todayDay, minDay, maxDay, axisStart, axisEnd } = domain;
@@ -121,6 +121,7 @@ export function buildTimeline(todayMid) {
   const months = marks.map((mark, i) => `${mark.tick === null ? '' : `<span class="timeline-month-tick" aria-hidden="true" style="left:${mark.tick}px"></span>`}${monthLayout.labels[i].visible ? `<span class="timeline-month" style="left:${monthLayout.labels[i].center}px;top:${monthTop}px">${escapeHtml(mark.title)}</span>` : ''}`).join('');
   const todayX = Math.max(22, Math.min(width - 22, timelinePosition(todayDay, minDay, maxDay, width)));
   const pillX = Math.max(28, Math.min(width - 28, todayX));
+  const showToday = !archive || (todayMid.getTime() >= axisStart && todayMid.getTime() <= axisEnd);
   const height = monthTop + Math.max(1, monthLayout.rows) * 20;
   const examStart = parseISOString(semester.examsFrom);
   const phaseLabel = examStart ? `Prüfungsphase ab ${examStart.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'})} · Ende offen` : '';
@@ -130,8 +131,8 @@ export function buildTimeline(todayMid) {
     ? `<div class="timeline-exam-phase" data-key="exam-phase-${semester.id}" role="img" aria-label="Prüfungsphase frühestens ab ${sittingDate(examStart)}, Ende offen" style="--phase-start:${phaseStart}px;--phase-label-left:${phaseLabelLeft}px;--phase-leader-width:${phaseStart - phaseLabelLeft}px"><span data-key="exam-phase-label-${semester.id}">${escapeHtml(phaseLabel)}</span></div>` : '';
   return { html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="height:${height}px;--axis-y:${axisY}px">
     <div class="timeline-progress" style="top:${axisY}px;width:${Math.max(0,todayX - 22)}px"></div>
-    <div class="timeline-today" style="left:${todayX}px;height:${axisY + 6}px" aria-hidden="true"></div>
-    <span class="timeline-today-label" style="left:${pillX}px">Heute</span>${periodsHtml}${months}${dots}</div>${examBand}`, dotEvents: visible };
+    ${showToday ? `<div class="timeline-today" style="left:${todayX}px;height:${axisY + 6}px" aria-hidden="true"></div>
+    <span class="timeline-today-label" style="left:${pillX}px">Heute</span>` : ''}${periodsHtml}${months}${dots}</div>${examBand}`, dotEvents: visible };
 }
 
 const timelineTooltip = document.getElementById('timeline-tooltip');
