@@ -84,17 +84,18 @@ export function timelineLabelLayout(labels, min, max, gap = 12, {singleRow = fal
   return { labels: labels.map(label => placed.get(label)), rows: rows.length };
 }
 
-/** Pack chronological cards across group boundaries, without visual/DOM reordering. */
+/** Keep chronological cards in one grid, ending a row at every group boundary.
+ * A full-width heading starts the next group; no placeholder DOM cells are needed.
+ */
 export function appointmentRows(items, groupFor, columns) {
   const count = Math.max(1, Math.min(4, Math.floor(columns) || 1));
   const rows = [];
-  let previousGroup;
-  for (let i = 0; i < items.length; i += count) {
-    const cards = items.slice(i, i + count);
-    const groups = [...new Set(cards.map(groupFor))];
-    const showHeading = groups.length > 1 || groups[0] !== previousGroup;
-    rows.push({ cards, groups, showHeading });
-    previousGroup = groups.at(-1);
+  for (const item of items) {
+    const group = groupFor(item);
+    const previous = rows.at(-1);
+    const changed = !previous || previous.groups[0] !== group;
+    if (changed || previous.cards.length === count) rows.push({cards:[item],groups:[group],showHeading:changed});
+    else previous.cards.push(item);
   }
   return rows;
 }

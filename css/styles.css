@@ -209,11 +209,10 @@ body {
 .pill.active { border-color: var(--text); background: var(--primary); color: var(--on-primary); border-radius: var(--shape-lg); }
 
 /* Grouped appointment cards */
-.dashboard-list { --list-columns: 1; display: grid; grid-template-columns: repeat(var(--list-columns), minmax(0, 1fr)); gap: var(--space-3); align-items: start; }
+.dashboard-list { --list-columns: 1; display: grid; grid-template-columns: repeat(var(--list-columns), minmax(0, 1fr)); gap: var(--space-3); align-items: stretch; }
 .group-row-heading, .empty-state { grid-column: 1 / -1; }
 .group-row-heading { margin-top: var(--space-2); }
 .group-heading { font: var(--text-label-large); color: var(--text-muted); }
-.card-group { font-size: var(--type-label-small); color: var(--text-muted); line-height: 1.2; }
 .appointments { min-width: 0; container-type: inline-size; }
 @container (min-width: 660px) { .dashboard-list { --list-columns: 2; } }
 @container (min-width: 1000px) { .dashboard-list { --list-columns: 3; } }

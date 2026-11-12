@@ -30,7 +30,6 @@ export function renderList(sorted, todayMid) {
   const columns = Number(getComputedStyle(listTarget).getPropertyValue('--list-columns')) || 1;
   const itemGroups = new Map();
   const groupIds = new Map();
-  const mixedIds = new Set();
   appointmentRows(orderedEvents, groupFor, columns).forEach(row => {
     if (row.showHeading) {
       const key = row.cards[0].id;
@@ -42,19 +41,18 @@ export function renderList(sorted, todayMid) {
         const id = transitionName(`${key}:${group}`, 'group');
         groupIds.set(group, id);
         return `<span id="${id}">${escapeHtml(group)}</span>`;
-      }).join('<span aria-hidden="true"> · </span>')}</h3>`;
+      }).join('')}</h3>`;
       listEl.appendChild(heading);
     }
     row.cards.forEach(item => {
       const group = groupFor(item);
-      if (row.groups.length > 1) mixedIds.add(item.id);
       // Metadata is assigned before the cards are appended to the same grid.
       itemGroups.set(item.id, { group, labelId: groupIds.get(group) });
     });
     row.cards.forEach(item => listEl.appendChild(buildCard(item)));
   });
   function buildCard(item) {
-    const { group, labelId } = itemGroups.get(item.id);
+    const { labelId } = itemGroups.get(item.id);
     const safeId = escapeHtml(item.id);
     const isAbgabe = item.type === 'Abgabe';
     const isDone = isEventDone(item, doneItems);
@@ -75,7 +73,6 @@ export function renderList(sorted, todayMid) {
       <div class="card-header" data-key="${safeId}-header">
         <div class="type-icon ${typeClass(item.type)}" data-key="${safeId}-icon" role="img" aria-label="${escapeHtml(item.type)}">${ICONS[item.type]}</div>
         <div class="info" data-key="${safeId}-info">
-          ${mixedIds.has(item.id) ? `<span class="card-group" data-key="${safeId}-group">${escapeHtml(group)}</span>` : ''}
           <h4 id="title-${escapeHtml(item.id)}" class="title"><span class="title-text" data-key="${safeId}-title-text">${escapeHtml(item.title)}</span></h4>
         </div>
         ${checkElement}
