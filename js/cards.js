@@ -14,7 +14,7 @@ export function sittingRows(event, today, doneItems = []) {
 }
 export function sittingAccessibleName(sitting, state) {
   const time = sitting.time.replace(/(\d{1,2}):00/g, '$1').replace('–', ' bis ');
-  return `${sitting.key ? sitting.key + '-Termin' : 'Termin'}, ${sittingDate(parseISOString(sitting.date), true)}, ${time}, ${state}`;
+  return `${sitting.key ? sitting.key + '-Termin' : 'Termin'}, ${sittingDate(parseISOString(sitting.date), true)}, ${time}${sitting.room ? ', Raum ' + sitting.room : ''}, ${state}`;
 }
 export function sittingRowsHTML(event, today, {doneItems = [], examsFrom} = {}) {
   const done = isEventDone(event, doneItems);
@@ -40,8 +40,8 @@ export function sittingRowsHTML(event, today, {doneItems = [], examsFrom} = {}) 
       <div class="sitting-visual" data-key="${key}-visual" aria-hidden="true">
         ${sitting.key ? `<span class="sitting-letter" data-key="${key}-letter" aria-label="${sitting.key}-Termin">${sitting.key}</span>` : `<span class="sitting-icon" data-key="${key}-icon">${ICONS.calendar}</span>`}
         <div class="sitting-info" data-key="${key}-info">${compact
-          ? `<span data-key="${key}-date">${sitting.key}-Termin · ${parseISOString(sitting.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} · vorbei</span>`
-          : `<span class="sitting-date" data-key="${key}-date">${sittingDate(parseISOString(sitting.date))}</span><span class="sitting-time" data-key="${key}-time">${escapeHtml(sitting.time)}</span>`}</div>
+          ? `<span class="${sitting.room ? 'room-text' : ''}" data-key="${key}-date">${sitting.key}-Termin · ${parseISOString(sitting.date).toLocaleDateString('de-DE',{day:'2-digit',month:'2-digit'})} · vorbei${sitting.room ? ' · ' + escapeHtml(sitting.time + ' · Raum ' + sitting.room) : ''}</span>`
+          : `<span class="sitting-date" data-key="${key}-date">${sittingDate(parseISOString(sitting.date))}</span><span class="sitting-time ${sitting.room ? 'room-text' : ''}" data-key="${key}-time">${escapeHtml(sitting.time + (sitting.room ? ' · Raum ' + sitting.room : ''))}</span>`}</div>
         ${countdown && !compact ? `<div class="countdown ${state} ${done ? 'done-badge' : ''}" data-key="${key}-countdown">${countdown}</div>` : ''}
       </div></div>`;
   }).join('');

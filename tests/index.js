@@ -21,3 +21,5 @@ import './scheduler.test.mjs';
 import './storage.test.mjs';
 
 import './components.test.mjs';
+
+import './ics.test.mjs';

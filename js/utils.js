@@ -62,6 +62,7 @@ export function validateData(rawEvents, rawPeriods) {
     else if (!['Prüfung', 'Abgabe', 'Termin'].includes(event.type)) reason = 'Typ unbekannt';
     else if (!present(event.title)) reason = 'Titel fehlt';
     else if (event.short !== undefined && !present(event.short)) reason = 'Kurzname ungültig';
+    else if (event.room !== undefined && !present(event.room)) reason = 'Raum ungültig';
     else if (event.earliest !== undefined && !parseISOString(event.earliest)) reason = 'Frühestes Datum ungültig';
     else if ('sittings' in event) {
       if (!Array.isArray(event.sittings)) reason = 'Termine müssen ein Array sein';
@@ -71,6 +72,7 @@ export function validateData(rawEvents, rawPeriods) {
         const keys = new Set();
         for (const sitting of event.sittings) {
           if (!sitting || !['A', 'B'].includes(sitting.key)) { reason = 'Terminschlüssel ungültig'; break; }
+          if (sitting.room !== undefined && !present(sitting.room)) { reason = 'Raum ungültig'; break; }
           if (keys.has(sitting.key)) { reason = 'Terminschlüssel doppelt'; break; }
           if (!parseISOString(sitting.date) || !present(sitting.time)) { reason = 'Termindatum oder Zeit ungültig'; break; }
           keys.add(sitting.key);
@@ -151,10 +153,10 @@ export function semesterForDate(semesters, date) {
 
 /** Legacy date/time remains a single unlettered sitting; input is never mutated. */
 export function sittingsOf(event) {
-  if (event.eventId) return [{ key: event.sittingKey || '', date: event.date, time: event.time }];
+  if (event.eventId) return [{ key: event.sittingKey || '', date: event.date, time: event.time, ...(event.room === undefined ? {} : {room:event.room}) }];
   return Array.isArray(event.sittings)
-    ? [...event.sittings].sort((a, b) => a.date.localeCompare(b.date) || a.key.localeCompare(b.key))
-    : event.date ? [{ key: '', date: event.date, time: event.time }] : [];
+    ? event.sittings.map(sitting => sitting.room === undefined && event.room !== undefined ? {...sitting, room:event.room} : {...sitting}).sort((a, b) => a.date.localeCompare(b.date) || a.key.localeCompare(b.key))
+    : event.date ? [{ key: '', date: event.date, time: event.time, ...(event.room === undefined ? {} : {room:event.room}) }] : [];
 }
 export function isEventDone(event, doneItems = []) {
   return ['Abgabe', 'Prüfung'].includes(event.type) && doneItems.includes(event.eventId || event.id);
