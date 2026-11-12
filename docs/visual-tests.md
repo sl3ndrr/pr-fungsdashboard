@@ -1,5 +1,14 @@
 # Browser- und visuelle Regressionen
 
+Die Einstellungsmenü-Fälle in `settings.spec.mjs` prüfen das Zahnrad neben dem
+Theme-Schalter, exklusiven Zugriff auf Semester/Export-Sichtbarkeit, Tab-/Shift-Tab-
+Grenzen, Escape/Schließen/Hintergrund, Reload, gesperrten Speicher, frühe Anwendung
+der gespeicherten Sichtbarkeit, System-Theme, Touch und 200 % Textgröße.
+Aufruf im bestehenden Testpaket: `npx playwright test settings.spec.mjs --project chromium --update-snapshots=none`.
+Die AP5-Semesterinteraktionen öffnen jetzt absichtlich das Menü; die geschlossene
+Seite hat das Zahnrad statt der Semesterauswahl in ihrer Tab-Reihenfolge.
+Details: [Einstellungsmenü-Abnahme](settings-verification.md).
+
 AP5: [Semesterwahl und Archivabnahme](ap5-verification.md). Die neuen Fälle laufen
 mit `npx playwright test archive.spec.mjs --project chromium --update-snapshots=none`
 im bestehenden Testpaket. Sie hängen Messungen und Bilder an, ohne Bildreferenzen
