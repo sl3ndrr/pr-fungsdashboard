@@ -17,10 +17,10 @@ test('state initialises explicit semester, filters and completion snapshot witho
   assert.equal(renders,0);
   assert.equal(store.get().semester.id,'ws-2026-2027');
   assert.equal(store.get().events.length,10);assert.deepEqual(store.get().periods,[]);
-  assert.deepEqual(store.get().doneItems,[]);
+  assert.deepEqual(store.get().doneItems,['a1','a2']);
   assert.equal(store.get().showPast,false);assert.equal(store.get().typeFilter,'all');
   assert.equal(store.get().timelineMode,'upcoming');assert.ok(Object.isFrozen(store.get()));
-  assert.deepEqual(saves,[{key:'test',items:[]}]);
+  assert.deepEqual(saves,[{key:'test',items:['a1','a2']}]);
 });
 test('one combined transaction notifies once and an unchanged patch does not notify',()=>{
   const {store}=fixture();const snapshots=[];

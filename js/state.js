@@ -28,7 +28,8 @@ export function createState(semesters, current, {loadItems, saveItems, key} = {}
     async initialiseDoneItems() {
       const savedItems = await loadItems(key);
       state = Object.freeze({...state, doneItems: Array.isArray(savedItems)
-        ? savedItems : state.events.filter(event => event.isDone).map(event => event.id)});
+        ? savedItems : semesters.flatMap(semester => validateData(semester.events, semester.periods).events)
+          .filter(event => event.isDone).map(event => event.id)});
       if (savedItems === null) await saveCompletedItems();
     },
     toggleDone(id) {
