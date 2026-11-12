@@ -64,6 +64,20 @@ Details: [verification-report.md](verification-report.md).
 
 # Visuelle Prüfungen
 
+AP2-Komponentenmatrix und Sonderzustände ohne Bildreferenzen:
+
+```bash
+cd tests/visual
+npx playwright test components.spec.mjs --project chromium --workers 2 --update-snapshots=none
+```
+
+Die 236 Fälle prüfen sieben Viewports, acht Stichtage, beide Themes und normale/reduzierte
+Bewegung sowie Checkboxzustände, Teilfortschritt, Abbruch, Leertexte, Font-Load und
+Navigation. PNGs und JSON-Messungen liegen ausschließlich im ignorierten Laufordner.
+`component-audit.mjs` prüft echte Bounding-Boxes und Textkontrast einschließlich
+transparenter Hintergründe und der Checkboxoberfläche. Ergebnisse und Grenzen:
+[AP2-Abnahme](ap2-verification.md).
+
 Im Projektverzeichnis `python3 -m http.server 8000` starten, anschließend `cd tests/visual && npm ci`. `node ux-check.mjs --heute 2027-02-18 --viewport 375x812 --theme dark --reduced-motion --selector .simulation-notice` erzeugt einen Vollseiten-Screenshot und JSON unter `test-results/ux/`. `--selector` kann für Kontrastmessungen wiederholt werden; transparente und halbtransparente Hintergründe sind manuell nachzuprüfen. `--out PFAD` wählt einen anderen Ausgabeordner, `--all` führt die gesamte Matrix aus. `DASHBOARD_URL` überschreibt die Serveradresse. Die Ergebnisse sind keine automatisch akzeptierten Baselines.
 
 Die vorhandenen Specs laufen mit `npx playwright test`; Browser müssen zuvor mit `npx playwright install` installiert werden. Auf Systemen ohne `python3` kann `PYTHON` den Pfad zum Python-Interpreter festlegen.

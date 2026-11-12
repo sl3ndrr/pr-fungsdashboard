@@ -23,6 +23,9 @@ Dashboard: <http://localhost:8000>. Browser-Regression: <http://localhost:8000/t
 - Monatliche Listengruppen und eigene Gruppe „Termin noch offen“; ein bis vier Spalten.
 - Abgaben abhaken; nach vergangenem A und vor einschließlich B: „Bestanden – B entfällt“.
   Die Auswahl wird lokal gespeichert; Rücknahme bleibt auch nach B möglich.
+- Abgabe-Checkbox mit sichtbarem Zustand „Offen“/„Erledigt“; die Abgabenkachel und ihr
+  Fortschritt bleiben bis zur vollständigen Erledigung neutral (auch bei 0/0).
+- Hero mit dem Wochentag des nächsten Termins und eigener Inhaltshöhe ab 840px.
 - Hell-, Dunkel- und Systemmodus, Tastaturfokus, Live Reduced Motion und Tageswechsel.
 
 Bis einschließlich **10.11.2026** bleibt das Sommersemester 2026 aktiv.
@@ -141,13 +144,14 @@ TZ=Europe/Berlin node --test tests/
 node --test scripts/css-duplicates.test.mjs
 ```
 
-**71/71 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
+**73/73 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
 Validierung, Sortierung/Gruppierung, Occurrences, Statistik, ARIA-Ausgabe und Motion enthalten.
 **Historischer Browser-Befund vor AP0:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
 fehlgeschlagen; Browserdownload HTTP 403, kein System-Chrome. Keine neuen Screenshots
 oder gemessenen DOM-Höhen. Das Höhenziel 200–220px bleibt bei dichten Daten offen.
 
 Aktueller AP1-Nachweis: [HTML-/Pixel-Gate, Matrix und Renderzahlen](docs/ap1-identity.md).
+AP2: [Komponentenabnahme und abgegrenzte Bestandsfehler](docs/ap2-verification.md).
 
 Details: [Abnahmebericht](docs/verification-report.md), [Designentscheidungen](docs/design-plan.md),
 [Browseranleitung](docs/visual-tests.md). Ausgangsstand: `9278abb` vom 24.10.2026;
