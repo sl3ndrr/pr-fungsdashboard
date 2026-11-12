@@ -20,6 +20,17 @@ async function open(page,{width=375,height=812,theme='light',motion='reduce',day
   await page.goto(`/?heute=${day}${semester?`&semester=${semester}`:''}`);
   await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');await settle(page);
 }
+async function openSettings(page) {
+  await page.locator('#settings-button').click();
+  await expect(page.locator('#settings-dialog')).toBeVisible();
+}
+async function chooseSemester(page,id) {
+  await openSettings(page);
+  await page.locator('#semester-select').selectOption(id);await settle(page);
+  await expect(page.locator('#semester-select')).toBeFocused();
+  await page.locator('#settings-close').click();
+  await expect(page.locator('#settings-button')).toBeFocused();
+}
 async function evidence(page,info,name,{screenshot=true}={}) {
   const common=await componentMeasurements(page);
   const own=await page.evaluate(()=>{
@@ -35,7 +46,9 @@ async function evidence(page,info,name,{screenshot=true}={}) {
       return {text:el.textContent,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05)};
     });
     const select=document.getElementById('semester-select'),box=select.getBoundingClientRect();
-    const collisions=[...document.querySelectorAll('button,input')].filter(el=>{
+    // Modal controls may cover the inert background; compare their own interaction layer.
+    const scope=select.closest('dialog')||document;
+    const collisions=[...scope.querySelectorAll('button,input')].filter(el=>{
       const r=el.getBoundingClientRect();return r.width&&r.height&&r.left<box.right&&r.right>box.left&&r.top<box.bottom&&r.bottom>box.top;
     }).map(el=>el.id);
     return {contrast,collisions,select:{width:box.width,height:box.height,value:select.value},cards:[...document.querySelectorAll('#list .card')].map(el=>el.id)};
@@ -92,6 +105,7 @@ for(const [width,height] of sizes)for(const theme of ['light','dark']) {
   test(`AP5 interactions ${width} ${theme}`,async({page,browser},info)=>{
     await open(page,{width,height,theme,semester:'',motion:'no-preference'});
     const historyLength=await page.evaluate(()=>{history.replaceState({ap5:true},'',location.href+'&extra=keep#top');return history.length;});
+    await openSettings(page);
     const select=page.locator('#semester-select');await select.focus();await select.press('Home');await settle(page);
     await expect(select).toBeFocused();await expect(select).toHaveValue('ss-2026');await archive(page);
     expect(new URL(page.url()).searchParams.get('semester')).toBe('ss-2026');
@@ -99,6 +113,7 @@ for(const [width,height] of sizes)for(const theme of ['light','dark']) {
     expect(new URL(page.url()).searchParams.get('extra')).toBe('keep');expect(new URL(page.url()).hash).toBe('#top');
     expect(await page.evaluate(()=>history.length)).toBe(historyLength);expect(await page.evaluate(()=>history.state)).toEqual({ap5:true});
     await evidence(page,info,'switched-motion');
+    await page.locator('#settings-close').click();await expect(page.locator('#settings-button')).toBeFocused();
     const assignment=page.locator('#card-a1 input');await assignment.focus();await assignment.press('Space');await settle(page);
     await expect(assignment).toBeFocused();await expect(assignment).not.toBeChecked();
     await page.evaluate(async()=>{await (await import('/js/state.js')).store.saved();});
@@ -115,7 +130,7 @@ for(const [width,height] of sizes)for(const theme of ['light','dark']) {
     await dot.press('Enter');await settle(page);await expect(page.locator('#card-p4')).toBeFocused();
     expect(await page.locator('#card-p4').evaluate(el=>{const r=el.getBoundingClientRect();return r.top<innerHeight&&r.bottom>0;})).toBe(true);
     await page.locator('[data-window="upcoming"]').click();await settle(page);await page.locator('[data-window="semester"]').click();await settle(page);
-    await select.selectOption('ws-2026-2027');await settle(page);await expect(select).toBeFocused();
+    await chooseSemester(page,'ws-2026-2027');
     await expect(page.locator('#archive-notice')).toBeHidden();
     const winterAssignment=page.locator('#card-ws26-asp-portfolio input');await winterAssignment.focus();await winterAssignment.press('Space');await settle(page);
     await page.reload();await settle(page);await expect(winterAssignment).toBeChecked();
@@ -125,7 +140,7 @@ for(const [width,height] of sizes)for(const theme of ['light','dark']) {
     await page.locator('[data-filter="Abgabe"]').click();await settle(page);
     const next=page.locator('.hero-next').first(),nextId=await next.getAttribute('data-event-id');await next.click();await settle(page);
     await expect(page.locator('#card-'+nextId)).toBeFocused();await expect(page.locator('[data-filter="all"]')).toHaveAttribute('aria-pressed','true');
-    await select.selectOption('ss-2026');await settle(page);await expect(page.locator('#card-a1 input')).not.toBeChecked();
+    await chooseSemester(page,'ss-2026');await expect(page.locator('#card-a1 input')).not.toBeChecked();
     await evidence(page,info,'shared-storage');
     const freshContext=await browser.newContext({viewport:{width,height},locale:'de-DE',timezoneId:'Europe/Berlin',colorScheme:theme,reducedMotion:'reduce'});
     const fresh=await freshContext.newPage(),freshMessages=[];
@@ -149,7 +164,7 @@ for(const [width,height] of sizes)for(const theme of ['light','dark']) {
       if(focus.body)continue;if(seen.has(focus.key))break;seen.add(focus.key);
       expect(focus.visible).toBe(true);expect(focus.outline).toBeGreaterThanOrEqual(2);expect(focus.style).not.toBe('none');
     }
-    expect(seen.has('semester-select')).toBe(true);expect(seen.size).toBeGreaterThan(15);
+    expect(seen.has('settings-button')).toBe(true);expect(seen.has('semester-select')).toBe(false);expect(seen.size).toBeGreaterThan(15);
     await info.attach('keyboard.json',{body:JSON.stringify({tabStops:seen.size}),contentType:'application/json'});
   });
 }
@@ -158,6 +173,7 @@ test.describe('AP5 touch',()=>{
   test.use({hasTouch:true,isMobile:true});
   for(const theme of ['light','dark'])test(`native selection ${theme}`,async({page},info)=>{
     await open(page,{theme,semester:'ws-2026-2027'});
+    await page.locator('#settings-button').tap();
     const select=page.locator('#semester-select');
     await select.tap();await page.keyboard.press('Home');await page.keyboard.press('Enter');await settle(page);
     await expect(select).toHaveValue('ss-2026');await expect(select).toBeFocused();
@@ -176,6 +192,7 @@ for(const semester of ['', 'ss-2026', 'ws-2026-2027']) {
     await page.clock.setFixedTime(new Date('2026-11-10T23:59:58+01:00'));
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.goto('/'+(semester?'?semester='+semester:''));await page.waitForFunction(()=>document.documentElement.dataset.ready==='true');
+    await openSettings(page);
     await page.locator('#semester-select').focus();
     await page.evaluate(()=>window.dispatchEvent(new Event('pageshow')));
     await page.clock.setFixedTime(new Date('2026-11-11T00:00:00+01:00'));
