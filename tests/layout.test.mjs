@@ -23,18 +23,36 @@ test('dense dates fit one width and alternate disjoint 44px target lanes', () =>
   assert.deepEqual(timelineEventLayout([.5,.5,.5,.5].map(x=>({x:x*280,variants:[{width:44}]})),280).map(item=>item.lane),[-1,1,-2,2]);
 });
 
-test('one plus two appointments share a row with explicit group labels and stable order', () => {
+test('group changes end a row early while retaining chronological DOM order', () => {
   const cards = [{id:'a',group:'Diese Woche'}, {id:'b',group:'Oktober'}, {id:'c',group:'Oktober'}];
   const rows = appointmentRows(cards,item=>item.group,3);
-  assert.equal(rows.length,1);
-  assert.deepEqual(rows[0].groups,['Diese Woche','Oktober']);
-  assert.deepEqual(rows[0].cards,cards);
+  assert.equal(rows.length,2);
+  assert.deepEqual(rows[0].groups,['Diese Woche']);
+  assert.deepEqual(rows[1].groups,['Oktober']);
+  assert.deepEqual(rows[0].cards,[cards[0]]);
+  assert.deepEqual(rows[1].cards,cards.slice(1));
   assert.equal(rows[0].showHeading,true);
   for(const columns of [1,2,3,4]) {
     const packed = appointmentRows([...cards,...cards],item=>item.group,columns);
     assert.deepEqual(packed.flatMap(row=>row.cards),[...cards,...cards]);
-    assert.ok(packed.slice(0,-1).every(row=>row.cards.length===columns));
+    assert.ok(packed.every(row=>row.cards.length<=columns&&row.groups.length===1));
+    packed.forEach((row,i)=>assert.equal(row.showHeading,!i||row.groups[0]!==packed[i-1].groups[0]));
   }
+});
+
+test('large groups continue without repeated headings; empty and invalid column counts stay safe', () => {
+  const cards=Array.from({length:13},(_,i)=>({id:i,group:i<5?'Januar':i<10?'Februar':'Termin noch offen'}));
+  for(const columns of [0,-1,1,2,3,4,8,NaN]) {
+    const count=Math.max(1,Math.min(4,Math.floor(columns)||1));
+    const rows=appointmentRows(cards,item=>item.group,columns);
+    assert.deepEqual(rows.flatMap(row=>row.cards),cards);
+    assert.deepEqual(rows.filter(row=>row.showHeading).map(row=>row.groups[0]),['Januar','Februar','Termin noch offen']);
+    rows.forEach((row,i)=>{
+      assert.ok(row.cards.every(item=>item.group===row.groups[0]));
+      if(i<rows.length-1&&row.groups[0]===rows[i+1].groups[0])assert.equal(row.cards.length,count);
+    });
+  }
+  assert.deepEqual(appointmentRows([],()=>'',4),[]);
 });
 
 test('every date uses the same linear map, including dates between same-day groups', () => {
