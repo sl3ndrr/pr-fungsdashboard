@@ -113,7 +113,9 @@ test('explicitly empty fixture, then a single winter event crossing year boundar
   await expect(page.locator('#hero')).toHaveAttribute('data-event-id','winter');
   await freeze(page);await expect(page.locator('#timeline-event-winter')).toBeVisible();
   assertFit(await geometry(page));
-  await expect(page.locator('.timeline-month')).toContainText(['Nov 2026','Dez','Jan 2027']);
+  // AP3 thins crowded captions instead of placing the year change in a second row.
+  await expect(page.locator('.timeline-month')).toContainText(['Nov 2026','Jan 2027']);
+  expect(await page.locator('.timeline-month').evaluateAll(els=>new Set(els.map(el=>el.offsetTop)).size)).toBe(1);
 });
 
 test('day/semester change preserves page scroll, window selection, keyed nodes and live state',async({page})=>{

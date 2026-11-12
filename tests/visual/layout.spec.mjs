@@ -10,6 +10,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
       columns:Number(getComputedStyle(document.querySelector('#list')).getPropertyValue('--list-columns')),
       cards:[...document.querySelectorAll('#list .card')].map(card=>({
         top:card.getBoundingClientRect().top,height:card.getBoundingClientRect().height,
+        group:document.getElementById(card.getAttribute('aria-labelledby').split(' ').at(-1)).textContent,
         labelled:card.getAttribute('aria-labelledby').split(' ').every(id=>document.getElementById(id)),
         leftBorder:getComputedStyle(card).borderLeftWidth,
       })),
@@ -27,7 +28,14 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
       dayScale=scale;
     }
     if(width>=1200) {
-      expect(geometry.cards.slice(0,Math.min(geometry.columns,geometry.cards.length)).every(card=>Math.abs(card.top-geometry.cards[0].top)<1)).toBe(true);
+      // AP3 starts a fresh row for each group while keeping one chronological grid.
+      let previousBottom=0;
+      for(const group of new Set(geometry.cards.map(card=>card.group))) {
+        const cards=geometry.cards.filter(card=>card.group===group);
+        expect(cards[0].top).toBeGreaterThan(previousBottom);
+        expect(cards.slice(0,geometry.columns).every(card=>Math.abs(card.top-cards[0].top)<1)).toBe(true);
+        previousBottom=Math.max(...cards.map(card=>card.top+card.height));
+      }
     }
     if(width>=1600) expect(geometry.columns).toBe(4);
     if(width===1600) {
