@@ -94,7 +94,7 @@ export function buildTimeline(todayMid) {
     const pointY = top + 12;
     const status = event.isCancelled ? `Abgebrochen${cancelledStatus(event) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(event)}`
       : isEventDone(event, doneItems) ? 'Erledigt' : parseISOString(event.date) < todayMid ? 'Vergangen' : 'Offen';
-    const description = `${event.type}${event.sittingKey ? ' · ' + event.sittingKey + '-Termin' : ''}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}, ${status}`;
+    const description = `${event.type}${event.sittingKey ? ' · ' + event.sittingKey + '-Termin' : ''}: ${event.title}, ${formatDate(parseISOString(event.date))}, ${event.time}${event.room ? ', Raum ' + event.room : ''}, ${status}`;
     return `<span class="timeline-stem" data-key="stem-${escapeHtml(event.id)}" aria-hidden="true" style="left:${x}px;top:${Math.min(axisY, pointY)}px;height:${Math.abs(axisY - pointY)}px"></span>
       <button id="timeline-event-${escapeHtml(event.id)}" type="button" class="timeline-dot ${typeClass(event.type)} ${event.isCancelled ? 'cancelled' : ''} ${parseISOString(event.date) < todayMid ? 'past' : ''} ${next?.id === event.id ? 'next' : ''} ${event.sittingKey === 'B' ? 'sitting-b' : ''}"
         style="left:${item.left}px;top:${top}px;width:${item.width}px;--point-x:${x - item.left}px" data-event-id="${escapeHtml(event.eventId)}" data-occurrence-id="${escapeHtml(event.id)}" data-date="${event.date}" aria-label="${escapeHtml(description)}">
@@ -167,7 +167,7 @@ function showTimelineTooltip(dot) {
   tooltipAnchor = dot;
   const status = item.isCancelled ? `Abgebrochen${cancelledStatus(item) === 'Abgebrochen' ? '' : ': ' + cancelledStatus(item)}`
     : isEventDone(item, doneItems) ? 'Erledigt' : parseISOString(item.date) < today() ? 'Vergangen' : 'Offen';
-  syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time)}</span><span>${escapeHtml(status)}</span>`);
+  syncHTML(timelineTooltip, `<strong>${escapeHtml(item.title)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</strong><span>${escapeHtml(formatDate(parseISOString(item.date)))} · ${escapeHtml(item.time + (item.room ? ' · Raum ' + item.room : ''))}</span><span>${escapeHtml(status)}</span>`);
   dot.setAttribute('aria-describedby', 'timeline-tooltip');
   timelineTooltip.dataset.open = 'true';
   timelineTooltip.setAttribute('aria-hidden', 'false');
