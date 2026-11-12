@@ -173,7 +173,7 @@ TZ=Europe/Berlin node --test tests/
 node --test scripts/css-duplicates.test.mjs
 ```
 
-**73/73 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
+**91/91 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
 Validierung, Sortierung/Gruppierung, Occurrences, Statistik, ARIA-Ausgabe und Motion enthalten.
 **Historischer Browser-Befund vor AP0:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
 fehlgeschlagen; Browserdownload HTTP 403, kein System-Chrome. Keine neuen Screenshots
@@ -181,6 +181,7 @@ oder gemessenen DOM-Höhen. Das Höhenziel 200–220px bleibt bei dichten Daten 
 
 Aktueller AP1-Nachweis: [HTML-/Pixel-Gate, Matrix und Renderzahlen](docs/ap1-identity.md).
 AP2: [Komponentenabnahme und abgegrenzte Bestandsfehler](docs/ap2-verification.md).
+AP5: [Semesterwahl, Archiv und Winter-Pixel-Gate](docs/ap5-verification.md).
 
 Details: [Abnahmebericht](docs/verification-report.md), [Designentscheidungen](docs/design-plan.md),
 [Browseranleitung](docs/visual-tests.md). Ausgangsstand: `9278abb` vom 24.10.2026;

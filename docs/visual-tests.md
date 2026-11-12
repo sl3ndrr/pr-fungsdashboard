@@ -1,5 +1,23 @@
 # Browser- und visuelle Regressionen
 
+AP5: [Semesterwahl und Archivabnahme](ap5-verification.md). Die neuen Fälle laufen
+mit `npx playwright test archive.spec.mjs --project chromium --update-snapshots=none`
+im bestehenden Testpaket. Sie hängen Messungen und Bilder an, ohne Bildreferenzen
+anzulegen. Für das Winter-Gate wird aus dem Repo-Root explizit aufgenommen:
+
+```bash
+node tests/visual/archive-check.mjs --record --root /pfad/zum/unveraenderten-main --out test-results/ap5/recording
+node tests/visual/archive-check.mjs --out test-results/ap5/current
+```
+
+Die Referenzen liegen in `test-results/ap5/winter-baseline`; `--baseline` kann den
+Pfad ändern. Aufnahme überschreibt keine vorhandenen Referenzdateien. Verglichen
+werden vollständige Übersicht/Terminliste und die Übersichtposition, mit dem
+bestehenden Playwright-Maßstab; Rohpixelzahlen werden separat ausgegeben.
+`--viewport`, `--heute`, `--theme` begrenzen einen Diagnosefall, `--smoke` vier
+mobile/Desktop-Startansichten. Der Helper startet den vorhandenen Node-Server auf
+8016 selbst, ohne Python oder neue Abhängigkeiten.
+
 Die App bleibt ohne Build und Laufzeitpakete. Playwright 1.62.1 ist ausschließlich
 Testwerkzeug; Node-Regressionen benötigen keine Pakete.
 
