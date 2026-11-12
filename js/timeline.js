@@ -110,19 +110,24 @@ export function buildTimeline(todayMid) {
     const day = calendarDayDiff(cursor, origin);
     if (day >= minDay || !marks.length) {
       const title = cursor.toLocaleDateString('de-DE', {month:'short'}).replace(/\.$/, '') + (previousYear !== cursor.getFullYear() ? ` ${cursor.getFullYear()}` : '');
-      marks.push({ anchor: Math.max(22, pos(cursor)), width: measure(title), title, tick: day >= minDay ? pos(cursor) : null });
+      marks.push({ anchor: Math.max(22, pos(cursor)), width: measure(title), title,
+        priority: previousYear !== undefined && previousYear !== cursor.getFullYear() ? 2 : !marks.length ? 1 : 0,
+        tick: day >= minDay ? pos(cursor) : null });
       previousYear = cursor.getFullYear();
     }
     cursor.setMonth(cursor.getMonth() + 1);
   }
-  const monthLayout = timelineLabelLayout(marks, 0, width, 8);
-  const months = marks.map((mark, i) => `${mark.tick === null ? '' : `<span class="timeline-month-tick" aria-hidden="true" style="left:${mark.tick}px"></span>`}<span class="timeline-month" style="left:${monthLayout.labels[i].center}px;top:${monthTop + monthLayout.labels[i].row * 20}px">${escapeHtml(mark.title)}</span>`).join('');
+  const monthLayout = timelineLabelLayout(marks, 0, width, 8, {singleRow:true});
+  const months = marks.map((mark, i) => `${mark.tick === null ? '' : `<span class="timeline-month-tick" aria-hidden="true" style="left:${mark.tick}px"></span>`}${monthLayout.labels[i].visible ? `<span class="timeline-month" style="left:${monthLayout.labels[i].center}px;top:${monthTop}px">${escapeHtml(mark.title)}</span>` : ''}`).join('');
   const todayX = Math.max(22, Math.min(width - 22, timelinePosition(todayDay, minDay, maxDay, width)));
   const pillX = Math.max(28, Math.min(width - 28, todayX));
   const height = monthTop + Math.max(1, monthLayout.rows) * 20;
   const examStart = parseISOString(semester.examsFrom);
+  const phaseLabel = examStart ? `Prüfungsphase ab ${examStart.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'})} · Ende offen` : '';
+  const phaseStart = examStart ? Math.max(0, pos(examStart)) : 0;
+  const phaseLabelLeft = Math.max(0, Math.min(phaseStart, width - measure(phaseLabel)));
   const examBand = examStart && calendarDayDiff(examStart, origin) <= maxDay
-    ? `<div class="timeline-exam-phase" data-key="exam-phase-${semester.id}" role="img" aria-label="Prüfungsphase frühestens ab ${sittingDate(examStart)}, Ende offen" style="--phase-start:${Math.max(0, pos(examStart))}px"><span data-key="exam-phase-label-${semester.id}">Prüfungsphase ab ${examStart.toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit'})}</span></div>` : '';
+    ? `<div class="timeline-exam-phase" data-key="exam-phase-${semester.id}" role="img" aria-label="Prüfungsphase frühestens ab ${sittingDate(examStart)}, Ende offen" style="--phase-start:${phaseStart}px;--phase-label-left:${phaseLabelLeft}px;--phase-leader-width:${phaseStart - phaseLabelLeft}px"><span data-key="exam-phase-label-${semester.id}">${escapeHtml(phaseLabel)}</span></div>` : '';
   return { html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="height:${height}px;--axis-y:${axisY}px">
     <div class="timeline-progress" style="top:${axisY}px;width:${Math.max(0,todayX - 22)}px"></div>
     <div class="timeline-today" style="left:${todayX}px;height:${axisY + 6}px" aria-hidden="true"></div>
