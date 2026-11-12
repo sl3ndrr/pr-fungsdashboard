@@ -27,17 +27,29 @@ Dashboard: <http://localhost:8000>. Browser-Regression: <http://localhost:8000/t
   Fortschritt bleiben bis zur vollständigen Erledigung neutral (auch bei 0/0).
 - Hero mit dem Wochentag des nächsten Termins und eigener Inhaltshöhe ab 840px.
 - Hell-, Dunkel- und Systemmodus, Tastaturfokus, Live Reduced Motion und Tageswechsel.
+- Einstellungsmenü neben dem Theme-Schalter für Semesterwahl und Kalenderexport-Sichtbarkeit.
 
 Bis einschließlich **10.11.2026** bleibt das Sommersemester 2026 aktiv.
 Am **11.11.2026 um 00:00 Uhr lokaler Gerätezeit** wird das Wintersemester 2026/2027
 aktiv, auch im bereits geöffneten Tab. Der letzte Sommertermin liegt am 10.11.
 Die Sommerdaten sind unverändert erhalten.
 
-Die Semesterzeile im Kopf ist eine native, mit Tastatur und Touch bedienbare Auswahl
-für alle Einträge aus `SEMESTERS`. Ohne gültiges `?semester=<id>` gilt weiterhin das
+Das Zahnrad neben dem Theme-Schalter öffnet die **Einstellungen**. Ausschließlich
+dort steht die native, mit Tastatur und Touch bedienbare Auswahl für alle Einträge
+aus `SEMESTERS`; die Semesterzeile im Kopf zeigt nur die aktuelle Auswahl an.
+Ohne gültiges `?semester=<id>` gilt weiterhin das
 nach Datum aktive Semester. Eine Auswahl setzt den Parameter mit `history.replaceState`;
 Reload behält sie, auch über einen Tageswechsel. Die Semesterwahl wird nicht lokal
 gespeichert: Ein neuer Besuch ohne Parameter zeigt das aktive Semester.
+
+Auch **„Kalenderexport anzeigen“** lässt sich ausschließlich in den Einstellungen
+ändern. Die Option blendet sowohl den Gesamtexport samt Hinweis als auch die
+Exportbuttons an den Karten ein oder aus. Sie ist anfangs eingeschaltet und wird
+unter `calendar_export_visible_v1` lokal gespeichert; die gespeicherte Sichtbarkeit
+gilt schon vor dem Laden der Anwendung, damit ausgeblendete Buttons nicht aufblitzen.
+Ohne verfügbaren Speicher bleibt die Einstellung für die aktuelle Seite bedienbar.
+Das Menü lässt sich per Schließen, Escape oder Klick auf den Hintergrund schließen;
+Tab/Shift+Tab bleiben darin, anschließend kehrt der Fokus zum Zahnrad zurück.
 
 Ein Semester erscheint als Archiv, sobald **alle nicht-`calOnly`-Events nach ihrem
 letzten Kalendertag vergangen** sind. Der letzte Termintag zählt vollständig mit;
@@ -133,6 +145,8 @@ B ist kleiner und gefüllt. Undatierte Prüfungen erzeugen keinen Punkt.
 | `js/state.js` | Expliziter Zustands-Snapshot, Transaktionen und serialisierte Speicherung |
 | `js/semesters.js` | Validierte Semesterparameter, kalendertagsbasierter Abschluss und Archivzahlen |
 | `js/semester-control.js` | Native Semesterwahl, URL und Fokus nach dem Wechsel |
+| `js/settings.js` | Einstellungsdialog, Fokusgrenzen und Kalenderexport-Sichtbarkeit |
+| `js/settings-preferences.js` | Gespeicherte Export-Sichtbarkeit mit Speicher-Fallback |
 | `js/scheduler.js` | Gemeinsame, abwartbare Renderanforderung je Animation Frame |
 | `js/render.js` | Renderfolge, unveränderter Fokus-/Scroll-Erhalt und Tageswechsel |
 | `js/theme.js` | Gespeichertes/System-Theme und Tastaturbedienung |
@@ -173,7 +187,7 @@ TZ=Europe/Berlin node --test tests/
 node --test scripts/css-duplicates.test.mjs
 ```
 
-**91/91 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
+**95/95 Node-Tests und 3/3 Scanner-Tests bestanden.** Sommer-Fingerprint, A/B-Randfälle,
 Validierung, Sortierung/Gruppierung, Occurrences, Statistik, ARIA-Ausgabe und Motion enthalten.
 **Historischer Browser-Befund vor AP0:** 507 Fälle erkannt, ein Chromium-Start vor Seitenaufruf
 fehlgeschlagen; Browserdownload HTTP 403, kein System-Chrome. Keine neuen Screenshots
@@ -182,6 +196,7 @@ oder gemessenen DOM-Höhen. Das Höhenziel 200–220px bleibt bei dichten Daten 
 Aktueller AP1-Nachweis: [HTML-/Pixel-Gate, Matrix und Renderzahlen](docs/ap1-identity.md).
 AP2: [Komponentenabnahme und abgegrenzte Bestandsfehler](docs/ap2-verification.md).
 AP5: [Semesterwahl, Archiv und Winter-Pixel-Gate](docs/ap5-verification.md).
+Einstellungen: [Menü, Fokus und Export-Sichtbarkeit](docs/settings-verification.md).
 
 Details: [Abnahmebericht](docs/verification-report.md), [Designentscheidungen](docs/design-plan.md),
 [Browseranleitung](docs/visual-tests.md). Ausgangsstand: `9278abb` vom 24.10.2026;
