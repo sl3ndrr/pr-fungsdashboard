@@ -33,6 +33,7 @@
   --error: light-dark(#ae2035, #ffb2ba); --on-error: light-dark(#fff, #650015);
   --error-container: light-dark(#ffdadf, #861127); --on-error-container: light-dark(#680018, #ffdadf);
   --surface: light-dark(#f7f9ff, #10141b);
+  --scrim: #000;
   --surface-container-lowest: light-dark(#fff, #0b0f16);
   --surface-container-low: light-dark(#f0f3fa, #181c23);
   --surface-container: light-dark(#eaeef5, #1c2028);
@@ -170,12 +171,21 @@ body {
 #timeline-window { flex-shrink: 0; }
 #timeline-window button { padding-inline: var(--space-2); }
 .header-semester { color: var(--text-muted); font-size: var(--font-sm); }
-/* Keep the existing header geometry; the native select supplies a 44px target. */
-.semester-control { position: relative; display: table; padding-inline-end: var(--space-8); max-width: 100%; }
-.semester-control::after { content: ''; position: absolute; right: 10px; top: 50%; width: 6px; height: 6px; border: solid var(--on-surface-variant); border-width: 0 2px 2px 0; transform: translateY(-75%) rotate(45deg); pointer-events: none; }
-#semester-select { position: absolute; inset-inline: 0; top: 50%; transform: translateY(-50%); width: 100%; min-width: 44px; height: 44px; appearance: none; border: 0; border-radius: var(--shape-sm); background: transparent; color: transparent; font: var(--text-body-medium); cursor: pointer; }
-#semester-select option { color: var(--on-surface); background: var(--surface); }
+.icon-button { display: grid; place-items: center; width: 44px; height: 44px; flex: 0 0 44px; border: 0; border-radius: var(--shape-full); background: var(--secondary-container); color: var(--on-secondary-container); cursor: pointer; }
+.icon-button svg { width: 20px; height: 20px; }
+.settings-dialog { margin: auto; width: min(440px, calc(100vw - 2 * var(--space-4))); max-height: calc(100dvh - 2 * var(--space-4)); overflow: auto; padding: var(--space-6); border: 0; border-radius: var(--shape-xl); background: var(--surface-container-high); color: var(--on-surface); box-shadow: var(--shadow-2); }
+.settings-dialog[open] { display: grid; gap: var(--space-6); }
+.settings-dialog::backdrop { background: color-mix(in srgb, var(--scrim) 40%, transparent); }
+.settings-heading { display: flex; align-items: center; gap: var(--space-3); }
+.settings-heading h2 { flex: 1; min-width: 0; font: var(--text-title-large); overflow-wrap: anywhere; }
+.settings-field { display: grid; gap: var(--space-2); }
+.settings-field > label, .settings-toggle { font: var(--text-title-small); }
+.settings-note { color: var(--on-surface-variant); font: var(--text-body-small); overflow-wrap: anywhere; }
+#semester-select { width: 100%; min-width: 44px; min-height: 48px; padding: var(--space-3); border: 0; border-radius: var(--shape-md); background: var(--surface); color: var(--on-surface); font: var(--text-body-medium); cursor: pointer; }
 #semester-select:focus-visible { outline: 3px solid var(--on-surface); outline-offset: 3px; }
+.settings-toggle { display: flex; align-items: center; gap: var(--space-3); min-height: 44px; cursor: pointer; }
+.settings-toggle span { min-width: 0; overflow-wrap: anywhere; }
+.settings-toggle input { width: 44px; height: 44px; flex: 0 0 44px; accent-color: var(--primary); cursor: pointer; }
 .archive-title { font: var(--text-headline-small); }
 .archive-summary { display: grid; gap: var(--space-4); }
 .archive-summary dt { font: var(--text-body-medium); }
@@ -547,3 +557,4 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 #export-reason { font: var(--text-body-small); color: var(--on-surface-variant); }
 .sitting-past-compact.sitting-has-room { padding-block: var(--space-1); }
 .sitting-past-compact.sitting-has-room .sitting-info { gap: 0; }
+:root[data-calendar-export-visible='false'] :is(.export-all-control, .card-footer) { display: none; }
