@@ -533,3 +533,5 @@ button:not(.hero-next):hover { --state-opacity: var(--state-hover); } button:foc
 .room-text { overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 .export-all-control { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-1); }
 #export-reason { font: var(--text-body-small); color: var(--on-surface-variant); }
+.sitting-past-compact.sitting-has-room { padding-block: var(--space-1); }
+.sitting-past-compact.sitting-has-room .sitting-info { gap: 0; }
