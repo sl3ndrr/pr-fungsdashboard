@@ -14,6 +14,7 @@
       try {
         const theme = localStorage.getItem('theme_pref');
         if (theme === 'light' || theme === 'dark') document.documentElement.dataset.theme = theme;
+        document.documentElement.dataset.calendarExportVisible = String(localStorage.getItem('calendar_export_visible_v1') !== 'false');
       } catch {}
     </script>
     <title>Semester-Roadmap</title>
@@ -37,10 +38,7 @@
       <header class="page-header">
         <div class="page-brand">
           <h1 class="display">Semester-Roadmap</h1>
-          <div class="semester-control">
-            <p id="semester-label" class="header-semester"></p>
-            <select id="semester-select" aria-label="Semester auswählen" title="Semester auswählen"></select>
-          </div>
+          <p id="semester-label" class="header-semester"></p>
           <p id="today-date" class="header-date"></p>
         </div>
         <div class="header-actions">
@@ -105,6 +103,12 @@
             Folgt der Systemeinstellung
           </p>
         </div>
+          <button id="settings-button" class="icon-button" type="button" aria-label="Einstellungen öffnen" title="Einstellungen" aria-haspopup="dialog" aria-controls="settings-dialog" aria-expanded="false">
+            <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9 3h6l.5 2.5 2 1.2 2.4-.8 3 5.2-1.9 1.7v2.3l1.9 1.7-3 5.2-2.4-.8-2 1.2L15 25H9l-.5-2.5-2-1.2-2.4.8-3-5.2L3 15.2v-2.3l-1.9-1.7 3-5.2 2.4.8 2-1.2L9 3Z" transform="translate(2 0) scale(.83)"/>
+              <circle cx="12" cy="11.6" r="3.2"/>
+            </svg>
+          </button>
         </div>
       </header>
 
@@ -152,6 +156,25 @@
         <div class="dashboard-list" id="list" role="list" aria-labelledby="appointments-heading"></div>
       </section>
     </main>
+
+    <dialog id="settings-dialog" class="settings-dialog" aria-labelledby="settings-title" aria-describedby="settings-intro">
+      <div class="settings-heading">
+        <h2 id="settings-title">Einstellungen</h2>
+        <button id="settings-close" class="icon-button" type="button" aria-label="Einstellungen schließen" title="Schließen">
+          <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="m6 6 12 12M6 18 18 6"/></svg>
+        </button>
+      </div>
+      <p id="settings-intro" class="settings-note">Passe deine Semesteransicht an.</p>
+      <div class="settings-field">
+        <label for="semester-select">Semester</label>
+        <select id="semester-select" aria-label="Semester auswählen" autofocus></select>
+        <p class="settings-note">Die Semesterwahl bleibt beim Neuladen dieser Ansicht erhalten.</p>
+      </div>
+      <div class="settings-field">
+        <label class="settings-toggle"><input id="calendar-export-toggle" type="checkbox" checked aria-describedby="calendar-export-help"><span>Kalenderexport anzeigen</span></label>
+        <p id="calendar-export-help" class="settings-note">Zeigt die Exportbuttons bei den Terminen und für das gesamte Semester. Diese Einstellung wird auf diesem Gerät gespeichert.</p>
+      </div>
+    </dialog>
 
     <div id="timeline-tooltip" class="timeline-tooltip" role="tooltip" data-open="false" aria-hidden="true"></div>
   </body>

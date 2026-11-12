@@ -24,3 +24,4 @@ import './components.test.mjs';
 
 import './ics.test.mjs';
 import './archive.test.mjs';
+import './settings.test.mjs';
