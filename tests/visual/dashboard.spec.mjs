@@ -54,14 +54,11 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark'])
   });
 }
 
-for(const [date,text,unit] of [['2026-10-06','1','Tag'],['2026-09-25','12','Tage'],['2026-10-07','Heute',null]]) {
-  test(`hero countdown ${text}`,async({page})=>{
+for(const [date,label,snapshot] of [['2026-10-06','in 1 Tag','1'],['2026-09-25','in 12 Tagen','12'],['2026-10-07','Heute','Heute']]) {
+  test(`hero countdown ${label}`,async({page})=>{
     await openDashboard(page,{width:360,date});
-    if(unit)await expect(page.locator('.hero-number')).toHaveAttribute('data-number',text);
-    else await expect(page.locator('.hero-number')).toHaveText(text);
-    if(unit)await expect(page.locator('.hero-unit')).toHaveText(unit);
-    else await expect(page.locator('.hero-unit')).toHaveCount(0);
-    await expect(page.locator('#hero')).toHaveScreenshot(`count-${text}.png`);
+    await expect(page.locator('.hero-countdown')).toHaveText(label);
+    await expect(page.locator('#hero')).toHaveScreenshot(`count-${snapshot}.png`);
   });
 }
 

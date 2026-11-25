@@ -18,10 +18,6 @@ export async function openDashboard(page,{width=1280,height=1000,theme='light',r
   await page.goto('/');
   await expect(page.locator('#hero')).toHaveAttribute('data-event-id',/.+/);
   await page.evaluate(()=>document.fonts.ready);
-  await page.waitForFunction(()=>{
-    const number=document.querySelector('.hero-number');
-    return !number?.dataset.number || number.querySelector('.digit-mask');
-  });
   await freeze(page);
 }
 

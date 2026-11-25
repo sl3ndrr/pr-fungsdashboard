@@ -2,7 +2,7 @@ import {store} from './state.js';
 import {ICONS} from './data.js';
 import {sittingDate, sittingAccessibleName} from './cards.js';
 import {selectTimelineEvent} from './timeline.js';
-import {parseISOString, calendarDayDiff, periodsOnDay, typeClass, escapeHtml, formatDate, formatFollowupDate, remainingDaysText} from './utils.js';
+import {parseISOString, calendarDayDiff, periodsOnDay, typeClass, escapeHtml, formatFollowupDate, remainingDaysText} from './utils.js';
 import {syncHTML, listenOnce, fadeChange} from './motion.js';
 import {archiveSummary} from './semesters.js';
 
@@ -35,18 +35,18 @@ function buildHero(upcoming, todayMid, animate) {
   }
   const d = parseISOString(item.date);
   const diffDays = calendarDayDiff(d, todayMid);
-  el.className = `hero ${diffDays <= 7 ? 'urgent' : ''} ${diffDays <= 3 ? 'imminent' : ''} `;
-  const count = diffDays === 0 ? 'Heute' : diffDays;
+  el.className = diffDays <= 3 ? 'hero imminent' : 'hero';
+  const countdown = diffDays === 0 ? 'Heute' : `in ${diffDays} ${diffDays === 1 ? 'Tag' : 'Tagen'}`;
+  const title = item.type === 'Abgabe' && item.short ? item.short : item.title;
   const activePeriods = periodsOnDay(todayMid, periods);
   const otherSitting = item.sittings?.find(sitting => sitting.key !== item.sittingKey);
   syncHTML(el, `
-    <h2 class="hero-label">Als Nächstes</h2>
     <div class="hero-main">
-      <div class="hero-countdown"><span class="hero-number ${diffDays === 0 ? 'word' : ''}">${count}</span>${diffDays > 0 ? `<span class="hero-unit">${diffDays === 1 ? 'Tag' : 'Tage'}</span>` : ''}<span class="hero-weekday">${escapeHtml(d.toLocaleDateString('de-DE', {weekday:'long'}))}</span></div>
-      <div class="hero-text">
-        <span class="badge ${typeClass(item.type)}">${ICONS[item.type]}${escapeHtml(item.type)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</span>
-        <h3 class="hero-title">${escapeHtml(item.title)}</h3>
-        <div class="hero-meta"><span>${ICONS.calendar}${d ? escapeHtml(formatDate(d)) : 'Termin noch offen'}</span><span>${ICONS.clock}${escapeHtml(item.time)}</span></div>
+      <h2 class="hero-label">Als Nächstes · ${escapeHtml(item.type)}${item.sittingKey ? ' · ' + item.sittingKey + '-Termin' : ''}</h2>
+      <h3 class="hero-title">${escapeHtml(title)}</h3>
+      <div class="hero-details">
+        <p class="hero-meta"><time datetime="${escapeHtml(item.date)}">${escapeHtml(sittingDate(d))}</time> · ${escapeHtml(item.time)}</p>
+        <p class="hero-countdown">${countdown}</p>
       </div>
     </div>
     ${otherSitting ? `<div class="hero-other" data-key="hero-other-${item.id}">${otherSitting.key}-Termin · ${sittingDate(parseISOString(otherSitting.date))} · ${parseISOString(otherSitting.date) < todayMid ? 'vorbei' : 'in ' + calendarDayDiff(parseISOString(otherSitting.date), todayMid) + ' Tagen'}</div>` : ''}

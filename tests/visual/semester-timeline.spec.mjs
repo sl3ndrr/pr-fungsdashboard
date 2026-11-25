@@ -3,6 +3,31 @@ import {openDashboard,freeze} from './helpers.mjs';
 
 const widths=[320,360,390,600,820,1024,1280,1600,2300];
 
+test('1440 × 900 exposes the four February names and dates in the enlarged timeline', async ({page}) => {
+  await openDashboard(page, {width:1440, height:900, date:'2026-11-25', reduced:true});
+  const firstExam = page.locator('#timeline-event-ws26-info3-A .timeline-event-label strong');
+  await expect(firstExam).toHaveText('Info III A');
+  await page.getByRole('button', {name:'Vergrößern'}).click();
+  await freeze(page);
+
+  const february = page.locator('.timeline-dot[data-date^="2027-02-"]');
+  await expect(february.locator('.timeline-event-label strong')).toHaveText(['Info III A','MaFIa 1 A','Rechenmeth. A','TheoPhy I A']);
+  await expect(february.locator('.timeline-event-label > span')).toHaveText(['17.02.','19.02.','22.02.','23.02.']);
+  const labels = await february.locator('.timeline-event-label').evaluateAll(elements => elements.map(el => {
+    const box = el.getBoundingClientRect();
+    const name = el.querySelector('strong');
+    return {left:box.left, right:box.right, top:box.top, bottom:box.bottom, clipped:name.scrollWidth > name.clientWidth};
+  }));
+  for (const [index, label] of labels.entries()) {
+    expect(label.clipped).toBe(false);
+    for (const other of labels.slice(index + 1)) {
+      expect(label.left < other.right && label.right > other.left && label.top < other.bottom && label.bottom > other.top).toBe(false);
+    }
+  }
+  await february.first().click();
+  await expect(page.locator('#card-ws26-info3')).toBeFocused();
+});
+
 for (const width of [320, 820, 1920]) {
   test(`optional timeline zoom at ${width}px`, async ({page}) => {
     await openDashboard(page, {width, reduced:true, date:'2026-11-25'});
@@ -140,6 +165,8 @@ test('same-day dates and very long titles retain labelled disjoint targets',asyn
   await openDashboard(page,{width:320,date:'2026-10-02',extraEvents:[
     {id:'same-day',type:'Prüfung',title:'Programmierpraktikum '.repeat(30),date:'2026-10-05',time:'12:00 Uhr'},
   ]});
+  await page.getByRole('button', {name:'Semester', exact:true}).click();
+  await freeze(page);
   assertFit(await geometry(page));
   const points=await page.locator('#timeline-event-p4 .timeline-point,#timeline-event-same-day .timeline-point').evaluateAll(els=>els.map(el=>el.getBoundingClientRect().x));
   expect(points[0]).toBeCloseTo(points[1],1);

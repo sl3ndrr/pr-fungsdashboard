@@ -20,6 +20,20 @@ initialiseUI();
 initialiseTheme();
 initialiseSemesterControl();
 initialiseSettings();
+
+const mobileLayout = matchMedia('(width < 600px)');
+const appointments = document.querySelector('.appointments');
+const overviewSide = document.querySelector('.overview-side');
+const topGrid = overviewSide.parentElement;
+function placeAppointments() {
+  const focused = document.activeElement;
+  if (mobileLayout.matches) overviewSide.before(appointments);
+  else if (appointments.parentElement === topGrid) topGrid.after(appointments);
+  if (appointments.contains(focused) && document.activeElement !== focused) focused.focus({preventScroll:true});
+}
+placeAppointments();
+mobileLayout.addEventListener('change', placeAppointments);
+
 const requestRender = createRenderScheduler(({animate, type}) => {
   const update = () => {updatePastToggle();updateTypeFilter();renderPreservingState(animate);};
   return type ? withTransition(update, {type}) : update();

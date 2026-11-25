@@ -6,7 +6,7 @@ for(const width of [360,768,1280,1600,2300])for(const theme of ['light','dark','
     await openDashboard(page,{width,theme});
     const geometry=await page.evaluate(()=>({
       overflow:document.documentElement.scrollWidth>innerWidth,
-      points:[...document.querySelectorAll('.timeline-dot')].map(dot=>{const r=dot.getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,date:dot.dataset.date};}),
+      points:[...document.querySelectorAll('.timeline-dot')].map(dot=>{const r=dot.querySelector('.timeline-point').getBoundingClientRect();return {x:r.left+r.width/2,y:r.top+r.height/2,date:dot.dataset.date};}),
       columns:Number(getComputedStyle(document.querySelector('#list')).getPropertyValue('--list-columns')),
       cards:[...document.querySelectorAll('#list .card')].map(card=>({
         top:card.getBoundingClientRect().top,height:card.getBoundingClientRect().height,
@@ -143,6 +143,48 @@ for(const theme of ['light','dark','system'])test(`connected controls share geom
   const heights=await page.locator('.segmented-filter').evaluateAll(els=>els.map(el=>({height:el.getBoundingClientRect().height,buttons:[...el.querySelectorAll('button')].map(b=>b.getBoundingClientRect().height)})));
   for(const group of heights) {expect(group.height).toBe(52);expect(group.buttons.every(h=>h===44)).toBe(true);}
   await page.locator('#toggle-past-btn').click();await freeze(page);
-  await expect(page.locator('#toggle-past-btn')).toHaveAttribute('aria-pressed','true');
-  expect(await page.locator('.past-filter .filter-indicator').isVisible()).toBe(true);
+  await expect(page.getByRole('checkbox', {name:'Vergangene anzeigen'})).toBeChecked();
 });
+
+for (const theme of ['light', 'dark']) {
+  test(`390 × 844 shows the next event and portfolio status immediately in ${theme}`, async ({page}) => {
+    await openDashboard(page, {width:390, height:844, theme, date:'2026-11-25', reduced:true});
+    const hero = page.locator('#hero');
+    await expect(hero.locator('.hero-main .hero-label')).toHaveText('Als Nächstes · Abgabe');
+    await expect(hero.locator('.hero-title')).toHaveText('ASP-Portfolio');
+    await expect(hero.locator('.hero-meta')).toHaveText('Fr., 18.12.2026 · Uhrzeit offen');
+    await expect(hero.locator('.hero-countdown')).toHaveText('in 23 Tagen');
+    await expect(hero.locator('.hero-next')).toHaveCount(2);
+    await expect(page.getByRole('group', {name:'Einträge nach Typ filtern'}).getByRole('button')).toHaveCount(4);
+
+    const card = page.locator('#card-ws26-asp-portfolio');
+    await expect(card.getByRole('heading')).toBeInViewport({ratio:1});
+    await expect(card.locator('.done-label')).toBeInViewport({ratio:1});
+    expect(await page.evaluate(() => scrollY)).toBe(0);
+    expect(await page.locator('.timeline-card').evaluate(el =>
+      Boolean(document.querySelector('.appointments').compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)
+    )).toBe(true);
+    const past = page.getByRole('checkbox', {name:'Vergangene anzeigen'});
+    const exportAll = page.locator('#export-all');
+    expect((await past.boundingBox()).y).toBeGreaterThan((await page.locator('#type-filter').boundingBox()).y);
+    expect(Math.abs((await past.boundingBox()).y - (await exportAll.boundingBox()).y)).toBeLessThan(44);
+
+    const checkbox = card.getByRole('checkbox', {name:'Abgabe ASP-Portfolio erledigt'});
+    const mark = card.locator('.check-mark');
+    const status = card.locator('.done-label');
+    await expect(checkbox).not.toBeChecked();
+    await expect(mark).toBeHidden();
+    await expect(status).toHaveText('Offen');
+    await checkbox.check();
+    await expect(mark).toBeVisible();
+    await expect(status).toHaveText('Erledigt');
+    await expect(hero.locator('.hero-title')).toHaveText('Info III');
+    await checkbox.uncheck();
+    await expect(mark).toBeHidden();
+    await expect(status).toHaveText('Offen');
+    await expect(hero.locator('.hero-title')).toHaveText('ASP-Portfolio');
+
+    await hero.locator('.hero-next').last().click();
+    await expect(page.locator('#card-ws26-mafia1')).toBeFocused();
+  });
+}

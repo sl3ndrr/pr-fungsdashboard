@@ -15,12 +15,10 @@ export async function componentMeasurements(page) {
     const rgba=color=>{ctx.clearRect(0,0,1,1);ctx.fillStyle=color;ctx.fillRect(0,0,1,1);return [...ctx.getImageData(0,0,1,1).data].map((v,i)=>i===3?v/255:v);};
     const over=(front,back)=>front.slice(0,3).map((v,i)=>v*front[3]+back[i]*(1-front[3]));
     const luminance=c=>c.map(v=>{v/=255;return v<=.04045?v/12.92:((v+.055)/1.055)**2.4;}).reduce((n,v,i)=>n+v*[.2126,.7152,.0722][i],0);
-    const selectors='.hero-label,.hero-title,.hero-weekday,.hero-unit,.hero-meta span,.hero-next-title,.hero-next-date,.hero-next-days,.hero-next .sitting-letter,.stat-label,.stat-value,.stat-total,.stat-note,.done-label,.sitting-legend,[data-filter="Termin"],.empty-state,.cancelled-chip,.sitting-open strong,.sitting-open span,.passed-toggle > span';
+    const selectors='.hero-label,.hero-title,.hero-countdown,.hero-meta,.hero-next-title,.hero-next-date,.hero-next-days,.hero-next .sitting-letter,.stat-label,.stat-value,.stat-total,.stat-note,.done-label,.sitting-legend,[data-filter="Termin"],.empty-state,.cancelled-chip,.sitting-open strong,.sitting-open span,.passed-toggle > span';
     const contrast=[...document.querySelectorAll(selectors)].filter(el=>visible(el)&&el.textContent.trim()).map(el=>{
       const chain=[];for(let p=el;p;p=p.parentElement)chain.push(p);
       let background=[255,255,255];for(const p of chain.reverse())background=over(rgba(getComputedStyle(p).backgroundColor),background);
-      // The visible label is positioned over its sibling checkbox surface.
-      if(el.matches('.done-label'))background=over(rgba(getComputedStyle(el.parentElement.querySelector('input')).backgroundColor),background);
       if(el.matches('[data-filter][aria-pressed="true"]'))background=over(rgba(getComputedStyle(el.parentElement.querySelector('.filter-indicator')).backgroundColor),background);
       const style=getComputedStyle(el),foreground=over(rgba(style.color),background),a=luminance(foreground),b=luminance(background);
       return {text:el.textContent.trim(),selector:el.className||el.tagName,ratio:(Math.max(a,b)+.05)/(Math.min(a,b)+.05),required:parseFloat(style.fontSize)>=24||(parseFloat(style.fontSize)>=18.66&&parseFloat(style.fontWeight)>=700)?3:4.5};

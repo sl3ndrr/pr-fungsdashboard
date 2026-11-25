@@ -37,9 +37,12 @@ test('hero empty state makes clear that only dated occurrences are exhausted',()
   const deps={store:{get:()=>({periods:[]})},...utils,document:{getElementById:()=>({})},ICONS:{check:''},syncHTML:(_,value)=>html=value};
   new Function(...Object.keys(deps),fn+';buildHero([],parseISOString("2027-04-08"),false)')(...Object.values(deps));
   assert.match(html,/Keine datierten Termine offen/);
-  assert.doesNotMatch(html,/hero-number/);
+  assert.doesNotMatch(html,/hero-countdown/);
 });
 
-test('hero weekday comes from the event date',()=>{
-  assert.match(hero(1,9), /class=\"hero-weekday\">Donnerstag<\/span>/);
+test('hero combines weekday and due date, then shows the complete countdown',()=>{
+  assert.match(hero(1,9), /<time datetime="2026-10-15">Do\., 15\.10\.2026<\/time> · 10:00 Uhr/);
+  for (const [day, text] of [[1,'in 14 Tagen'], [14,'in 1 Tag'], [15,'Heute']]) {
+    assert.ok(hero(day, 20).includes(`class="hero-countdown">${text}</p>`));
+  }
 });

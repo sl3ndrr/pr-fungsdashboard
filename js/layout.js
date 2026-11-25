@@ -33,24 +33,38 @@ export function timelinePosition(day, minDay, maxDay, width, edge = 22) {
   return inset + (day - minDay) / Math.max(1, maxDay - minDay) * (width - inset * 2);
 }
 
-/** Measured label variants and their 44px targets share disjoint lane intervals.
- * Labels stay centred on their date, except for explicit edge clamping.
- * Rows alternate -1,+1,-2,+2; input order is never changed.
+/** Reserve date targets first in the compact view, then give names the available
+ * space in priority order. The enlarged view can add lanes for full labels.
  */
-export function timelineEventLayout(items, width, gap = 8) {
+export function timelineEventLayout(items, width, gap = 8, {expanded = false} = {}) {
   const lanes = [];
-  return items.map((item, index) => {
-    const neighbours = items.filter((_, i) => i !== index).map(other => Math.abs(other.x - item.x));
-    const budget = Math.max(44, Math.min(156, width, ...(neighbours.length ? neighbours : [width])) - gap);
-    const variant = item.variants.find(value => value.width <= budget) ?? item.variants.at(-1);
+  const bounds = (item, variant) => {
     const size = Math.min(width, Math.max(44, variant.width));
     const center = Math.max(size / 2, Math.min(width - size / 2, item.x));
-    const left = center - size / 2, right = center + size / 2;
-    let row = lanes.findIndex(intervals => intervals.every(interval => left >= interval.right + gap || right + gap <= interval.left));
-    if (row < 0) { row = lanes.length; lanes.push([]); }
-    lanes[row].push({left, right});
-    return { ...variant, width: size, center, left, lane: row % 2 ? (row + 1) / 2 : -(row / 2 + 1) };
+    return {...variant, width: size, center, left: center - size / 2, right: center + size / 2};
+  };
+  const fits = (slot, lane, exclude) => lane.every(other =>
+    other === exclude || slot.left >= other.right + gap || slot.right + gap <= other.left
+  );
+  const slots = items.map(item => {
+    const variant = expanded ? item.variants[0] : item.variants.at(-1);
+    const slot = bounds(item, variant);
+    let row = lanes.findIndex(lane => fits(slot, lane));
+    if (row < 0) {
+      row = lanes.length;
+      lanes.push([]);
+    }
+    lanes[row].push(slot);
+    return {item, slot, row};
   });
+  if (!expanded) {
+    const priorityOrder = [...slots].sort((a, b) => (b.item.priority ?? 0) - (a.item.priority ?? 0));
+    for (const {item, slot, row} of priorityOrder) {
+      const variant = item.variants.find(value => value.width <= width && fits(bounds(item, value), lanes[row], slot));
+      if (variant) Object.assign(slot, bounds(item, variant));
+    }
+  }
+  return slots.map(({slot, row}) => ({...slot, lane: row % 2 ? (row + 1) / 2 : -(row / 2 + 1)}));
 }
 
 /** Keep complete labels in the rail. Optional thinning retains a single reading row;

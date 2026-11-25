@@ -71,7 +71,7 @@ async function archive(page) {
   await expect(page.locator('#card-a1 input')).toBeChecked();
   await expect(page.locator('#card-a2 input')).toBeChecked();
   await expect(page.locator('#archive-notice')).toBeVisible();
-  await expect(page.locator('#toggle-past-btn')).toHaveAttribute('aria-pressed','true');
+  await expect(page.locator('#toggle-past-btn')).toBeChecked();
   await expect(page.locator('[data-window="semester"]')).toHaveAttribute('aria-pressed','true');
   await expect(page.locator('.timeline-today,.timeline-today-label')).toHaveCount(0);
   await expect(page.locator('#stats-line')).not.toContainText('in 7 Tagen');

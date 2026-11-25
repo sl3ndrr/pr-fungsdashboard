@@ -62,10 +62,14 @@ export function buildTimeline(todayMid, expanded = false) {
   const measure = text => Math.ceil(context.measureText(text).width) + 4;
   const shortDate = event => parseISOString(event.date).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
   const shortName = event => `${event.short || event.title}${event.sittingKey ? ' ' + event.sittingKey : ''}`;
-  const layout = timelineEventLayout(visible.map(event => ({ x: pos(parseISOString(event.date)), variants: [
+  const layout = timelineEventLayout(visible.map(event => ({
+    x: pos(parseISOString(event.date)),
+    priority: Number(event.type === 'Prüfung' && parseISOString(event.date) >= todayMid && !event.isCancelled && !isEventDone(event, doneItems)),
+    variants: [
     { title: shortName(event), date: shortDate(event), width: Math.max(measure(shortName(event)), measure(shortDate(event))) },
     { title: '', date: shortDate(event), width: measure(shortDate(event)) },
-  ] })), width, 4);
+    ],
+  })), width, 4, {expanded});
   const above = Math.max(1, ...layout.map(item => -item.lane));
   const below = Math.max(0, ...layout.map(item => item.lane));
   const axisY = 24 + above * 44;
@@ -182,7 +186,19 @@ function leaveTimelineTooltip() {
 }
 timelineTooltip.addEventListener('pointerenter', () => clearTimeout(tooltipLeaveTimer));
 timelineTooltip.addEventListener('pointerleave', leaveTimelineTooltip);
-window.addEventListener('scroll', closeTimelineTooltip, true);
+window.addEventListener('scroll', () => {
+  if (!tooltipAnchor) return;
+  if (document.activeElement !== tooltipAnchor || !tooltipAnchor.isConnected) {
+    closeTimelineTooltip();
+    return;
+  }
+  const point = tooltipAnchor.querySelector('.timeline-point').getBoundingClientRect();
+  const rail = tooltipAnchor.closest('#timeline-container').getBoundingClientRect();
+  const visible = point.right > Math.max(rail.left, 0) && point.left < Math.min(rail.right, innerWidth)
+    && point.bottom > 0 && point.top < innerHeight;
+  if (visible) positionTimelineTooltip();
+  else closeTimelineTooltip();
+}, true);
 window.addEventListener('resize', positionTimelineTooltip);
 document.addEventListener('keydown', event => {
   if (event.key === 'Escape' && tooltipAnchor) {

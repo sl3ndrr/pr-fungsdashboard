@@ -4,7 +4,6 @@ const root = document.documentElement;
 const animations = new Set();
 const channels = new WeakMap();
 const bound = new WeakMap();
-const countRuns = new WeakMap();
 let transition, pendingUpdate;
 let transaction = false;
 let updateRects;
@@ -125,7 +124,7 @@ export function syncChildren(target,source) {
     if(target.childNodes[index]!==live)target.insertBefore(live,target.childNodes[index]||null);
     if(live.nodeType===3){if(live.textContent!==fresh.textContent)live.textContent=fresh.textContent;return;}
     if(live.nodeType!==1)return;
-    const numeric=live.matches('.hero-number,.countdown-number')&&/^\d+$/.test(fresh.textContent);
+    const numeric=live.matches('.countdown-number')&&/^\d+$/.test(fresh.textContent);
     const oldText=live.dataset.number||live.dataset.renderText||live.textContent;
     if(live.matches('.countdown')&&oldText!==fresh.textContent) {
       fadeChange(live,()=>{syncAttributes(live,fresh);syncChildren(live,fresh);});
@@ -133,7 +132,7 @@ export function syncChildren(target,source) {
     }
     syncAttributes(live,fresh);
     if(numeric){if(live.dataset.number!==fresh.textContent)setNumber(live,fresh.textContent);}
-    else if(live.matches('.hero-number,.countdown-number')) {delete live.dataset.number;countRuns.delete(live);syncChildren(live,fresh);}
+    else if(live.matches('.countdown-number')) {delete live.dataset.number;syncChildren(live,fresh);}
     else syncChildren(live,fresh);
     if(live.matches('.countdown'))live.dataset.renderText=fresh.textContent;
   });
@@ -148,7 +147,7 @@ export function listenOnce(el,event,listener) {
 }
 function setNumber(el,value) {
   const changed=el.dataset.number!==value;
-  countRuns.delete(el);el.dataset.number=value;
+  el.dataset.number=value;
   let visual=el.querySelector('.number-visual'),label=el.querySelector('.number-label');
   if(!visual){el.replaceChildren();visual=document.createElement('span');visual.className='number-visual';visual.setAttribute('aria-hidden','true');label=document.createElement('span');label.className='visually-hidden number-label';el.append(visual,label);}
   label.textContent=value;
@@ -161,22 +160,10 @@ function setNumber(el,value) {
   masks.slice(value.length).forEach(mask=>mask.remove());
   if(changed && reducedMotion.matches)motion(visual,[{opacity:0},{opacity:1}],{kind:'effects',speed:'fast'});
 }
-export function startCount(el) {
-  if(!el||reducedMotion.matches||!/^\d+$/.test(el.dataset.number||el.textContent))return;
-  const final=Number(el.dataset.number||el.textContent),run={};let start;
-  countRuns.set(el,run);el.replaceChildren();
-  const visual=document.createElement('span');visual.setAttribute('aria-hidden','true');visual.style.display='inline-block';visual.style.minWidth=`${String(final).length}ch`;
-  const label=document.createElement('span');label.className='visually-hidden';label.textContent=String(final);el.append(visual,label);
-  const step=now=>{
-    if(countRuns.get(el)!==run||el.dataset.number!==String(final)||!el.isConnected)return;
-    start??=now;const t=Math.min(1,(now-start)/600);visual.textContent=String(Math.round(final*(1-Math.exp(-7*t))/(1-Math.exp(-7))));
-    if(t<1&&!reducedMotion.matches)requestAnimationFrame(step);else{el.replaceChildren();setNumber(el,String(final));}
-  };requestAnimationFrame(step);
-}
 export function enterPage() {
   document.querySelectorAll('.hero,.timeline-card,.stat-tile,#list .card,#list .group-heading').forEach((el,index)=>{
     const delay=Math.min(index*25,250);motion(el,[{transform:'translateY(16px) scale(.96)'},{transform:'none'}],{delay});motion(el,[{opacity:0},{opacity:1}],{kind:'effects',delay});
-  });startCount(document.querySelector('.hero-number'));
+  });
 }
 export function fadeChange(el,update,{direction=0,axis='x'}={}) {
   if(!el||!el.childNodes.length||transaction){update();return;}

@@ -2,6 +2,17 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { tooltipPosition, timelineEventLayout, timelinePosition, timelineLabelLayout, appointmentRows } from '../js/layout.js';
 
+test('compact labels resolve conflicts by priority and expanded labels get separate lanes', () => {
+  const variants = title => [{title, width:90}, {title:'', width:44}];
+  const early = {x:60, priority:1, variants:variants('First')};
+  const later = {x:140, priority:1, variants:variants('Second')};
+  assert.deepEqual(timelineEventLayout([early, later], 200, 4).map(item => item.title), ['First', '']);
+  assert.deepEqual(timelineEventLayout([{...early, priority:0}, later], 200, 4).map(item => item.title), ['', 'Second']);
+  const expanded = timelineEventLayout([early, later], 200, 4, {expanded:true});
+  assert.deepEqual(expanded.map(item => item.title), ['First', 'Second']);
+  assert.notEqual(expanded[0].lane, expanded[1].lane);
+});
+
 test('tooltip prefers above, falls below, and clamps all viewport edges', () => {
   const size = {width:260,height:100}, viewport = {width:360,height:640};
   assert.deepEqual(tooltipPosition({left:150,width:20,top:200,bottom:240},size,viewport), {left:30,top:92,placement:'above'});

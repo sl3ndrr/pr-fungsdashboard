@@ -2,15 +2,12 @@ import {store} from './state.js';
 import {updateFilterIndicator} from './ui.js';
 
 // Filter für vergangene Termine.
-const togglePastBtn = document.getElementById('toggle-past-btn');
+const pastCheckbox = document.getElementById('toggle-past-btn');
 export function updatePastToggle() {
-  const {showPast} = store.get();
-  togglePastBtn.textContent = showPast ? 'Vergangene ausblenden' : 'Vergangene anzeigen';
-  togglePastBtn.setAttribute('aria-pressed', String(showPast));
-  updateFilterIndicator(togglePastBtn.closest('.segmented-filter'));
+  pastCheckbox.checked = store.get().showPast;
 }
-togglePastBtn.addEventListener('click', () => {
-  store.update({showPast:!store.get().showPast}, {type:'filter'});
+pastCheckbox.addEventListener('change', () => {
+  store.update({showPast:pastCheckbox.checked}, {type:'filter'});
 });
 
 export function updateTypeFilter() {
