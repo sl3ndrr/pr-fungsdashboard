@@ -10,6 +10,7 @@ import {updatePastToggle, updateTypeFilter} from './filters.js';
 import {renderPreservingState, refreshCurrentDay} from './render.js';
 import {initialiseSemesterControl} from './semester-control.js';
 import {initialiseSettings} from './settings.js';
+import {closeTimelineTooltip} from './timeline.js';
 
 document.getElementById('export-all').addEventListener('click', () => {
   const {events, semester} = store.get();
@@ -24,6 +25,16 @@ const requestRender = createRenderScheduler(({animate, type}) => {
   return type ? withTransition(update, {type}) : update();
 });
 const timelineContainerElement = document.getElementById('timeline-container');
+const timelineZoom = document.getElementById('timeline-zoom');
+timelineZoom.addEventListener('click', async () => {
+  const expanded = timelineZoom.getAttribute('aria-expanded') !== 'true';
+  timelineZoom.setAttribute('aria-expanded', String(expanded));
+  timelineZoom.querySelector('span').textContent = expanded ? 'Verkleinern' : 'Vergrößern';
+  timelineZoom.closest('.timeline-card').toggleAttribute('data-expanded', expanded);
+  closeTimelineTooltip();
+  await requestRender();
+  timelineZoom.scrollIntoView({block:'nearest', inline:'nearest'});
+});
 
 (async function init() {
   await store.initialiseDoneItems();

@@ -41,7 +41,8 @@ export function render(animate) {
   }
   const {events, doneItems, archive} = store.get();
   updateSemesterControl();
-  const tl = buildTimeline(todayMid);
+  const expandedTimeline = document.querySelector('.timeline-card').hasAttribute('data-expanded');
+  const tl = buildTimeline(todayMid, expandedTimeline);
   renderTimelineLegend(tl);
   renderedDay = localDayKey(current);
   document.getElementById('today-date').textContent = current.toLocaleDateString('de-DE', {

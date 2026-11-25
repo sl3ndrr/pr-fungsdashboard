@@ -45,16 +45,19 @@ document.addEventListener('click', event => {
 });
 
 let measurementContext;
-export function buildTimeline(todayMid) {
+export function buildTimeline(todayMid, expanded = false) {
   const {events, periods, semester, timelineMode, doneItems, archive} = store.get();
   const domain = timelineWindow(events, todayMid, timelineMode, doneItems);
   if (!domain) return { html: '<p class="timeline-empty">Noch keine Termine für dieses Semester</p>', dotEvents: [] };
   const { events: visible, origin, todayDay, minDay, maxDay, axisStart, axisEnd } = domain;
-  const width = Math.max(44, document.getElementById('timeline-container').clientWidth);
+  const container = document.getElementById('timeline-container');
+  const viewportWidth = Math.max(44, container.clientWidth);
+  const width = expanded ? Math.max(viewportWidth, 680, (maxDay - minDay) * 12 + 44) : viewportWidth;
+  const trackWidth = expanded ? `${width}px` : '100%';
   const pos = date => timelinePosition(calendarDayDiff(date, origin), minDay, maxDay, width);
   measurementContext ||= document.createElement('canvas').getContext('2d');
   const context = measurementContext;
-  const font = getComputedStyle(document.getElementById('timeline-container'));
+  const font = getComputedStyle(container);
   context.font = `800 ${font.fontSize} ${font.fontFamily}`;
   const measure = text => Math.ceil(context.measureText(text).width) + 4;
   const shortDate = event => parseISOString(event.date).toLocaleDateString('de-DE', { day:'2-digit', month:'2-digit' });
@@ -128,8 +131,8 @@ export function buildTimeline(todayMid) {
   const phaseStart = examStart ? Math.max(0, pos(examStart)) : 0;
   const phaseLabelLeft = Math.max(0, Math.min(phaseStart, width - measure(phaseLabel)));
   const examBand = examStart && calendarDayDiff(examStart, origin) <= maxDay
-    ? `<div class="timeline-exam-phase" data-key="exam-phase-${semester.id}" role="img" aria-label="Prüfungsphase frühestens ab ${sittingDate(examStart)}, Ende offen" style="--phase-start:${phaseStart}px;--phase-label-left:${phaseLabelLeft}px;--phase-leader-width:${phaseStart - phaseLabelLeft}px"><span data-key="exam-phase-label-${semester.id}">${escapeHtml(phaseLabel)}</span></div>` : '';
-  return { html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="height:${height}px;--axis-y:${axisY}px">
+    ? `<div class="timeline-exam-phase" data-key="exam-phase-${semester.id}" role="img" aria-label="Prüfungsphase frühestens ab ${sittingDate(examStart)}, Ende offen" style="width:${trackWidth};--phase-start:${phaseStart}px;--phase-label-left:${phaseLabelLeft}px;--phase-leader-width:${phaseStart - phaseLabelLeft}px"><span data-key="exam-phase-label-${semester.id}">${escapeHtml(phaseLabel)}</span></div>` : '';
+  return { html: `<div class="timeline-track" data-axis-start="${axisStart}" data-axis-end="${axisEnd}" style="width:${trackWidth};height:${height}px;--axis-y:${axisY}px">
     <div class="timeline-progress" style="top:${axisY}px;width:${Math.max(0,todayX - 22)}px"></div>
     ${showToday ? `<div class="timeline-today" style="left:${todayX}px;height:${axisY + 6}px" aria-hidden="true"></div>
     <span class="timeline-today-label" style="left:${pillX}px">Heute</span>` : ''}${periodsHtml}${months}${dots}</div>${examBand}`, dotEvents: visible };
@@ -191,6 +194,17 @@ document.addEventListener('keydown', event => {
 export function renderTimeline(tl) {
   const timelineContainer = document.getElementById('timeline-container');
   syncHTML(timelineContainer,tl.html);
+  const scrollHint = document.getElementById('timeline-scroll-hint');
+  const canScroll = timelineContainer.closest('.timeline-card').hasAttribute('data-expanded')
+    && timelineContainer.scrollWidth > timelineContainer.clientWidth;
+  scrollHint.hidden = !canScroll;
+  if (canScroll) {
+    timelineContainer.tabIndex = 0;
+    timelineContainer.setAttribute('aria-describedby', scrollHint.id);
+  } else {
+    timelineContainer.removeAttribute('tabindex');
+    timelineContainer.removeAttribute('aria-describedby');
+  }
   timelineContainer.querySelectorAll('.timeline-dot').forEach(dot => {
     listenOnce(dot, 'click', () => {
       closeTimelineTooltip();
@@ -212,8 +226,12 @@ export function renderTimeline(tl) {
 
 export function renderTimelineLegend(tl) {
   const {timelineMode} = store.get();
-  document.querySelectorAll('#timeline-window button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.window === timelineMode)));
-  updateFilterIndicator(document.getElementById('timeline-window'));
+  const windowControls = document.getElementById('timeline-window');
+  if (windowControls.querySelector('[aria-pressed="true"]')?.dataset.window !== timelineMode) {
+    document.getElementById('timeline-container').scrollLeft = 0;
+  }
+  windowControls.querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(button.dataset.window === timelineMode)));
+  updateFilterIndicator(windowControls);
   const types = [...new Set(tl.dotEvents.map(event => event.type))];
   syncHTML(document.getElementById('timeline-legend-items'), types.map(type => `<span class="timeline-legend-item"><span class="timeline-legend-shape ${typeClass(type)}" aria-hidden="true"></span>${escapeHtml(type)}</span>`).join('') + (tl.dotEvents.some(event => event.isCancelled) ? '<span class="timeline-legend-item"><span class="timeline-legend-cancelled" aria-hidden="true"></span>Abgebrochen</span>' : ''));
 }

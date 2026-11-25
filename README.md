@@ -19,6 +19,8 @@ Dashboard: <http://localhost:8000>. Browser-Regression: <http://localhost:8000/t
 - Einheitliche Terminzeilen auch für Abgaben und persönliche Termine.
 - Eingepasster linearer Zeitstrahl mit einem Punkt je Termin, Semester-/Ab-heute-Fenster,
   Kurznamen, Tooltip und direkter Navigation zur Karte.
+- „Vergrößern“ öffnet die breitere Zeitstrahlansicht. Bei Bedarf lässt sie sich
+  horizontal scrollen. „Verkleinern“ stellt die kompakte Übersicht wieder her.
 - Offenes Prüfungsband ohne erfundenes Enddatum.
 - Monatliche Listengruppen und eigene Gruppe „Termin noch offen“; ein bis vier Spalten.
 - Abgaben abhaken; nach vergangenem A und vor einschließlich B: „Bestanden – B entfällt“.

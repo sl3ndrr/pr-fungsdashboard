@@ -2,6 +2,56 @@ import {test,expect} from 'playwright/test';
 import {openDashboard,freeze} from './helpers.mjs';
 
 const widths=[320,360,390,600,820,1024,1280,1600,2300];
+
+for (const width of [320, 820, 1920]) {
+  test(`optional timeline zoom at ${width}px`, async ({page}) => {
+    await openDashboard(page, {width, reduced:true, date:'2026-11-25'});
+    const zoom = page.getByRole('button', {name:'Vergrößern'});
+    const timeline = page.locator('#timeline-container');
+    const track = timeline.locator('.timeline-track');
+    const scrollHint = page.locator('#timeline-scroll-hint');
+    const targets = timeline.getByRole('button');
+    const count = await targets.count();
+    const compact = await track.evaluate(el => el.offsetWidth);
+    expect(count).toBeGreaterThan(0);
+    await expect(zoom).toHaveAttribute('aria-expanded', 'false');
+    await expect(scrollHint).toBeHidden();
+
+    await zoom.focus();
+    await zoom.press('Enter');
+    const shrink = page.getByRole('button', {name:'Verkleinern'});
+    await expect(shrink).toHaveAttribute('aria-expanded', 'true');
+    await expect(shrink).toBeFocused();
+    await expect.poll(() => track.evaluate(el => el.offsetWidth)).toBeGreaterThan(compact);
+    await expect(targets).toHaveCount(count);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+
+    if (width < 840) {
+      await expect(scrollHint).toBeVisible();
+      await timeline.focus();
+      await timeline.press('ArrowRight');
+      await expect.poll(() => timeline.evaluate(el => el.scrollLeft)).toBeGreaterThan(0);
+      await page.getByRole('button', {name:'Semester', exact:true}).click();
+      await expect.poll(() => timeline.evaluate(el => el.scrollLeft)).toBe(0);
+      await page.getByRole('button', {name:'Ab heute', exact:true}).click();
+    }
+
+    const last = targets.last();
+    const eventId = await last.getAttribute('data-event-id');
+    await last.click();
+    await expect(page.locator(`#card-${eventId}`)).toBeFocused();
+    await shrink.click();
+    await expect(zoom).toHaveAttribute('aria-expanded', 'false');
+    await expect(scrollHint).toBeHidden();
+    await expect.poll(() => track.evaluate(el => el.offsetWidth)).toBe(compact);
+    await expect(targets).toHaveCount(count);
+
+    await zoom.click();
+    await page.reload();
+    await expect(zoom).toHaveAttribute('aria-expanded', 'false');
+  });
+}
+
 async function geometry(page) {
   return page.evaluate(()=>{
     const box=el=>{const r=el.getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom,width:r.width,height:r.height};};
